@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import nexasphereLogo from '../../assets/images/logos/nexasphere-app-logo.png';
+import nexasphereLogo from '../../assets/images/logos/nexasphere-logo.png';
 import { IconArrowRight, IconSpark, DynamicIcon } from '../../shared/Icons';
 import './HeroSection.css';
 

@@ -1,7 +1,6 @@
 package org.nexasphere.model.entity;
 
 import jakarta.persistence.*;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -68,5 +67,4 @@ public class EventEntity {
                 .replaceAll("^-|-$", "");
         return slug.isEmpty() ? "event-" + System.currentTimeMillis() : slug;
     }
-}
 }

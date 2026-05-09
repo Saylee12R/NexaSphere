@@ -43,7 +43,7 @@ public class AdminController {
         }
         log.info("Login attempt for user: {}", request.email());
         TokenSession session = adminAuthService.login(request.email().trim(), request.password());
-        return ResponseEntity.ok(new LoginResponse(session.getToken(), session.getEmail()));
+        return ResponseEntity.ok(new LoginResponse(session.token(), session.sessionInfo().email()));
     }
 
     private String getClientIp(HttpServletRequest request) {

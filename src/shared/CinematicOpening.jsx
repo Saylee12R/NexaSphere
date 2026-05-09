@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import nexasphereLogo from '../assets/images/logos/nexasphere-app-logo.png';
+import nexasphereLogo from '../assets/images/logos/nexasphere-logo.png';
 
 const SHARDS = [
   { clip:'polygon(0 0,42% 0,28% 38%,0 22%)',           ox:'20%', oy:'10%', idx:0,  d:0   },

@@ -1,4 +1,4 @@
-package org.nexasphere.service.crud;
+package org.nexasphere.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +10,7 @@ import org.nexasphere.model.entity.ActivityEvent;
 import org.nexasphere.model.events.ActivityEventCreatedEvent;
 import org.nexasphere.repository.ActivityEventRepository;
 import org.nexasphere.service.AdminEventPublisher;
+import org.nexasphere.service.crud.ActivityEventService;
 import org.nexasphere.util.Sanitizer;
 import org.springframework.web.server.ResponseStatusException;
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DynamicIcon } from '../../shared/Icons';
 import { API_BASE } from '../../data/config';
 
 function Counter({ value, suffix = '' }) {

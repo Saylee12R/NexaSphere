@@ -1,4 +1,5 @@
 import { events as fallbackEvents } from '../../data/eventsData';
+import { DynamicIcon } from '../../shared/Icons';
 import './EventsSection.css';
 
 const ANIMATION_STAGGER_DELAY = 0.11;
@@ -30,19 +31,19 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
                   onClick={isKSS ? () => onEventClick?.(ev) : undefined}
                 >
                   <div className="timeline-event-header">
-                    <span style={{ fontSize: '1.4rem' }}>{ev.icon}</span>
+                    <DynamicIcon name={ev.icon} size={24} />
                     <div className={`timeline-event-name ${isKSS ? 'kss' : ''}`}>
                       {ev.name}
                     </div>
                     {isKSS && <span className="view-details-badge">View Details →</span>}
                   </div>
                   
-                  <div className="timeline-event-date">📅 {ev.date}</div>
+                  <div className="timeline-event-date"><DynamicIcon name="Calendar" size={14} style={{ marginRight: '6px' }} />{ev.date}</div>
                   <p className="timeline-event-desc">{ev.description}</p>
                   
                   <div className="timeline-badges">
                     <span className={`timeline-badge ${ev.status}`}>
-                      {ev.status === 'completed' ? '✅ Completed' : '🔜 Upcoming'}
+                      {ev.status === 'completed' ? <><DynamicIcon name="CheckCircle" size={14} style={{ marginRight: '4px' }} /> Completed</> : <><DynamicIcon name="Calendar" size={14} style={{ marginRight: '4px' }} /> Upcoming</>}
                     </span>
                     {ev.tags?.map(t => (
                       <span key={t} className="tag-badge">{t}</span>
@@ -57,7 +58,7 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
             <div className="timeline-item">
               <div className="timeline-dot upcoming" />
               <div className="timeline-card pop-in timeline-placeholder">
-                <span style={{ fontSize: '1.3rem' }}>🚀</span>
+                <DynamicIcon name="Rocket" size={24} style={{ color: 'var(--c1)', marginBottom: '8px' }} />
                 <p>More events are being planned. Watch this space!</p>
               </div>
             </div>

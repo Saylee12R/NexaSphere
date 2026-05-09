@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.startsWith;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,7 +58,7 @@ class ActivityEventsControllerIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(event)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").startsWith("manual-"))
+                .andExpect(jsonPath("$.id").value(startsWith("manual-")))
                 .andExpect(jsonPath("$.activityKey").value("insight-session"));
     }
 

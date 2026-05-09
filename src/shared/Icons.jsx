@@ -20,7 +20,19 @@ import {
   Briefcase, 
   Camera, 
   Send,
-  MoveVertical
+  MoveVertical,
+  Brain,
+  Wrench,
+  CheckCircle2 as CheckCircle,
+  Rocket,
+  Timer,
+  Video,
+  Clapperboard,
+  Target,
+  ClipboardList,
+  Zap,
+  Heart,
+  Star
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -28,7 +40,9 @@ const ICON_MAP = {
   Telescope, Globe, Mic2, MessageSquare, 
   Mail, X, MapPin, Phone, ExternalLink, ChevronRight,
   Briefcase, Camera, Send, MoveVertical,
-  // Fallbacks for missing brand icons in this version
+  Brain, Wrench, CheckCircle, Rocket, Timer, Video,
+  Clapperboard, Target, ClipboardList, Zap, Heart, Star,
+  // Fallbacks
   Linkedin: Briefcase,
   Github: Code2,
   Instagram: Camera,

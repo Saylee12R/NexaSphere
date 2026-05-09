@@ -4,7 +4,7 @@
 
 const hackathon = {
   id: 'hackathon',
-  icon: 'âš¡',
+  icon: 'Zap',
   title: 'Hackathon',
   tagline: 'Build. Break. Repeat.',
   color: '#CC1111',
