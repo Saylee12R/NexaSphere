@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import glbajajLogo from '../../assets/images/logos/glbajaj-logo.png';
 
 /* ─────────────────────────────────────────────────────────
-   NEXASPHERE — CONTACT PAGE
+   NEXASPHERE � CONTACT PAGE
    Sections:
      1. Hero banner
-     2. Contact cards (Email · LinkedIn · WhatsApp)
-     3. Find Us — embedded GL Bajaj map
+     2. Contact cards (Email � LinkedIn � WhatsApp)
+     3. Find Us � embedded GL Bajaj map
      4. Send a message CTA (external mailto form)
 ───────────────────────────────────────────────────────── */
 
@@ -135,7 +135,7 @@ function MapSection() {
           display: 'inline-flex', alignItems: 'center', gap: 8,
           fontFamily: 'Space Mono,monospace', fontSize: '.65rem',
           color: 'var(--t3)', letterSpacing: '.28em', textTransform: 'uppercase',
-        }}>📍 FIND US</span>
+        }}>[Loc] FIND US</span>
         <h3 style={{
           fontFamily: 'Orbitron,monospace', fontSize: 'clamp(1.1rem,3vw,1.6rem)',
           fontWeight: 700, marginTop: 8, marginBottom: 6,
@@ -143,7 +143,7 @@ function MapSection() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
         }}>GL Bajaj Group of Institutions</h3>
         <p style={{ color: 'var(--t2)', fontSize: '.9rem' }}>
-          Mathura – Delhi Highway (NH-2), Near Crossing Republic, Mathura, UP 281406
+          Mathura � Delhi Highway (NH-2), Near Crossing Republic, Mathura, UP 281406
         </p>
       </div>
 
@@ -166,7 +166,7 @@ function MapSection() {
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 12, zIndex: 2, background: 'var(--card)',
           }}>
-            <div style={{ fontSize: '2rem', animation: 'float 2s ease-in-out infinite' }}>📍</div>
+            <div style={{ fontSize: '2rem', animation: 'float 2s ease-in-out infinite' }}>[Loc]</div>
             <div style={{
               fontFamily: 'Space Mono,monospace', fontSize: '.6rem',
               color: 'var(--t3)', letterSpacing: '.2em',
@@ -219,7 +219,7 @@ function MapSection() {
           className="btn btn-outline btn-sm"
           style={{ display: 'inline-flex' }}
         >
-          🗺️ Open in Google Maps
+          [Map]️ Open in Google Maps
         </a>
       </div>
     </div>
@@ -239,7 +239,7 @@ function MessageCTA() {
     });
   };
 
-  const subject = encodeURIComponent(`Hi NexaSphere${name ? ` — ${name}` : ''}`);
+  const subject = encodeURIComponent(`Hi NexaSphere${name ? ` � ${name}` : ''}`);
   const body    = encodeURIComponent(
     `Hello NexaSphere Team,\n\n${message || '[Your message here]'}\n\nBest,\n${name || 'Your Name'}`
   );
@@ -257,7 +257,7 @@ function MessageCTA() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
         }}>Drop Us a Message</h3>
         <p style={{ color: 'var(--t2)', fontSize: '.88rem', lineHeight: 1.6 }}>
-          For collaborations, queries, or just to say hi —<br/>we respond to every message.
+          For collaborations, queries, or just to say hi �<br/>we respond to every message.
         </p>
       </div>
 
@@ -284,7 +284,7 @@ function MessageCTA() {
         <textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
-          placeholder="Your message — what would you like to tell us?"
+          placeholder="Your message � what would you like to tell us?"
           rows={5}
           style={{
             width: '100%', padding: '12px 16px',
@@ -305,14 +305,14 @@ function MessageCTA() {
           className="btn btn-primary btn-ripple"
           style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}
         >
-          📧 Open Email App
+          [Mail] Open Email App
         </a>
         <button
           className="btn btn-outline btn-ripple"
           onClick={handleCopy}
           style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}
         >
-          {copied ? '✅ Copied!' : '📋 Copy Email'}
+          {copied ? '✅ Copied!' : '[=] Copy Email'}
         </button>
       </div>
 
@@ -433,7 +433,7 @@ export default function ContactPage({ onBack }) {
           maxWidth: 540, margin: '0 auto', lineHeight: 1.7,
           animationDelay: '.12s',
         }}>
-          We&apos;re a student-run community — always happy to connect, collaborate, and answer questions.
+          We&apos;re a student-run community � always happy to connect, collaborate, and answer questions.
         </p>
         <div className="contact-divider" style={{ marginTop: 40, maxWidth: 600 }}/>
       </div>
@@ -449,19 +449,19 @@ export default function ContactPage({ onBack }) {
           className="cin-container"
         >
           <ContactCard
-            icon="📧" label="Email" delay={0}
+            icon="[Mail]" label="Email" delay={0}
             value={EMAIL}
             href={`mailto:${EMAIL}`}
             color="var(--c1)"
           />
           <ContactCard
-            icon="🔗" label="LinkedIn" delay={0.08}
-            value="NexaSphere · GL Bajaj"
+            icon="->" label="LinkedIn" delay={0.08}
+            value="NexaSphere � GL Bajaj"
             href={LINKEDIN}
             color="var(--c2)"
           />
           <ContactCard
-            icon="💬" label="WhatsApp Community" delay={0.16}
+            icon="[ ]" label="WhatsApp Community" delay={0.16}
             value="Join our active community group"
             href={WHATSAPP}
             color="var(--c5)"
@@ -498,15 +498,15 @@ export default function ContactPage({ onBack }) {
             textTransform: 'uppercase', marginBottom: 6,
           }}>GL Bajaj Group of Institutions</div>
           <p style={{ color: 'var(--t2)', fontSize: '.83rem', lineHeight: 1.65 }}>
-            Mathura – Delhi Highway (NH-2),<br/>
+            Mathura � Delhi Highway (NH-2),<br/>
             Near Crossing Republic, Mathura,<br/>
-            Uttar Pradesh — 281406
+            Uttar Pradesh � 281406
           </p>
           <a
             href="tel:+915652400400"
             style={{ display: 'block', marginTop: 10, color: 'var(--c1)', fontSize: '.85rem', fontWeight: 600 }}
           >
-            📞 +91-565-2400400
+            [Tel] +91-565-2400400
           </a>
         </div>
 

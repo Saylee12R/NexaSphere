@@ -8,7 +8,7 @@ const activityDetails = {
   Hackathon: {
     color: "#CC1111",
     longDesc:
-      "Intense 24–48 hour coding marathons where teams build innovative solutions to real-world problems under time pressure. Participants form cross-functional teams, brainstorm ideas, design architectures, and ship working prototypes — all under the clock.",
+      "Intense 24�48 hour coding marathons where teams build innovative solutions to real-world problems under time pressure. Participants form cross-functional teams, brainstorm ideas, design architectures, and ship working prototypes � all under the clock.",
     highlights: [
       "Team-based challenges",
       "Mentorship from seniors",
@@ -25,7 +25,7 @@ const activityDetails = {
   Codathon: {
     color: "#EE2222",
     longDesc:
-      "Competitive programming contests that test your algorithmic thinking, data structures knowledge, and code efficiency. From greedy to dynamic programming — sharpen your edge for placements and ICPC-style rounds.",
+      "Competitive programming contests that test your algorithmic thinking, data structures knowledge, and code efficiency. From greedy to dynamic programming � sharpen your edge for placements and ICPC-style rounds.",
     highlights: [
       "Timed challenge rounds",
       "Multi-difficulty problems",
@@ -37,7 +37,7 @@ const activityDetails = {
   Ideathon: {
     color: "#FF4444",
     longDesc:
-      "Creativity-first competition where the best idea wins — no code required. Pitch your innovation, back it with research, and present a compelling case. Perfect for thinkers, designers, and business-minded builders.",
+      "Creativity-first competition where the best idea wins � no code required. Pitch your innovation, back it with research, and present a compelling case. Perfect for thinkers, designers, and business-minded builders.",
     highlights: [
       "Pitching rounds",
       "Expert panel judging",
@@ -66,7 +66,7 @@ const activityDetails = {
   Workshop: {
     color: "#AA0000",
     longDesc:
-      "Hands-on learning sessions on cutting-edge tools, frameworks, and emerging technologies. Led by experienced peers, alumni, or industry guests — every workshop gets you building something real by the end.",
+      "Hands-on learning sessions on cutting-edge tools, frameworks, and emerging technologies. Led by experienced peers, alumni, or industry guests � every workshop gets you building something real by the end.",
     highlights: [
       "Live coding sessions",
       "Take-home projects",
@@ -83,7 +83,7 @@ const activityDetails = {
   "Insight Session": {
     color: "#CC3333",
     longDesc:
-      "Deep-dive talks and peer-to-peer knowledge sharing where every member is both teacher and student. Explore industry trends, career paths, emerging research, and the big ideas shaping tomorrow’s technology landscape.",
+      "Deep-dive talks and peer-to-peer knowledge sharing where every member is both teacher and student. Explore industry trends, career paths, emerging research, and the big ideas shaping tomorrow�s technology landscape.",
     highlights: [
       "Peer presentations",
       "Industry trend analysis",
@@ -100,7 +100,7 @@ const activityDetails = {
   "Open Source Day": {
     color: "#4CAF50",
     longDesc:
-      "Dedicated events encouraging real contributions to open-source projects. Learn Git workflows, find your first issue, submit PRs, and become part of the global developer community — all in a guided, supportive environment.",
+      "Dedicated events encouraging real contributions to open-source projects. Learn Git workflows, find your first issue, submit PRs, and become part of the global developer community � all in a guided, supportive environment.",
     highlights: [
       "First-PR guidance",
       "Project selection help",
@@ -112,7 +112,7 @@ const activityDetails = {
   "Tech Debate": {
     color: "#880000",
     longDesc:
-      "Structured debates on the most controversial topics in tech — AI vs Human Jobs, Native vs Cross-Platform, SQL vs NoSQL. Sharpen your ability to defend a position, handle rebuttals, and communicate technical ideas clearly.",
+      "Structured debates on the most controversial topics in tech � AI vs Human Jobs, Native vs Cross-Platform, SQL vs NoSQL. Sharpen your ability to defend a position, handle rebuttals, and communicate technical ideas clearly.",
     highlights: [
       "Structured format",
       "Expert moderation",
@@ -411,7 +411,7 @@ export default function ActivitiesPage({ onNavigate, onBack }) {
           className="cin-section-label pop-in"
           style={{ position: "relative", zIndex: 1 }}
         >
-          NexaSphere · GL Bajaj
+          NexaSphere � GL Bajaj
         </span>
         <h1
           className="section-title pop-word"
@@ -433,7 +433,7 @@ export default function ActivitiesPage({ onNavigate, onBack }) {
             zIndex: 1,
           }}
         >
-          Every format is designed to sharpen a different skill. Explore what excites you — then dive in.
+          Every format is designed to sharpen a different skill. Explore what excites you � then dive in.
         </p>
       </div>
 

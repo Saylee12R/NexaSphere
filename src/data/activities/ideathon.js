@@ -40,7 +40,7 @@ const ideathon = {
       name: 'Ideathon 1.0',
       date: 'Coming Soon',
       description:
-        'Bring your boldest ideas. No code required — just vision, creativity, and the courage to disrupt.',
+        'Bring your boldest ideas. No code required � just vision, creativity, and the courage to disrupt.',
     },
   ],
 };

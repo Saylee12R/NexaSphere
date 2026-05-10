@@ -1,32 +1,32 @@
 import { useEffect, useRef } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════
-   NEXASPHERE CINEMATIC STORM v5 — FULL CANVAS, ONE UNIFIED FLOW
+   NEXASPHERE CINEMATIC STORM v5 � FULL CANVAS, ONE UNIFIED FLOW
 
    Everything rendered on a single canvas for maximum cohesion.
 
-   Phase 1  ERUPT     (0–380ms)
+   Phase 1  ERUPT     (0�380ms)
      500 sand particles BLAST from all 4 corners simultaneously
      Thick amber flood fills screen from edges in
      Unmissable even on dark backgrounds
 
-   Phase 2  COMPRESS  (380–720ms)
+   Phase 2  COMPRESS  (380�720ms)
      All particles spiral VIOLENTLY toward center
-     Black-hole pull effect — amber becomes incandescent at center
+     Black-hole pull effect � amber becomes incandescent at center
      Theme switches at 620ms (completely hidden)
 
-   Phase 3  SINGULARITY (720–780ms)
+   Phase 3  SINGULARITY (720�780ms)
      All matter collapses to a bright pinpoint at center
      Screen-wide white FLASH (2 frames)
 
-   Phase 4  BANG      (780–1300ms)
-     SUPERNOVA — shockwave ring explodes outward from center
+   Phase 4  BANG      (780�1300ms)
+     SUPERNOVA � shockwave ring explodes outward from center
      Full screen flooded with new theme color in 300ms
      Radial LIGHT RAYS burst from center (star burst)
      Chromatic aberration rings (RGB split)
      Debris particles scatter and fade
 
-   Phase 5  SETTLE    (1300–2000ms)
+   Phase 5  SETTLE    (1300�2000ms)
      Rays fade, debris clears
      Canvas opacity → 0, real app visible
 ═══════════════════════════════════════════════════════════════ */
@@ -144,7 +144,7 @@ export default function StormOverlay({ toTheme, onMidpoint, onDone }) {
       }
 
       /* ═══════════════════════════════════════
-         PHASE 1: ERUPT (0–380ms)
+         PHASE 1: ERUPT (0�380ms)
          Amber flood + grains flying in from corners
       ═══════════════════════════════════════ */
       if (ph === 'erupt') {
@@ -173,7 +173,7 @@ export default function StormOverlay({ toTheme, onMidpoint, onDone }) {
       }
 
       /* ═══════════════════════════════════════
-         PHASE 2: COMPRESS (380–720ms)
+         PHASE 2: COMPRESS (380�720ms)
          Grains spiral in, incandescent core
       ═══════════════════════════════════════ */
       if (ph === 'compress') {
@@ -194,7 +194,7 @@ export default function StormOverlay({ toTheme, onMidpoint, onDone }) {
       }
 
       /* ═══════════════════════════════════════
-         PHASE 3: SINGULARITY (720–780ms)
+         PHASE 3: SINGULARITY (720�780ms)
          WHITE FLASH + total collapse
       ═══════════════════════════════════════ */
       if (ph === 'singularity') {
@@ -205,8 +205,8 @@ export default function StormOverlay({ toTheme, onMidpoint, onDone }) {
       }
 
       /* ═══════════════════════════════════════
-         PHASE 4: BANG (780–1300ms)
-         SUPERNOVA — shockwave expands from center
+         PHASE 4: BANG (780�1300ms)
+         SUPERNOVA � shockwave expands from center
          Fills screen with new theme color
       ═══════════════════════════════════════ */
       if (ph === 'bang') {
@@ -292,7 +292,7 @@ export default function StormOverlay({ toTheme, onMidpoint, onDone }) {
       }
 
       /* ═══════════════════════════════════════
-         PHASE 5: SETTLE (1300–2000ms)
+         PHASE 5: SETTLE (1300�2000ms)
          Debris fades, canvas fades out
       ═══════════════════════════════════════ */
       if (ph === 'settle') {
@@ -312,7 +312,7 @@ export default function StormOverlay({ toTheme, onMidpoint, onDone }) {
       }
 
       /* ═══════════════════════════════════════
-         GRAINS — drawn in all phases
+         GRAINS � drawn in all phases
       ═══════════════════════════════════════ */
       grains.forEach((p, idx) => {
         p.wave += p.ws;

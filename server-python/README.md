@@ -1,4 +1,4 @@
-# 🐍 NexaSphere Python Backend
+# [py] NexaSphere Python Backend
 
 ## FastAPI Microservice for Form Processing
 
@@ -7,7 +7,7 @@
 <br/>
 
 ---
-## 📌 Overview
+## [pin] Overview
 
 <br/>
 
@@ -51,7 +51,7 @@ FastAPI microservice handling:
 <br/>
 
 ---
-## 🚀 Quick Start
+## >> Quick Start
 
 <br/>
 
@@ -95,12 +95,12 @@ pip install -r requirements.txt
 
 **Key Dependencies:**
 
-- **fastapi** — Web framework
-- **uvicorn** — ASGI server
-- **pydantic** — Data validation
-- **google-cloud-sheets** — Google integration
-- **supabase** — Database client
-- **python-dotenv** — Environment management
+- **fastapi**  Web framework
+- **uvicorn**  ASGI server
+- **pydantic**  Data validation
+- **google-cloud-sheets**  Google integration
+- **supabase**  Database client
+- **python-dotenv**  Environment management
 
 <br/>
 
@@ -146,11 +146,11 @@ uvicorn main:app --reload --port 8000
 
 <br/>
 
-**✅ Server Running on:** http://localhost:8000
+**[ok] Server Running on:** http://localhost:8000
 
 <br/>
 
-**📚 Interactive Documentation:**
+**[docs] Interactive Documentation:**
 
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
@@ -159,7 +159,7 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-## 🔑 Environment Variables Guide
+## [key] Environment Variables Guide
 
 <br/>
 
@@ -217,7 +217,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 <br/>
 
 ---
-## 📁 Project Structure
+## [dir] Project Structure
 
 <br/>
 
@@ -251,7 +251,7 @@ server-python/
 
 <br/>
 
-## 🔗 API Endpoints
+## -> API Endpoints
 
 <br/>
 
@@ -349,7 +349,7 @@ Content-Type: application/json
 
 ---
 
-## 📊 Google Sheets Integration
+## [data] Google Sheets Integration
 
 <br/>
 
@@ -404,7 +404,7 @@ Create a Google Sheet with these tabs:
 
 ---
 
-## 💾 Supabase Integration
+## [db] Supabase Integration
 
 <br/>
 
@@ -460,7 +460,7 @@ CREATE TABLE core_team_applications (
 <br/>
 
 ---
-## 🧪 Testing
+## [test] Testing
 
 <br/>
 
@@ -478,7 +478,7 @@ pytest
 pytest --cov=. --cov-report=html
 ```
 
-**📊 View Coverage:** `htmlcov/index.html`
+**[data] View Coverage:** `htmlcov/index.html`
 
 <br/>
 
@@ -492,7 +492,7 @@ pytest tests/test_forms.py::test_membership_submission
 
 ---
 
-## 🚀 Deployment
+## >> Deployment
 
 <br/>
 
@@ -561,7 +561,7 @@ DEBUG=False
 
 ---
 
-## 🐛 Troubleshooting
+## [bug] Troubleshooting
 
 <br/>
 
@@ -569,7 +569,7 @@ DEBUG=False
 
 <br/>
 
-**❌ ModuleNotFoundError: No module named 'fastapi'**
+**[x] ModuleNotFoundError: No module named 'fastapi'**
 
 ```bash
 # Solution: Activate venv and install dependencies
@@ -583,7 +583,7 @@ pip install -r requirements.txt
 
 <br/>
 
-**❌ 403 Forbidden when accessing Sheet**
+**[x] 403 Forbidden when accessing Sheet**
 
 ```bash
 # Solution: Share sheet with service account
@@ -594,7 +594,7 @@ pip install -r requirements.txt
 
 <br/>
 
-**❌ Invalid GOOGLE_SHEET_ID**
+**[x] Invalid GOOGLE_SHEET_ID**
 
 ```bash
 # Solution: Extract from URL
@@ -608,7 +608,7 @@ pip install -r requirements.txt
 
 <br/>
 
-**❌ Connection refused to Supabase**
+**[x] Connection refused to Supabase**
 
 ```bash
 # Solution: Verify environment variables
@@ -622,7 +622,7 @@ echo $SUPABASE_SERVICE_ROLE_KEY
 
 <br/>
 
-**❌ CORS policy error from frontend**
+**[x] CORS policy error from frontend**
 
 ```bash
 # Solution: Check CORS_ORIGIN environment variable
@@ -636,7 +636,7 @@ CORS_ORIGIN=https://nexasphere-glbajaj.vercel.app
 
 <br/>
 
-## 📚 Resources
+## [docs] Resources
 
 <br/>
 
@@ -654,7 +654,7 @@ CORS_ORIGIN=https://nexasphere-glbajaj.vercel.app
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? [email] Contact nexasphere@glbajajgroup.org
 
 **Backend Version:** 1.0 | **Last Updated:** May 2026
 

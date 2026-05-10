@@ -10,7 +10,7 @@ const openSourceDay = {
   color: '#06b6d4',
   gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)',
   description:
-    'Dedicated sessions to explore, contribute, and celebrate open-source. Find your first PR, or your hundredth — every contribution counts.',
+    'Dedicated sessions to explore, contribute, and celebrate open-source. Find your first PR, or your hundredth � every contribution counts.',
 
   conductedEvents: [
     // ── Paste completed open source day events here ──

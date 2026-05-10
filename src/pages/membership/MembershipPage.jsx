@@ -343,7 +343,7 @@ export default function MembershipPage({ onBack }) {
     
     {
       title:    'About NexaSphere',
-      subtitle: 'NexaSphere Membership Form — GL Bajaj Group of Institutions',
+      subtitle: 'NexaSphere Membership Form � GL Bajaj Group of Institutions',
       icon:     <IconBolt style={{ width: 18, height: 18 }} />,
       render: () => (
         <div style={{ display: 'grid', gap: 18 }}>
@@ -358,7 +358,7 @@ export default function MembershipPage({ onBack }) {
             <span style={{ display: 'flex', color: '#ffb400', flexShrink: 0 }}><DynamicIcon name="AlertTriangle" size={22} /></span>
             <div style={{ lineHeight: 1.75 }}>
               <div style={{ fontFamily: 'Orbitron,monospace', fontSize: '.75rem', letterSpacing: '.1em', color: 'var(--t1)', marginBottom: 6, textTransform: 'uppercase' }}>
-                Important — Read Before Proceeding
+                Important � Read Before Proceeding
               </div>
               <div style={{ fontSize: '.9rem', color: 'var(--t2)' }}>
                 This form can be filled <b style={{ color: 'var(--t1)' }}>only once</b> per device.
@@ -373,7 +373,7 @@ export default function MembershipPage({ onBack }) {
           <p style={{ color: 'var(--t2)', lineHeight: 1.8, fontSize: '.96rem' }}>
             <span className="grad-text" style={{ fontWeight: 700 }}>NexaSphere</span> is the official
             student tech ecosystem at <b style={{ color: 'var(--t1)' }}>GL Bajaj Group of Institutions, Mathura</b>.
-            We bring together students from all branches and years under one platform — organising and
+            We bring together students from all branches and years under one platform � organising and
             supporting <b>tech and non-tech events</b> across every domain:
           </p>
 
@@ -694,7 +694,7 @@ export default function MembershipPage({ onBack }) {
           maxWidth:660, margin:'0 auto',
           lineHeight:1.75, animationDelay:'.12s',
         }}>
-          NexaSphere connects students with opportunities across Tech and Non-Tech domains —
+          NexaSphere connects students with opportunities across Tech and Non-Tech domains �
           development, cloud, cybersecurity, management, and career growth.
         </p>
         <div className="member-divider" style={{ marginTop:34, maxWidth:780 }}/>
@@ -736,7 +736,7 @@ export default function MembershipPage({ onBack }) {
                   </div>
                   <div style={{ color:'var(--t2)', fontSize:'.9rem' }}>
                     {done
-                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>Thank you for joining NexaSphere — GL Bajaj Group of Institutions <DynamicIcon name="Rocket" size={14} /></span>
+                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>Thank you for joining NexaSphere � GL Bajaj Group of Institutions <DynamicIcon name="Rocket" size={14} /></span>
                       : current.subtitle}
                   </div>
                 </div>
@@ -808,7 +808,7 @@ export default function MembershipPage({ onBack }) {
                   <p style={{ color:'var(--t2)', lineHeight:1.8, maxWidth:540, margin:'0 auto' }}>
                     Your form has been successfully submitted.
                     <br/><br/>
-                    Now request to join the NexaSphere WhatsApp group using the link below — and
+                    Now request to join the NexaSphere WhatsApp group using the link below � and
                     <b style={{ color:'var(--t1)' }}> mention that you have already filled the NexaSphere form</b>.
                     <br/><br/>
                     Our team will verify your responses and add you to the respective NexaSphere spaces/groups.
@@ -848,7 +848,7 @@ export default function MembershipPage({ onBack }) {
                     <DynamicIcon name="Pin" size={14} /> Also make sure to follow the official NexaSphere LinkedIn page for updates.
                   </span><br/>
                   <b style={{ color:'var(--t2)', display:'inline-flex', alignItems:'center', gap:6, justifyContent:'center', flexWrap:'wrap' }}>
-                    <DynamicIcon name="Rocket" size={14} /> Stay connected and keep building — NexaSphere Team
+                    <DynamicIcon name="Rocket" size={14} /> Stay connected and keep building � NexaSphere Team
                   </b>
                 </div>
               </div>
@@ -910,7 +910,7 @@ export default function MembershipPage({ onBack }) {
                         submit();
                       }}
                     >
-                      {busy ? 'Submitting…' : 'Submit Membership Form'}
+                      {busy ? 'Submitting�' : 'Submit Membership Form'}
                     </button>
                   )}
                 </div>

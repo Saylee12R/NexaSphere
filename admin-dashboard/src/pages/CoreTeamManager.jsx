@@ -63,7 +63,7 @@ export function CoreTeamManager() {
               <div className="team-info">
                 <div className="item-name">{member.name}</div>
                 <div className="item-meta">{member.role}</div>
-                <div className="item-meta">{member.branch} {member.year && `· ${member.year}`}</div>
+                <div className="item-meta">{member.branch} {member.year && `� ${member.year}`}</div>
               </div>
               <button
                 className="btn-icon danger"

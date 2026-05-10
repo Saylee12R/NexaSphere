@@ -1,6 +1,6 @@
-# 📝 src/pages/recruitment/
+# [note] src/pages/recruitment/
 
-In-website **NexaSphere Core Team Application Form** — 7-step form that collects applicant details and writes responses directly to Google Sheets via Apps Script.
+In-website **NexaSphere Core Team Application Form**  7-step form that collects applicant details and writes responses directly to Google Sheets via Apps Script.
 
 ---
 
@@ -16,7 +16,7 @@ In-website **NexaSphere Core Team Application Form** — 7-step form that collec
 
 | Step | Title | Key Fields |
 |---|---|---|
-| 0 | About NexaSphere | Informational — no input |
+| 0 | About NexaSphere | Informational  no input |
 | 1 | Personal Information | Full Name, College Email, WhatsApp, Year, Branch, Section |
 | 2 | Role & Domain Preference | Role applied for, Areas of interest (multi-select) |
 | 3 | Skills & Experience | Programming skills, Communication languages, Campus experience, GitHub |
@@ -30,7 +30,7 @@ In-website **NexaSphere Core Team Application Form** — 7-step form that collec
 
 - **College Email** must end with `@glbajajgroup.org`
 - **WhatsApp** must be exactly 10 digits
-- **GitHub URL** format: `https://github.com/username` (optional — only validated if filled)
+- **GitHub URL** format: `https://github.com/username` (optional  only validated if filled)
 - All `*` fields must be filled before proceeding to next step
 - Declaration: all 3 positive boxes must be checked; "disagree" must be unchecked
 
@@ -61,5 +61,5 @@ A `RolesGuideModal` slide-over panel (renders at z-index 99999) lists all Core T
 ## Success Screen
 
 After submission, the user sees links to:
-- 💬 Core Team Screening Room (WhatsApp group)
-- 🌐 NexaSphere Community (WhatsApp group)
+- [chat] Core Team Screening Room (WhatsApp group)
+- [web] NexaSphere Community (WhatsApp group)

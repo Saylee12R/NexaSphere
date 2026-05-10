@@ -18,8 +18,8 @@ const values = [
 
 const milestones = [
   { year: '2026', label: 'Founded', desc: 'NexaSphere was architected and formed at GL Bajaj Group of Institutions, Mathura.', icon: 'Rocket' },
-  { year: 'Mar 2026', label: 'KSS #153', desc: 'Inaugural Knowledge Sharing Session on Impact of AI — 3 presenters, 5 volunteers, full house.', icon: 'Brain' },
-  { year: 'Coming Soon', label: 'Expanding', desc: 'Hackathons, workshops, open-source days and more — all in the pipeline.', icon: 'Telescope' },
+  { year: 'Mar 2026', label: 'KSS #153', desc: 'Inaugural Knowledge Sharing Session on Impact of AI � 3 presenters, 5 volunteers, full house.', icon: 'Brain' },
+  { year: 'Coming Soon', label: 'Expanding', desc: 'Hackathons, workshops, open-source days and more � all in the pipeline.', icon: 'Telescope' },
 ];
 
 export default function AboutPage({ onBack }) {
@@ -54,7 +54,7 @@ export default function AboutPage({ onBack }) {
           fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
         }}>← Back</button>
 
-        <span className="cin-section-label pop-in" style={{position:'relative',zIndex:1}}>GL Bajaj Group of Institutions · Mathura</span>
+        <span className="cin-section-label pop-in" style={{position:'relative',zIndex:1}}>GL Bajaj Group of Institutions � Mathura</span>
         <h1 className="section-title pop-word" style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', position:'relative',zIndex:1 }}>About NexaSphere</h1>
         <p className="section-subtitle pop-in" style={{ animationDelay: '.1s', maxWidth: '540px', margin: '0 auto', position:'relative',zIndex:1 }}>
           Building Tomorrow's Tech Leaders Today

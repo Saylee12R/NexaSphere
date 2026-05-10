@@ -1,6 +1,6 @@
-# 🎨 src/styles/
+# [ui] src/styles/
 
-Three CSS files — each with a clear, distinct responsibility.
+Three CSS files  each with a clear, distinct responsibility.
 
 ---
 
@@ -8,10 +8,10 @@ Three CSS files — each with a clear, distinct responsibility.
 
 **CSS variables, body reset, fonts, layout utilities, scroll UI.**
 
-### To change colors site-wide — edit `:root {}` at the top:
+### To change colors site-wide  edit `:root {}` at the top:
 
 ```css
---cyan:       #00d4ff;   /* Primary accent — headings, borders, glows */
+--cyan:       #00d4ff;   /* Primary accent  headings, borders, glows */
 --indigo:     #6366f1;   /* Secondary accent */
 --purple:     #a855f7;   /* Tertiary accent */
 --bg-primary: #04060f;   /* Page background */
@@ -33,7 +33,7 @@ Three CSS files — each with a clear, distinct responsibility.
 
 ### Scroll Reveal Classes
 
-Add any of these to an element — it will animate in when scrolled into view:
+Add any of these to an element  it will animate in when scrolled into view:
 
 | Class | Effect |
 |---|---|
@@ -41,7 +41,7 @@ Add any of these to an element — it will animate in when scrolled into view:
 | `.reveal-left` | Slide in from left |
 | `.reveal-right` | Slide in from right |
 | `.reveal-scale` | Scale up from 88% |
-| `.reveal-delay-1` — `.reveal-delay-6` | Stagger delays (0.08s per step) |
+| `.reveal-delay-1`  `.reveal-delay-6` | Stagger delays (0.08s per step) |
 
 ### Available Keyframes
 
@@ -63,11 +63,11 @@ Add any of these to an element — it will animate in when scrolled into view:
 
 ## components.css
 
-**Styles for every component — buttons, navbar, cards, modal, timeline, hero, footer, copy popup.**
+**Styles for every component  buttons, navbar, cards, modal, timeline, hero, footer, copy popup.**
 
 ### Sections inside:
 - Buttons (`.btn`, `.btn-primary`, `.btn-outline`, `.btn-linkedin`, `.btn-whatsapp`, etc.)
-- Navbar — desktop (`.ns-navbar`) and mobile (`.ns-navbar-mobile`)
+- Navbar  desktop (`.ns-navbar`) and mobile (`.ns-navbar-mobile`)
 - Activity cards (`.activity-card`, `.activity-grid`)
 - Team cards (`.team-card`, `.team-grid`)
 - Team modal (`.modal-overlay`, `.modal-box`, `.modal-photo`, etc.)

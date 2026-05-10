@@ -164,7 +164,7 @@ function EventCard({ event, activityColor, onSelect, onDelete }) {
               }}>✅ Completed</span>
             )}
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '10px' }}>📅 {event.date}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '10px' }}>[Cal] {event.date}</div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: '0 0 12px', lineHeight: 1.6 }}>
             {event.tagline || event.description}
           </p>
@@ -223,9 +223,9 @@ function UpcomingCard({ event, color }) {
           fontSize: '0.68rem', padding: '2px 8px', borderRadius: '20px',
           background: `${color}15`, color, border: `1px solid ${color}40`,
           fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0,
-        }}>🔜 Upcoming</span>
+        }}>=> Upcoming</span>
       </div>
-      <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '6px' }}>📅 {event.date}</div>
+      <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '6px' }}>[Cal] {event.date}</div>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>{event.description}</p>
     </div>
   );

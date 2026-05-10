@@ -5,11 +5,11 @@
 export const events = [
   {
     id: 1,
-    name: 'KSS #153 — Knowledge Sharing Session',
+    name: 'KSS #153 � Knowledge Sharing Session',
     shortName: 'KSS #153',
     date: 'March 14, 2025',
     description:
-      "NexaSphere's inaugural Knowledge Sharing Session — an interactive peer-to-peer learning event where members presented on the Impact of AI, fostering curiosity, collaboration, and community building.",
+      "NexaSphere's inaugural Knowledge Sharing Session � an interactive peer-to-peer learning event where members presented on the Impact of AI, fostering curiosity, collaboration, and community building.",
     status: 'completed',
     icon: 'Brain',
     tags: ['AI', 'Learning', 'Community'],

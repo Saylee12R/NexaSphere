@@ -1,4 +1,4 @@
-# ☕ NexaSphere Java Backend
+# [java] NexaSphere Java Backend
 
 ## Spring Boot 3 REST API
 
@@ -7,7 +7,7 @@
 <br/>
 
 ---
-## 📌 Overview
+## [pin] Overview
 
 <br/>
 
@@ -54,7 +54,7 @@ Before starting, ensure you have:
 
 ---
 
-## 🚀 Quick Start
+## >> Quick Start
 
 <br/>
 
@@ -89,7 +89,7 @@ mvn spring-boot:run
 
 <br/>
 
-**✅ Server Running on:** http://localhost:8080
+**[ok] Server Running on:** http://localhost:8080
 
 <br/>
 
@@ -115,7 +115,7 @@ mvn spring-boot:run
 
 ---
 
-## 📋 Environment Variables
+## [list] Environment Variables
 
 <br/>
 
@@ -187,7 +187,7 @@ logging.level.org.springframework.web=DEBUG
 
 ---
 
-## 📁 Project Structure
+## [dir] Project Structure
 
 <br/>
 
@@ -221,7 +221,7 @@ server-java/
 
 ---
 
-## 🧪 Testing
+## [test] Testing
 
 <br/>
 
@@ -239,7 +239,7 @@ mvn test
 mvn clean test jacoco:report
 ```
 
-**📊 View Coverage:** `target/site/jacoco/index.html`
+**[data] View Coverage:** `target/site/jacoco/index.html`
 
 <br/>
 
@@ -253,7 +253,7 @@ mvn verify
 
 ---
 
-## 🏛️ Architecture
+## [arch]️ Architecture
 
 <br/>
 
@@ -262,7 +262,7 @@ mvn verify
 <table>
   <tr>
     <td width="50%">
-      <h3>🎯 Controller Layer</h3>
+      <h3>[>] Controller Layer</h3>
       <ul>
         <li>REST endpoint handlers</li>
         <li>Request/response mapping</li>
@@ -271,7 +271,7 @@ mvn verify
       </ul>
     </td>
     <td width="50%">
-      <h3>🔧 Service Layer</h3>
+      <h3>[config] Service Layer</h3>
       <ul>
         <li>Business logic</li>
         <li>Data processing</li>
@@ -282,7 +282,7 @@ mvn verify
   </tr>
   <tr>
     <td width="50%">
-      <h3>🗄️ Repository Layer</h3>
+      <h3>[db]️ Repository Layer</h3>
       <ul>
         <li>Database queries</li>
         <li>CRUD operations</li>
@@ -291,7 +291,7 @@ mvn verify
       </ul>
     </td>
     <td width="50%">
-      <h3>📦 Model Layer</h3>
+      <h3>[pkg] Model Layer</h3>
       <ul>
         <li>JPA entities</li>
         <li>Database tables</li>
@@ -306,7 +306,7 @@ mvn verify
 
 ---
 
-## 🌐 API Endpoints
+## [web] API Endpoints
 
 <br/>
 
@@ -347,7 +347,7 @@ POST   /api/admin/logout
 <br/>
 
 ---
-## 🔐 Authentication
+## [auth] Authentication
 
 <br/>
 
@@ -386,7 +386,7 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
 
 ---
 
-## 📚 Database Setup
+## [docs] Database Setup
 
 <br/>
 
@@ -427,7 +427,7 @@ Spring Boot auto-creates tables on startup via JPA
 
 ---
 
-## 🚀 Deployment
+## >> Deployment
 
 <br/>
 
@@ -472,7 +472,7 @@ DB_PASS=[from-dashboard]
 
 ---
 
-## 🐛 Troubleshooting
+## [bug] Troubleshooting
 
 <br/>
 
@@ -480,7 +480,7 @@ DB_PASS=[from-dashboard]
 
 <br/>
 
-**❌ Maven command not found**
+**[x] Maven command not found**
 
 ```bash
 # Solution: Add Maven to PATH
@@ -490,7 +490,7 @@ DB_PASS=[from-dashboard]
 
 <br/>
 
-**❌ Java 17 not found**
+**[x] Java 17 not found**
 
 ```bash
 # Solution: Download Java 17+
@@ -503,7 +503,7 @@ DB_PASS=[from-dashboard]
 
 <br/>
 
-**❌ Connection refused on port 8080**
+**[x] Connection refused on port 8080**
 
 ```bash
 # Solution: Port already in use
@@ -513,7 +513,7 @@ server.port=9090
 
 <br/>
 
-**❌ Database connection failed**
+**[x] Database connection failed**
 
 ```bash
 # Solution: Verify PostgreSQL is running
@@ -524,7 +524,7 @@ server.port=9090
 
 ---
 
-## 📖 Additional Resources
+## [docs] Additional Resources
 
 <br/>
 
@@ -541,7 +541,7 @@ server.port=9090
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? [email] Contact nexasphere@glbajajgroup.org
 
 **Backend Version:** 1.0 | **Last Updated:** May 2026
 

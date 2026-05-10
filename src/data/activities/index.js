@@ -1,4 +1,4 @@
-// ── NexaSphere Activity Pages — Master Index ──
+// ── NexaSphere Activity Pages � Master Index ──
 // Each activity lives in its own file.
 // To add a new activity: create a new file here, import it, and add it to activityPages.
 // To update an activity's events: edit ONLY that activity's file.

@@ -103,7 +103,7 @@ function IntroContent({ phase, count, tagline, accent, accent2, muted, grad, bg,
         transition:'all .55s ease', marginBottom:'4px',
         textShadow: isL ? 'none' : '0 0 12px rgba(255,255,255,.15)',
       }}>
-        GL Bajaj Group of Institutions · Mathura
+        GL Bajaj Group of Institutions � Mathura
       </div>
       <div style={{
         position:'absolute', bottom:0, left:0, right:0, height:'2px',

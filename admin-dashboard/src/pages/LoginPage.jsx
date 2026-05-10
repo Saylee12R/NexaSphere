@@ -51,7 +51,7 @@ export function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="��������"
                 required
                 style={{ width: '100%', paddingRight: '40px' }}
               />

@@ -20,7 +20,7 @@ npm run dev                 # runs on http://localhost:5174
 
 1. Create a new Vercel project pointing to the `admin-dashboard/` folder
 2. Set `VITE_API_BASE` environment variable
-3. Deploy — access via `admin.nexasphere-glbajaj.vercel.app`
+3. Deploy  access via `admin.nexasphere-glbajaj.vercel.app`
 
 Also add the admin dashboard URL to `CORS_ORIGIN` in the Java backend environment.
 
@@ -30,10 +30,10 @@ Also add the admin dashboard URL to `CORS_ORIGIN` in the Java backend environmen
 - Events CRUD (create, edit, delete)
 - Activity Events management per category (8 activity types)
 - Core Team member add/remove
-- Event-driven UI — no page reloads on mutations
+- Event-driven UI  no page reloads on mutations
 - Skeleton loaders, toast notifications, confirm dialogs
 - Auto-redirect to login on session expiry
-## 👨‍💼 NexaSphere Admin Dashboard
+## [dev]‍[work] NexaSphere Admin Dashboard
 
 ## Standalone React + Vite Application
 
@@ -43,7 +43,7 @@ Also add the admin dashboard URL to `CORS_ORIGIN` in the Java backend environmen
 <br/>
 
 ---
-## 📌 Overview
+## [pin] Overview
 
 <br/>
 
@@ -86,7 +86,7 @@ Dedicated admin application providing:
 
 ---
 
-## 🚀 Quick Start
+## >> Quick Start
 
 <br/>
 
@@ -131,13 +131,13 @@ npm run dev
 
 <br/>
 
-**✅ Access Dashboard:** http://localhost:5174
+**[ok] Access Dashboard:** http://localhost:5174
 
 <br/>
 
 ---
 
-## 🔑 Login Credentials
+## [key] Login Credentials
 
 <br/>
 
@@ -155,7 +155,7 @@ npm run dev
 <br/>
 
 ---
-## 📋 Environment Variables
+## [list] Environment Variables
 
 <br/>
 
@@ -193,7 +193,7 @@ VITE_ENVIRONMENT=production
 
 ---
 
-## 📁 Project Structure
+## [dir] Project Structure
 
 <br/>
 
@@ -252,7 +252,7 @@ admin-dashboard/
 ---
 
 
-## 🎯 Core Features
+## [>] Core Features
 
 <br/>
 
@@ -263,25 +263,25 @@ admin-dashboard/
 <table>
   <tr>
     <td width="50%">
-      <h3>✨ Capabilities</h3>
+      <h3>[*] Capabilities</h3>
       <ul>
-        <li>📝 Create new events</li>
+        <li>[note] Create new events</li>
         <li>✏️ Edit existing events</li>
-        <li>🗑️ Delete events</li>
-        <li>📅 Set dates & times</li>
-        <li>📍 Add locations</li>
-        <li>📄 Add descriptions</li>
+        <li>[del]️ Delete events</li>
+        <li>[cal] Set dates & times</li>
+        <li>[loc] Add locations</li>
+        <li>[file] Add descriptions</li>
       </ul>
     </td>
     <td width="50%">
-      <h3>🔄 Updates</h3>
+      <h3>[sync] Updates</h3>
       <ul>
-        <li>⚡ Real-time sync</li>
-        <li>🔔 Instant updates</li>
-        <li>🎯 No page reload</li>
-        <li>✅ Success feedback</li>
-        <li>⚠️ Error handling</li>
-        <li>🔄 Refresh data</li>
+        <li>! Real-time sync</li>
+        <li>[notify] Instant updates</li>
+        <li>[>] No page reload</li>
+        <li>[ok] Success feedback</li>
+        <li>[!] Error handling</li>
+        <li>[sync] Refresh data</li>
       </ul>
     </td>
   </tr>
@@ -299,14 +299,14 @@ admin-dashboard/
 
 **8 Activity Categories:**
 
-- 🔨 **Hackathon** — 24-48 hour coding events
-- 💻 **Codathon** — Competitive programming
-- 💡 **Ideathon** — Innovation & brainstorming
-- ⚡ **Promptathon** — AI prompt engineering
-- 🎓 **Workshop** — Technical trainings
-- 🎤 **Insight Session** — Expert talks
-- 🌍 **Open Source Day** — Community contribution
-- 🗣️ **Tech Debate** — Discussions & debates
+- [build] **Hackathon**  24-48 hour coding events
+- [code] **Codathon**  Competitive programming
+- [idea] **Ideathon**  Innovation & brainstorming
+- ! **Promptathon**  AI prompt engineering
+- [edu] **Workshop**  Technical trainings
+- [speak] **Insight Session**  Expert talks
+- [web] **Open Source Day**  Community contribution
+- [talk]️ **Tech Debate**  Discussions & debates
 
 <br/>
 
@@ -330,7 +330,7 @@ admin-dashboard/
 <table>
   <tr>
     <td width="50%">
-      <h3>👥 Member Profile</h3>
+      <h3>[team] Member Profile</h3>
       <ul>
         <li>Name & Email</li>
         <li>Phone number</li>
@@ -344,11 +344,11 @@ admin-dashboard/
       <h3>⚙️ Operations</h3>
       <ul>
         <li>✏️ Add members</li>
-        <li>📝 Edit details</li>
-        <li>🖼️ Upload photos</li>
-        <li>🔗 Add socials</li>
-        <li>🗑️ Remove members</li>
-        <li>📄 View profiles</li>
+        <li>[note] Edit details</li>
+        <li>[img]️ Upload photos</li>
+        <li>-> Add socials</li>
+        <li>[del]️ Remove members</li>
+        <li>[file] View profiles</li>
       </ul>
     </td>
   </tr>
@@ -375,7 +375,7 @@ admin-dashboard/
 
 ---
 
-## 🔐 Authentication Flow
+## [auth] Authentication Flow
 
 <br/>
 
@@ -407,7 +407,7 @@ admin-dashboard/
 
 ---
 
-## 🌐 API Integration
+## [web] API Integration
 
 <br/>
 
@@ -462,7 +462,7 @@ DELETE /api/admin/core-team/{id}   ← Delete member
 <br/>
 
 ---
-## 🧪 Testing
+## [test] Testing
 
 <br/>
 
@@ -493,7 +493,7 @@ npm run test EventForm.test.jsx
 ---
 
 
-## 🚀 Deployment Guide
+## >> Deployment Guide
 
 <br/>
 
@@ -578,7 +578,7 @@ Click **"Deploy"** and wait for completion.
 
 <br/>
 
-**📍 Live URL:** https://admin-nexasphere.vercel.app
+**[loc] Live URL:** https://admin-nexasphere.vercel.app
 
 <br/>
 
@@ -586,7 +586,7 @@ Click **"Deploy"** and wait for completion.
 
 <br/>
 
-## 📝 Build for Production
+## [note] Build for Production
 
 <br/>
 
@@ -616,7 +616,7 @@ npm run preview
 
 ---
 
-## 🐛 Troubleshooting
+## [bug] Troubleshooting
 
 <br/>
 
@@ -624,7 +624,7 @@ npm run preview
 
 <br/>
 
-**❌ npm command not found**
+**[x] npm command not found**
 
 ```bash
 # Install Node.js from https://nodejs.org/
@@ -633,7 +633,7 @@ npm run preview
 
 <br/>
 
-**❌ Port 5174 already in use**
+**[x] Port 5174 already in use**
 
 ```bash
 # Use different port
@@ -646,7 +646,7 @@ npm run dev -- --port 5175
 
 <br/>
 
-**❌ CORS error from backend**
+**[x] CORS error from backend**
 
 ```bash
 # Verify VITE_API_BASE in .env.local
@@ -656,7 +656,7 @@ npm run dev -- --port 5175
 
 <br/>
 
-**❌ 401 Unauthorized on protected routes**
+**[x] 401 Unauthorized on protected routes**
 
 ```bash
 # Clear browser storage: localStorage
@@ -670,7 +670,7 @@ npm run dev -- --port 5175
 
 <br/>
 
-**❌ Blank page after Vercel deployment**
+**[x] Blank page after Vercel deployment**
 
 ```bash
 # Check Vercel build logs
@@ -680,7 +680,7 @@ npm run dev -- --port 5175
 
 <br/>
 
-**❌ API requests failing in production**
+**[x] API requests failing in production**
 
 ```bash
 # Verify VITE_API_BASE points to production backend
@@ -692,7 +692,7 @@ npm run dev -- --port 5175
 
 ---
 
-## 📚 Development Guidelines
+## [docs] Development Guidelines
 
 <br/>
 
@@ -736,7 +736,7 @@ export default function EventForm({ onSubmit, event }) {
 
 ---
 
-## 📖 Resources
+## [docs] Resources
 
 <br/>
 
@@ -749,16 +749,16 @@ export default function EventForm({ onSubmit, event }) {
 <br/>
 
 ---
-## 🚀 Performance Tips
+## >> Performance Tips
 
 <br/>
 
-- 📦 Code splitting with lazy loading
-- 🖼️ Image optimization
-- 🗜️ CSS & JS minification
-- 💾 Caching strategies
-- ⚡ Debounce API calls
-- 🎯 Virtual scrolling for large lists
+- [pkg] Code splitting with lazy loading
+- [img]️ Image optimization
+- [compress]️ CSS & JS minification
+- [db] Caching strategies
+- ! Debounce API calls
+- [>] Virtual scrolling for large lists
 
 <br/>
 
@@ -768,7 +768,7 @@ export default function EventForm({ onSubmit, event }) {
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? [email] Contact nexasphere@glbajajgroup.org
 
 **Dashboard Version:** 1.0 | **Last Updated:** May 2026
 

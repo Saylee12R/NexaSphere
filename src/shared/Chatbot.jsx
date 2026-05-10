@@ -41,7 +41,7 @@ const Chatbot = () => {
       {!isOpen ? (
         <button className="chat-trigger-btn" onClick={() => setIsOpen(true)}>
           <div className="pulse-ring"></div>
-          💬
+          [ ]
         </button>
       ) : (
         <div className="chat-window-glass">
@@ -50,7 +50,7 @@ const Chatbot = () => {
               <span className="status-dot"></span>
               <span>NEXA-AI</span>
             </div>
-            <button className="close-btn" onClick={() => setIsOpen(false)}>×</button>
+            <button className="close-btn" onClick={() => setIsOpen(false)}>�</button>
           </div>
           
           <div className="chat-messages" ref={scrollRef}>
@@ -68,7 +68,7 @@ const Chatbot = () => {
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Query system..."
             />
-            <button onClick={handleSend} className="send-btn">🚀</button>
+            <button onClick={handleSend} className="send-btn">>></button>
           </div>
         </div>
       )}

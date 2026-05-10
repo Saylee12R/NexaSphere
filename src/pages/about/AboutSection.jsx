@@ -47,7 +47,7 @@ export default function AboutSection() {
               Founded to bridge the gap between academic learning and real-world technology, we run hackathons, workshops, knowledge-sharing sessions, and career guidance events.
             </p>
             <p className="about-text pop-left" style={{marginTop:'12px',animationDelay:'.16s'}}>
-              From peer-led Knowledge Sharing Sessions and hands-on workshops to Industry Insider career guidance and competitive hackathons — NexaSphere runs events that connect curiosity with real opportunity, all year round.
+              From peer-led Knowledge Sharing Sessions and hands-on workshops to Industry Insider career guidance and competitive hackathons � NexaSphere runs events that connect curiosity with real opportunity, all year round.
             </p>
             
             <div className="pop-left" style={{marginTop:'16px',animationDelay:'.22s'}}>
@@ -84,9 +84,9 @@ export default function AboutSection() {
         </div>
 
         <div className="about-actions pop-in" style={{animationDelay:'.28s'}}>
-          <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp">💬 Join WhatsApp</a>
-          <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="btn btn-linkedin">🔗 LinkedIn</a>
-          <a href={`mailto:${NEXASPHERE_EMAIL}`} className="btn btn-outline">📧 Email Us</a>
+          <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp">[ ] Join WhatsApp</a>
+          <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="btn btn-linkedin">-> LinkedIn</a>
+          <a href={`mailto:${NEXASPHERE_EMAIL}`} className="btn btn-outline">[Mail] Email Us</a>
         </div>
       </div>
     </section>

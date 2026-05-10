@@ -1,4 +1,4 @@
-# 🌟 NexaSphere
+# [*] NexaSphere
 
 ## Official Community Platform — GL Bajaj Group of Institutions, Mathura
 
@@ -10,16 +10,16 @@
 
 ---
 
-## 🔗 Quick Access
+## -> Quick Access
 
 <div align="center">
 
 | Resource               | Link                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------ |
-| 🌐 **Live Website**    | [https://nexa-sphere-sigma.vercel.app/](https://nexa-sphere-sigma.vercel.app/)|
-| 🔑 **Admin Dashboard** | [https://admin-dashboard-navy-pi-22.vercel.app/](https://admin-dashboard-navy-pi-22.vercel.app/)     |
-| 📧 **Contact**         | nexasphere@glbajajgroup.org                                                    |
-| 💼 **Institution**     | GL Bajaj Group of Institutions, Mathura                                        |
+| [web] **Live Website**    | [https://nexa-sphere-sigma.vercel.app/](https://nexa-sphere-sigma.vercel.app/)|
+| [key] **Admin Dashboard** | [https://admin-dashboard-navy-pi-22.vercel.app/](https://admin-dashboard-navy-pi-22.vercel.app/)     |
+| [email] **Contact**         | nexasphere@glbajajgroup.org                                                    |
+| [work] **Institution**     | GL Bajaj Group of Institutions, Mathura                                        |
 
 </div>
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 🚀 Technology Stack
+## >> Technology Stack
 
 Modern, scalable architecture built with industry-leading technologies:
 
@@ -37,29 +37,29 @@ Modern, scalable architecture built with industry-leading technologies:
   <tr>
     <td align="center" width="50%">
       <h3>Frontend Layer</h3>
-      <p>⚡ React 18 + Vite 5</p>
-      <p>🎨 Vanilla CSS with Advanced Motion</p>
-      <p>📦 Vercel Hosting</p>
+      <p>! React 18 + Vite 5</p>
+      <p>[ui] Vanilla CSS with Advanced Motion</p>
+      <p>[pkg] Vercel Hosting</p>
     </td>
     <td align="center" width="50%">
       <h3>Backend Layer</h3>
-      <p>☕ Java 17 + Spring Boot 3</p>
-      <p>🐍 Python 3.11 + FastAPI</p>
-      <p>🚀 Railway / Render / Fly.io</p>
+      <p>[java] Java 17 + Spring Boot 3</p>
+      <p>[py] Python 3.11 + FastAPI</p>
+      <p>>> Railway / Render / Fly.io</p>
     </td>
   </tr>
   <tr>
     <td align="center">
       <h3>Database</h3>
-      <p>🗄️ PostgreSQL (Production)</p>
-      <p>💾 H2 (Development)</p>
-      <p>📊 Supabase Integration</p>
+      <p>[db]️ PostgreSQL (Production)</p>
+      <p>[db] H2 (Development)</p>
+      <p>[data] Supabase Integration</p>
     </td>
     <td align="center">
       <h3>Services</h3>
-      <p>📝 Google Sheets Integration</p>
-      <p>🔐 JWT Authentication</p>
-      <p>🔄 Real-time Updates</p>
+      <p>[note] Google Sheets Integration</p>
+      <p>[auth] JWT Authentication</p>
+      <p>[sync] Real-time Updates</p>
     </td>
   </tr>
 </table>
@@ -68,12 +68,12 @@ Modern, scalable architecture built with industry-leading technologies:
 
 ---
 
-## 📁 Project Architecture
+## [dir] Project Architecture
 
 ```
 nexasphere/
 │
-├── 📂 src/                          ← Main Frontend Application
+├── [dir] src/                          ← Main Frontend Application
 │   ├── pages/                       ← Page Components
 │   │   ├── home/
 │   │   ├── about/
@@ -90,7 +90,7 @@ nexasphere/
 │   ├── data/                        ← Static Content & Configuration
 │   └── App.jsx, main.jsx
 │
-├── 📂 admin-dashboard/              ← Standalone Admin Application
+├── [dir] admin-dashboard/              ← Standalone Admin Application
 │   ├── src/
 │   │   ├── pages/                   ← Admin Pages
 │   │   ├── components/              ← Admin Components
@@ -98,7 +98,7 @@ nexasphere/
 │   │   └── hooks/                   ← Custom React Hooks
 │   └── package.json
 │
-├── 📂 server-java/                  ← REST API Backend
+├── [dir] server-java/                  ← REST API Backend
 │   ├── src/main/java/org/nexasphere/
 │   │   ├── controller/              ← REST Endpoints
 │   │   ├── service/                 ← Business Logic
@@ -108,7 +108,7 @@ nexasphere/
 │   ├── pom.xml
 │   └── README.md
 │
-├── 📂 server-python/                ← Forms Microservice
+├── [dir] server-python/                ← Forms Microservice
 │   ├── routers/                     ← API Routes
 │   ├── services/                    ← Business Logic
 │   ├── models/                      ← Data Models
@@ -129,9 +129,9 @@ nexasphere/
 
 ---
 
-## 🛠️ Local Development Setup
+## [tools]️ Local Development Setup
 
-### ✅ Prerequisites
+### [ok] Prerequisites
 
 Make sure you have these installed on your system:
 
@@ -147,13 +147,14 @@ Make sure you have these installed on your system:
 
 <br/>
 
-### 🎯 Step 1: Frontend Setup
+### [>] Step 1: Frontend Setup
 
 <br/>
 
 **Clone and Install:**
 
 ```bash
+git clone https://github.com/your-org/nexasphere.git
 cd nexasphere
 npm install
 npm run dev
@@ -165,7 +166,7 @@ npm run dev
 
 <br/>
 
-**📋 Environment Variables (.env.local):**
+**[list] Environment Variables (.env.local):**
 
 ```bash
 VITE_API_BASE=http://localhost:8080
@@ -175,7 +176,7 @@ VITE_API_BASE=http://localhost:8080
 
 ---
 
-### ☕ Step 2: Java Backend Setup
+### [java] Step 2: Java Backend Setup
 
 <br/>
 
@@ -193,7 +194,7 @@ mvn spring-boot:run
 
 <br/>
 
-**📋 Environment Variables (application.properties):**
+**[list] Environment Variables (application.properties):**
 
 ```properties
 # Admin Credentials
@@ -201,7 +202,7 @@ ADMIN_EMAIL=nexasphere@glbajajgroup.org
 ADMIN_PASSWORD=Admin@123
 
 # CORS Configuration
-CORS_ORIGIN=http://localhost:5173,https://nexasphere-glbajaj.vercel.app
+CORS_ORIGIN=http://localhost:5173,https://nexa-sphere-sigma.vercel.app
 
 # Database (Development - H2)
 DB_URL=jdbc:h2:mem:nexaspheredb
@@ -225,7 +226,7 @@ DB_PASS=yourpassword
 
 ---
 
-### 🐍 Step 3: Python Forms Service
+### [py] Step 3: Python Forms Service
 
 <br/>
 
@@ -253,11 +254,11 @@ uvicorn main:app --reload --port 8000
 
 **▶️ Access:** http://localhost:8000
 
-**📋 Interactive Docs:** http://localhost:8000/docs
+**[list] Interactive Docs:** http://localhost:8000/docs
 
 <br/>
 
-**📋 Environment Variables (.env):**
+**[list] Environment Variables (.env):**
 
 ```bash
 # Google Cloud Authentication
@@ -271,14 +272,14 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # CORS & Server
-CORS_ORIGIN=http://localhost:5173,https://nexasphere-glbajaj.vercel.app
+CORS_ORIGIN=http://localhost:5173,https://nexa-sphere-sigma.vercel.app
 ```
 
 <br/>
 
 ---
 
-### 👨‍💼 Step 4: Admin Dashboard
+### [dev]‍[work] Step 4: Admin Dashboard
 
 <br/>
 
@@ -296,7 +297,7 @@ npm run dev
 
 <br/>
 
-**📋 Environment Variables (.env.local):**
+**[list] Environment Variables (.env.local):**
 
 ```bash
 VITE_API_BASE=http://localhost:8080
@@ -306,9 +307,9 @@ VITE_API_BASE=http://localhost:8080
 
 ---
 
-## 🌐 API Documentation
+## [web] API Documentation
 
-### 🔓 Public Endpoints (No Authentication)
+### [unlocked] Public Endpoints (No Authentication)
 
 <br/>
 
@@ -323,7 +324,7 @@ VITE_API_BASE=http://localhost:8080
 
 <br/>
 
-### 🔐 Protected Endpoints (Admin Only)
+### [auth] Protected Endpoints (Admin Only)
 
 <br/>
 
@@ -340,14 +341,14 @@ VITE_API_BASE=http://localhost:8080
 
 ---
 
-## 👨‍💻 Admin Dashboard Features
+## [dev]‍[code] Admin Dashboard Features
 
 <br/>
 
 <table>
   <tr>
     <td width="50%">
-      <h3>📊 Event Management</h3>
+      <h3>[data] Event Management</h3>
       <ul>
         <li>✓ Create new events</li>
         <li>✓ Edit event details</li>
@@ -356,7 +357,7 @@ VITE_API_BASE=http://localhost:8080
       </ul>
     </td>
     <td width="50%">
-      <h3>🎯 Activity Events</h3>
+      <h3>[>] Activity Events</h3>
       <ul>
         <li>✓ Manage 8 activity categories</li>
         <li>✓ Hackathon, Codathon, Ideathon</li>
@@ -367,7 +368,7 @@ VITE_API_BASE=http://localhost:8080
   </tr>
   <tr>
     <td width="50%">
-      <h3>👥 Team Management</h3>
+      <h3>[team] Team Management</h3>
       <ul>
         <li>✓ Add core team members</li>
         <li>✓ Edit member profiles</li>
@@ -376,7 +377,7 @@ VITE_API_BASE=http://localhost:8080
       </ul>
     </td>
     <td width="50%">
-      <h3>⚡ Real-time Updates</h3>
+      <h3>! Real-time Updates</h3>
       <ul>
         <li>✓ Event-driven architecture</li>
         <li>✓ No page reloads</li>
@@ -387,7 +388,7 @@ VITE_API_BASE=http://localhost:8080
   </tr>
 </table>
 
-**🔑 Admin Credentials:**
+**[key] Admin Credentials:**
 
 - **Email:** nexasphere@glbajajgroup.org
 - **Password:** Admin@123
@@ -395,9 +396,9 @@ VITE_API_BASE=http://localhost:8080
 <br/>
 
 ---
-## 🚀 Production Deployment
+## >> Production Deployment
 
-### 🌐 Frontend Deployment (Vercel)
+### [web] Frontend Deployment (Vercel)
 
 <br/>
 
@@ -411,13 +412,13 @@ VITE_API_BASE=http://localhost:8080
 
 <br/>
 
-**📍 Live URL:** https://nexasphere-glbajaj.vercel.app
+**[loc] Live URL:** https://nexa-sphere-sigma.vercel.app
 
 <br/>
 
 ---
 
-### 👨‍💼 Admin Dashboard Deployment (Vercel)
+### [dev]‍[work] Admin Dashboard Deployment (Vercel)
 
 <br/>
 
@@ -429,13 +430,13 @@ VITE_API_BASE=http://localhost:8080
 
 <br/>
 
-**📍 Live URL:** https://admin-nexasphere.vercel.app
+**[loc] Live URL:** https://admin-dashboard-navy-pi-22.vercel.app
 
 <br/>
 
 ---
 
-### ☕ Java Backend Deployment (Railway)
+### [java] Java Backend Deployment (Railway)
 
 <br/>
 
@@ -451,12 +452,12 @@ railway up
 
 <br/>
 
-**📋 Production Environment Variables:**
+**[list] Production Environment Variables:**
 
 ```
 ADMIN_EMAIL=nexasphere@glbajajgroup.org
 ADMIN_PASSWORD=Admin@123
-CORS_ORIGIN=https://nexasphere-glbajaj.vercel.app,https://admin-dashboard-navy-pi-22.vercel.app/
+CORS_ORIGIN=https://nexa-sphere-sigma.vercel.app,https://admin-dashboard-navy-pi-22.vercel.app
 DB_URL=jdbc:postgresql://[host]:5432/railway
 DB_DRIVER=org.postgresql.Driver
 DB_USER=postgres
@@ -467,7 +468,7 @@ DB_PASS=[from-dashboard]
 
 ---
 
-### 🐍 Python Service Deployment
+### [py] Python Service Deployment
 
 <br/>
 
@@ -489,9 +490,9 @@ railway up
 
 <br/>
 
-## 🗄️ Database Configuration
+## [db]️ Database Configuration
 
-### 💾 Development (H2 In-Memory)
+### [db] Development (H2 In-Memory)
 
 Auto-configured on startup:
 
@@ -501,7 +502,7 @@ Auto-configured on startup:
 
 <br/>
 
-### 🗄️ Production (PostgreSQL)
+### [db]️ Production (PostgreSQL)
 
 <br/>
 
@@ -565,7 +566,7 @@ CREATE TABLE core_team_applications (
 
 ---
 
-## 🧪 Testing
+## [test] Testing
 
 <br/>
 
@@ -598,23 +599,24 @@ pytest --cov
 
 ---
 
-## 📖 Documentation
+## [docs] Documentation
 
 For detailed information about specific components, visit:
 
 <br/>
 
-- **[server-java/README.md](server-java/README.md)** — Java backend build, setup, and deployment
-- **[server-python/README.md](server-python/README.md)** — Python backend setup and integrations
-- **[admin-dashboard/README.md](admin-dashboard/README.md)** — Admin dashboard installation
+- **[server-java/README.md](server-java/README.md)**  Java backend build, setup, and deployment
+- **[server-python/README.md](server-python/README.md)**  Python backend setup and integrations
+- **[admin-dashboard/README.md](admin-dashboard/README.md)**  Admin dashboard installation
+- **[google-apps-script/README.md](google-apps-script/README.md)**  Google Apps Script setup and integration
 
 <br/>
 
 ---
 
-## 🤝 Contributing
+## [+] Contributing
 
-This is an **internal project** for the NexaSphere core team.
+NexaSphere is an **open-source project**. Contributions, bug reports, and suggestions are welcome!
 
 <br/>
 
@@ -628,7 +630,7 @@ This is an **internal project** for the NexaSphere core team.
 
 <br/>
 
-### 📋 Code Quality Standards
+### [list] Code Quality Standards
 
 - ✓ No `console.log` statements
 - ✓ Functions under 40 lines
@@ -641,11 +643,11 @@ This is an **internal project** for the NexaSphere core team.
 
 ---
 
-## 📋 Project Checklist
+## [list] Project Checklist
 
 <br/>
 
-### Documentation ✅
+### Documentation [ok]
 
 - [x] Complete API documentation
 - [x] Environment variable guides
@@ -655,7 +657,7 @@ This is an **internal project** for the NexaSphere core team.
 
 <br/>
 
-### Infrastructure 🚀
+### Infrastructure >>
 
 - [x] Frontend hosting (Vercel)
 - [x] API backend available
@@ -665,7 +667,7 @@ This is an **internal project** for the NexaSphere core team.
 
 <br/>
 
-### Future Improvements 🎯
+### Future Improvements [>]
 
 - [ ] Architecture diagrams
 - [ ] Video tutorials
@@ -676,16 +678,16 @@ This is an **internal project** for the NexaSphere core team.
 <br/>
 
 ---
-## 📝 License & Usage
+## [note] License & Usage
 
-**Internal Project** — GL Bajaj NexaSphere Core Team  
-All rights reserved. Not for external distribution.
+**Open Source Project** — GL Bajaj NexaSphere Core Team  
+See LICENSE for details.
 
 <br/>
 
 ---
 
-## 📧 Contact & Support
+## [email] Contact & Support
 
 <br/>
 
@@ -695,20 +697,20 @@ All rights reserved. Not for external distribution.
     <th>Details</th>
   </tr>
   <tr>
-    <td>📧 Email</td>
+    <td>[email] Email</td>
     <td>nexasphere@glbajajgroup.org</td>
   </tr>
   <tr>
-    <td>🏢 Institution</td>
+    <td>[org] Institution</td>
     <td>GL Bajaj Group of Institutions, Mathura</td>
   </tr>
   <tr>
-    <td>🌐 Website</td>
+    <td>[web] Website</td>
     <td>https://nexa-sphere-sigma.vercel.app</td>
   </tr>
   <tr>
-    <td>👨‍💼 Admin Panel</td>
-    <td>https://admin-nexasphere.vercel.app</td>
+    <td>[dev]‍[work] Admin Panel</td>
+    <td>https://admin-dashboard-navy-pi-22.vercel.app</td>
   </tr>
 </table>
 
@@ -720,7 +722,7 @@ All rights reserved. Not for external distribution.
 
 <div align="center">
 
-### Made with ❤️ by NexaSphere Core Team
+### Made with love by NexaSphere Core Team
 
 **Version 1.0** | Last Updated: May 2026
 

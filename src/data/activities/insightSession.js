@@ -15,7 +15,7 @@ const insightSession = {
   conductedEvents: [
     {
       id: 'kss-153',
-      name: 'KSS #153 — Impact of AI',
+      name: 'KSS #153 � Impact of AI',
       shortName: 'KSS #153',
       date: 'March 2025',
       status: 'completed',
@@ -30,29 +30,29 @@ const insightSession = {
         { label: 'Volunteers', value: '5' },
         { label: 'Session', value: '#153' },
       ],
-      overview: `Knowledge Sharing Session #153 on the topic "Impact of AI" just wrapped up at GL Bajaj Group of Institutions, Mathura — and what a session it was!\n\nThink about it — today, even deciding whether to have chai or coffee is being influenced by AI. Recommendation engines, smart assistants, predictive habits... AI has quietly slipped into every corner of our lives. And our presenters made sure we felt every bit of that reality.`,
+      overview: `Knowledge Sharing Session #153 on the topic "Impact of AI" just wrapped up at GL Bajaj Group of Institutions, Mathura � and what a session it was!\n\nThink about it � today, even deciding whether to have chai or coffee is being influenced by AI. Recommendation engines, smart assistants, predictive habits... AI has quietly slipped into every corner of our lives. And our presenters made sure we felt every bit of that reality.`,
       topics: [
         {
           title: 'Impact of AI on Everyday Life',
           speaker: 'Ankit Singh',
           role: 'Presenter',
-          duration: '—',
+          duration: '�',
           summary:
-            'Explored how AI silently shapes our daily decisions — from what we watch, eat, and buy, to how recommendation engines and smart assistants predict our habits before we even realise it.',
+            'Explored how AI silently shapes our daily decisions � from what we watch, eat, and buy, to how recommendation engines and smart assistants predict our habits before we even realise it.',
         },
         {
           title: 'AI in Industry & Career Paths',
           speaker: 'Astha Shukla',
           role: 'Presenter',
-          duration: '—',
+          duration: '�',
           summary:
-            "Deep-dived into how AI is transforming industries — healthcare, finance, education, and beyond — and what it means for the careers of tomorrow's engineers.",
+            "Deep-dived into how AI is transforming industries � healthcare, finance, education, and beyond � and what it means for the careers of tomorrow's engineers.",
         },
         {
-          title: 'The Future of AI — Opportunities & Challenges',
+          title: 'The Future of AI � Opportunities & Challenges',
           speaker: 'Vikas Kumar Sharma',
           role: 'Presenter',
-          duration: '—',
+          duration: '�',
           summary:
             'Discussed the ethical landscape of AI, its growing capabilities, and the responsibilities that come with building intelligent systems.',
         },
@@ -98,7 +98,7 @@ const insightSession = {
       ],
       photoLink: null,
       videoLink: null,
-      closingNote: `That's the magic of a KSS — it doesn't just inform, it transforms. A big thank you to every presenter, every volunteer, every face in the audience. You are NexaSphere.`,
+      closingNote: `That's the magic of a KSS � it doesn't just inform, it transforms. A big thank you to every presenter, every volunteer, every face in the audience. You are NexaSphere.`,
     },
   ],
 

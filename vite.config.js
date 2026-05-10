@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'NexaSphere — Connecting GL Bajaj Tech Ecosystem',
+        name: 'NexaSphere � Connecting GL Bajaj Tech Ecosystem',
         short_name: 'NexaSphere',
         description: 'The premier tech community of GL Bajaj Group of Institutions.',
         theme_color: '#CC1111',

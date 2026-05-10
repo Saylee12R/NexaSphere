@@ -56,7 +56,7 @@ function MemberCard({ member, idx, onClick }) {
       <div className="team-card-role">{member.role}</div>
       <div className="team-card-chips">
         <span className="chip-branch">{member.branch}</span>
-        <span className="chip-section">Sec {member.section}</span>
+        <span className="chip-section">�{member.section}</span>
       </div>
       <div className="team-card-hint">Click to view ↗</div>
       <div className="corner-tl" /><div className="corner-br" />
@@ -95,11 +95,11 @@ export default function TeamPage({ onBack, onApply }) {
         }}>← Back</button>
 
         <span className="cin-section-label" style={{ display: 'block', textAlign: 'center', marginBottom: '8px', fontFamily: "'Space Mono', monospace", fontSize: '.6rem', color: 'var(--t3)', letterSpacing: '.3em', textTransform: 'uppercase', position:'relative',zIndex:1 }}>
-          GL Bajaj Group of Institutions · Mathura
+          GL Bajaj Group of Institutions � Mathura
         </span>
         <h1 className="section-title" style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', position:'relative',zIndex:1 }}>Core Team</h1>
         <p className="section-subtitle" style={{ maxWidth: '500px', margin: '0 auto', position:'relative',zIndex:1 }}>
-          The minds and hands behind NexaSphere — meet the people driving the vision forward.
+          The minds and hands behind NexaSphere � meet the people driving the vision forward.
         </p>
       </div>
 

@@ -24,7 +24,7 @@ const workshop = {
       date: 'April 24',
       status: 'upcoming',
       description:
-        'Version control mastery for every developer. Learn Git from scratch — init, commit, branch, merge, pull requests — and start contributing to real projects like a pro.',
+        'Version control mastery for every developer. Learn Git from scratch � init, commit, branch, merge, pull requests � and start contributing to real projects like a pro.',
       tags: ['Git', 'GitHub', 'Version Control', 'Open Source'],
     },
     {
@@ -34,7 +34,7 @@ const workshop = {
       date: 'Coming Soon',
       status: 'upcoming',
       description:
-        'Get started with Python — the language powering AI, automation, and the web.',
+        'Get started with Python � the language powering AI, automation, and the web.',
       tags: ['Python', 'Basics', 'Programming'],
     },
   ],

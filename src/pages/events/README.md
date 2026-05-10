@@ -1,6 +1,6 @@
-# 📅 src/pages/events/
+# [cal] src/pages/events/
 
-Events pages — home page event timeline and full event detail pages.
+Events pages  home page event timeline and full event detail pages.
 
 ---
 
@@ -25,7 +25,7 @@ Open `src/data/eventsData.js` and append to the `events` array:
   date: 'April 2026',
   description: 'One paragraph description.',
   status: 'upcoming',        // 'upcoming' | 'completed'
-  icon: '🚀',
+  icon: '>>',
   tags: ['Tag1', 'Tag2'],
 }
 ```

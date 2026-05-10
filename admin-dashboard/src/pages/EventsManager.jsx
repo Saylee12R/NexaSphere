@@ -68,7 +68,7 @@ export function EventsManager() {
                 <span className="item-icon"><AdminIcon name={event.icon || 'Calendar'} size={22} /></span>
                 <div>
                   <div className="item-name">{event.name}</div>
-                  <div className="item-meta">{event.dateText} {event.location && `· ${event.location}`}</div>
+                  <div className="item-meta">{event.dateText} {event.location && `� ${event.location}`}</div>
                 </div>
               </div>
               <div className="list-item-right">

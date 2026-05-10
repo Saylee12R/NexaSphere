@@ -1,4 +1,4 @@
-# 📄 src/pages/
+# [file] src/pages/
 
 Each subdirectory is a **full-page view** rendered by `App.jsx` when navigation changes. Pages receive an `onBack` prop to return to the previous view.
 
@@ -9,10 +9,10 @@ Each subdirectory is a **full-page view** rendered by `App.jsx` when navigation 
 | Folder | Component | Triggered by |
 |---|---|---|
 | `home/` | `HeroSection` | Default (no page set) |
-| `activities/` | `ActivitiesPage` · `ActivityDetailPage` | "Activities" nav tab |
-| `events/` | `EventsPage` · `EventDetailPage` | "Events" nav tab |
+| `activities/` | `ActivitiesPage`  `ActivityDetailPage` | "Activities" nav tab |
+| `events/` | `EventsPage`  `EventDetailPage` | "Events" nav tab |
 | `about/` | `AboutPage` | "About" nav tab |
-| `team/` | `TeamPage` · `TeamSection` | "Team" nav tab |
+| `team/` | `TeamPage`  `TeamSection` | "Team" nav tab |
 | `contact/` | `ContactPage` | "Contact" nav tab |
 | `recruitment/` | `RecruitmentPage` | "Apply for Core Team" buttons |
 | `membership/` | `MembershipPage` | "Join as Member" hero button |

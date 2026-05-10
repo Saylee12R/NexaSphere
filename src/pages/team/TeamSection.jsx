@@ -47,7 +47,7 @@ function MemberCard({ member, idx, onClick }) {
       <div className="team-card-role">{member.role}</div>
       <div className="team-card-chips">
         <span className="chip-branch">{member.branch}</span>
-        <span className="chip-section">Sec {member.section}</span>
+        <span className="chip-section">�{member.section}</span>
       </div>
       <div className="team-card-hint">Click to view ↗</div>
       <div className="corner-tl"/><div className="corner-br"/>
@@ -78,7 +78,7 @@ export default function TeamSection({ onApply }) {
     <section className="section" id="section-team">
       <div className="container">
         <div className="ns-reveal">
-          <span className="cin-section-label pop-in">GL Bajaj Group of Institutions · Mathura</span>
+          <span className="cin-section-label pop-in">GL Bajaj Group of Institutions � Mathura</span>
           <h2 className="section-title pop-word">Core Team</h2>
           <p className="section-subtitle pop-in" style={{animationDelay:'.1s'}}>The Minds Behind NexaSphere</p>
         </div>

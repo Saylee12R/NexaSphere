@@ -54,7 +54,7 @@ const defaultContent = {
   events: [
     {
       id: 'kss-153',
-      name: 'KSS #153 — Knowledge Sharing Session',
+      name: 'KSS #153 � Knowledge Sharing Session',
       shortName: 'KSS #153',
       date: 'March 14, 2025',
       description: 'NexaSphere\'s inaugural Knowledge Sharing Session focused on the impact of AI.',

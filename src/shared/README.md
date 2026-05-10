@@ -1,4 +1,4 @@
-# 🧩 src/shared/
+# [module] src/shared/
 
 Shared components used across multiple pages.
 
@@ -8,7 +8,7 @@ Shared components used across multiple pages.
 
 | File | Purpose |
 |---|---|
-| `Navbar.jsx` | Top navigation bar — desktop + mobile, active tab highlight |
+| `Navbar.jsx` | Top navigation bar  desktop + mobile, active tab highlight |
 | `Footer.jsx` | Site footer with links, logo, and social icons |
 | `Icons.jsx` | SVG icon components (`IconArrowLeft`, `IconArrowRight`, `IconBolt`, `IconShieldCheck`, `IconSpark`, `IconUsers`) |
 | `ParticleBackground.jsx` | Animated particle canvas rendered behind all content |

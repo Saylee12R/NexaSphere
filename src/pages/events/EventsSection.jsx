@@ -54,10 +54,10 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
                       }}>View Details →</span>
                     )}
                   </div>
-                  <div className="timeline-event-date">📅 {ev.date}</div>
+                  <div className="timeline-event-date">[Cal] {ev.date}</div>
                   <p className="timeline-event-desc">{ev.description}</p>
                   <div style={{display:'flex',alignItems:'center',gap:'7px',flexWrap:'wrap'}}>
-                    <span className={`timeline-badge ${ev.status}`}>{ev.status==='completed'?'✅ Completed':'🔜 Upcoming'}</span>
+                    <span className={`timeline-badge ${ev.status}`}>{ev.status==='completed'?'✅ Completed':'=> Upcoming'}</span>
                     {ev.tags?.map(t=>(
                       <span key={t} style={{fontSize:'.68rem',padding:'2px 8px',borderRadius:'10px',background:'var(--c2a)',color:'var(--c2)',border:'1px solid var(--c2b)',fontWeight:600}}>{t}</span>
                     ))}
@@ -70,7 +70,7 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
             <div className="timeline-item">
               <div className="timeline-dot upcoming"/>
               <div className="timeline-card pop-in" style={{textAlign:'center',color:'var(--t3)'}}>
-                <span style={{fontSize:'1.3rem'}}>🚀</span>
+                <span style={{fontSize:'1.3rem'}}>>></span>
                 <p style={{marginTop:'6px',fontSize:'.84rem'}}>More events are being planned. Watch this space!</p>
               </div>
             </div>

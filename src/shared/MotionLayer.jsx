@@ -1,5 +1,5 @@
 /**
- * MotionLayer.jsx — NexaSphere Motion Engine v3 (Full-Site)
+ * MotionLayer.jsx � NexaSphere Motion Engine v3 (Full-Site)
  *
  * Non-destructive: adds NEW effects only. Never modifies existing
  * pop-in / pop-word / ag animation logic.
@@ -44,13 +44,13 @@ export function SectionDivider() {
   return <div className="section-divider" aria-hidden="true"/>;
 }
 
-/* ── PAGE FLASH — visible radial glow on tab-switch ──── */
+/* ── PAGE FLASH � visible radial glow on tab-switch ──── */
 export function PageFlash() {
   return <div className="page-flash" aria-hidden="true"/>;
 }
 
 /* ────────────────────────────────────────────────────────
-   PAGE BANNER ORBS — decorative floating orbs inside
+   PAGE BANNER ORBS � decorative floating orbs inside
    each tab page's hero banner (not ambient layer)
    ──────────────────────────────────────────────────────── */
 export function BannerOrbs({ color = 'rgba(0,212,255,.06)' }) {
@@ -88,7 +88,7 @@ export function useScrollProgress() {
   }, []);
 }
 
-/* ── useNsReveal — fires .ns-visible on scroll ────────── */
+/* ── useNsReveal � fires .ns-visible on scroll ────────── */
 export function useNsReveal(deps = []) {
   useEffect(() => {
     
@@ -172,7 +172,7 @@ export function useGlobalMouseParallax() {
   }, []);
 }
 
-/* ── useMagneticCards — .mag-card 3D tilt ────────────── */
+/* ── useMagneticCards � .mag-card 3D tilt ────────────── */
 export function useMagneticCards() {
   useEffect(() => {
     if (window.matchMedia('(hover:none)').matches) return;

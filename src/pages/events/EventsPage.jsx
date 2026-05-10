@@ -36,7 +36,7 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
           fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
         }}>← Back</button>
 
-        <span className="cin-section-label pop-in" style={{position:'relative',zIndex:1}}>NexaSphere · GL Bajaj</span>
+        <span className="cin-section-label pop-in" style={{position:'relative',zIndex:1}}>NexaSphere � GL Bajaj</span>
         <h1 className="section-title pop-word" style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', position:'relative',zIndex:1 }}>Our Events</h1>
         <p className="section-subtitle pop-in" style={{ animationDelay: '.1s', maxWidth: '520px', margin: '0 auto', position:'relative',zIndex:1 }}>
           Where ideas come to life. Every event is a milestone in the NexaSphere journey.

@@ -1,6 +1,6 @@
-# 🏠 src/pages/home/
+# [home] src/pages/home/
 
-Home page hero section — the first thing visitors see.
+Home page hero section  the first thing visitors see.
 
 ---
 
@@ -16,7 +16,7 @@ Home page hero section — the first thing visitors see.
 
 | Constant | Purpose |
 |---|---|
-| *(none currently)* | — |
+| *(none currently)* |  |
 
 ## Key Props
 
@@ -35,10 +35,10 @@ Edit the `items` array inside `StatsBar` to update the 4 headline numbers:
 
 ```js
 const items = [
-  { v: '12', l: 'Members',  i: '👥' },
-  { v: '8',  l: 'Activities', i: '⚡' },
-  { v: '1',  l: 'Events Done', i: '📅' },
-  { v: '∞',  l: 'Ideas',    i: '💡' },
+  { v: '12', l: 'Members',  i: '[team]' },
+  { v: '8',  l: 'Activities', i: '!' },
+  { v: '1',  l: 'Events Done', i: '[cal]' },
+  { v: '[inf]',  l: 'Ideas',    i: '[idea]' },
 ];
 ```
 

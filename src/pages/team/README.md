@@ -1,6 +1,6 @@
-# 👥 src/pages/team/
+# [team] src/pages/team/
 
-Team pages — displays core team members and links to the Core Team Application form.
+Team pages  displays core team members and links to the Core Team Application form.
 
 ---
 
@@ -42,6 +42,6 @@ All members are defined in `src/data/teamData.js`. Each entry:
 ```
 
 **To add a new member:**
-1. Add photo to `src/assets/images/team/<name>.png` (300×300px, transparent bg)
+1. Add photo to `src/assets/images/team/<name>.png` (300300px, transparent bg)
 2. Import photo in `teamData.js`
 3. Add entry to the `teamMembers` array

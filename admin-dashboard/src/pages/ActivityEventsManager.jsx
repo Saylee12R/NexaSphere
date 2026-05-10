@@ -94,7 +94,7 @@ export function ActivityEventsManager() {
                   <div className="item-name">{event.name}</div>
                   <div className="item-meta">
                     {event.date && `${event.date}`}
-                    {event.participants && ` · ${event.participants} participants`}
+                    {event.participants && ` � ${event.participants} participants`}
                   </div>
                 </div>
               </div>

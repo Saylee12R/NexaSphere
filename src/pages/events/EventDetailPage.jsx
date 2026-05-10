@@ -150,8 +150,8 @@ function TopicCard({ topic, index, color }) {
           <div style={{ fontFamily: 'Orbitron,monospace', fontSize: '0.88rem', fontWeight: 700, color, marginBottom: '6px' }}>{topic.title}</div>
           <div style={{ display: 'flex', gap: '14px', marginBottom: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><DynamicIcon name="Mic2" size={12} /> {topic.speaker}</span>
-            {topic.role && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>· {topic.role}</span>}
-            {topic.duration !== '—' && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><DynamicIcon name="Timer" size={12} /> {topic.duration}</span>}
+            {topic.role && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>� {topic.role}</span>}
+            {topic.duration !== '�' && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><DynamicIcon name="Timer" size={12} /> {topic.duration}</span>}
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{topic.summary}</p>
         </div>
@@ -384,7 +384,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
           
           {event.volunteers?.length > 0 && (
             <section>
-              <SectionHeader icon="Zap" title="Volunteers — The Unsung Heroes" color={color} />
+              <SectionHeader icon="Zap" title="Volunteers � The Unsung Heroes" color={color} />
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {event.volunteers.map((v, i) => (
                   <PersonChip key={i} name={v.name} role="Volunteer" color={color} icon="Zap" />

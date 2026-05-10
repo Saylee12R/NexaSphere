@@ -1,6 +1,6 @@
-# 🎨 src/pages/activities/
+# [ui] src/pages/activities/
 
-Activity pages — each domain's detail page with conducted and upcoming events.
+Activity pages  each domain's detail page with conducted and upcoming events.
 
 ---
 
@@ -9,7 +9,7 @@ Activity pages — each domain's detail page with conducted and upcoming events.
 | File | Purpose |
 |---|---|
 | `ActivitiesPage.jsx` | Grid of all activity cards with navigation to detail pages |
-| `ActivityDetailPage.jsx` | Full detail page for one activity — conducted + upcoming events |
+| `ActivityDetailPage.jsx` | Full detail page for one activity  conducted + upcoming events |
 
 ---
 

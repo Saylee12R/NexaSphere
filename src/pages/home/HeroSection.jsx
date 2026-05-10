@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import nexasphereLogo from '../../assets/images/logos/nexasphere-logo.png';
 import { IconArrowRight, IconSpark } from '../../shared/Icons';
 
-/* â”€â”€ Ripple Button â”€â”€ */
+/* ── Ripple Button ── */
 function RippleBtn({ cls, children, href, onClick }) {
   const ref = useRef(null);
   const go = e => {
@@ -20,7 +20,7 @@ function RippleBtn({ cls, children, href, onClick }) {
   return <button ref={ref} className={`btn btn-ripple ${cls}`} onClick={go}>{children}</button>;
 }
 
-/* â”€â”€ Animated gradient title â€” safe in both modes â”€â”€ */
+/* ── Animated gradient title — safe in both modes ── */
 function HeroTitle({ isLight }) {
   return (
     <div className="hero-title">
@@ -29,7 +29,7 @@ function HeroTitle({ isLight }) {
   );
 }
 
-/* â”€â”€ SVG Orbit rings â”€â”€ */
+/* ── SVG Orbit rings ── */
 function OrbitRings({ isLight }) {
   const rings = isLight
     ? [{rx:105,ry:48,dur:8,r:2,col:'204,17,17',d:'0s'},{rx:58,ry:182,dur:13,r:1.5,col:'136,0,0',d:'-5s'},{rx:162,ry:37,dur:17,r:1,col:'238,34,34',d:'-9s'},{rx:78,ry:158,dur:6,r:2,col:'255,68,68',d:'-2s'}]
@@ -55,7 +55,7 @@ function OrbitRings({ isLight }) {
   );
 }
 
-/* â”€â”€ Logo with 3D mouse tilt â”€â”€ */
+/* ── Logo with 3D mouse tilt ── */
 function Logo3D({ ready, isLight }) {
   const ref = useRef(null);
   const onMove = useCallback(e => {
@@ -90,14 +90,9 @@ function Logo3D({ ready, isLight }) {
   );
 }
 
-/* â”€â”€ Stats bar â”€â”€ */
+/* ── Stats bar ── */
 function StatsBar({ vis, isLight }) {
-  const items = [
-  { v: '12', l: 'Members', i: '👥' },
-  { v: '8', l: 'Activities', i: '⚡' },
-  { v: '1', l: 'Events Done', i: '📝' },
-  { v: '∞', l: 'Ideas', i: '💡' }
-];
+  const items = [{v:'12',l:'Members',i:'[Team]'},{v:'8',l:'Activities',i:'!'},{v:'1',l:'Events Done',i:'[Cal]'},{v:'∞',l:'Ideas',i:'*'}];
   return (
     <div style={{
       display:'flex',maxWidth:'500px',margin:'40px auto 0',
@@ -130,7 +125,7 @@ function StatsBar({ vis, isLight }) {
   );
 }
 
-/* â”€â”€ Particles / atmosphere â”€â”€ */
+/* ── Particles / atmosphere ── */
 function Atmosphere({ isLight }) {
   if (isLight) return (
     <div style={{position:'absolute',inset:0,zIndex:0,pointerEvents:'none',

@@ -10,7 +10,7 @@ const promptathon = {
   color: '#8b5cf6',
   gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
   description:
-    'The art of talking to AI — turned into a competitive sport. Craft the sharpest, most creative prompts to solve real-world problems, generate stunning outputs, and outsmart your peers in the age of generative intelligence.',
+    'The art of talking to AI � turned into a competitive sport. Craft the sharpest, most creative prompts to solve real-world problems, generate stunning outputs, and outsmart your peers in the age of generative intelligence.',
 
   conductedEvents: [
     // ── Paste completed promptathon events here ──
@@ -40,7 +40,7 @@ const promptathon = {
       name: 'Promptathon 1.0',
       date: 'Coming Soon',
       description:
-        'The first-ever NexaSphere Promptathon — where prompt engineering meets creativity. Master AI, craft killer prompts, and compete for the top spot.',
+        'The first-ever NexaSphere Promptathon � where prompt engineering meets creativity. Master AI, craft killer prompts, and compete for the top spot.',
     },
   ],
 
@@ -58,7 +58,7 @@ const promptathon = {
     {
       icon: 'Target',
       title: 'Real-World Tasks',
-      desc: 'Tackle genuine challenges — from content generation to data analysis — using only natural language.',
+      desc: 'Tackle genuine challenges � from content generation to data analysis � using only natural language.',
     },
     {
       icon: 'Star',

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { activities } from '../../data/activitiesData';
 import { activityPages } from '../../data/activities/index';
 
-/* Anti-gravity delays — same pattern as team cards */
+/* Anti-gravity delays � same pattern as team cards */
 const AG_DELAYS = [0, -2.1, -4.2, -1.0, -3.3, -5.5, -0.7, -6.1];
 
 function ActivityCard({ a, idx, onNav }) {

@@ -16,7 +16,7 @@ const techDebate = {
     // ── Paste completed tech debate events here ──
     // {
     //   id: 'debate-1',
-    //   name: 'Tech Debate 1.0 — AI vs Human Creativity',
+    //   name: 'Tech Debate 1.0 � AI vs Human Creativity',
     //   shortName: 'Debate 1.0',
     //   date: 'Month Year',
     //   status: 'completed',
@@ -44,7 +44,7 @@ const techDebate = {
       name: 'Tech Debate 1.0',
       date: 'Coming Soon',
       description:
-        'First tech debate session. Motion: "AI will replace human creativity." — Which side are you on?',
+        'First tech debate session. Motion: "AI will replace human creativity." � Which side are you on?',
     },
   ],
 };

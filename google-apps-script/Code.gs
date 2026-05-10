@@ -1,5 +1,5 @@
 /**
- * NexaSphere Membership Form — Google Apps Script
+ * NexaSphere Membership Form  Google Apps Script
  * ─────────────────────────────────────────────────────────────────────────────
  * This is a STANDALONE script for the Membership Form ONLY.
  * The Core Team Recruitment form has its own separate script/sheet.
@@ -64,7 +64,7 @@ function getOrCreateSheet() {
   var sheet = ss.getSheetByName(SHEET_TAB_NAME);
 
   if (!sheet) {
-    // Tab doesn't exist yet — create it and write the header
+    // Tab doesn't exist yet  create it and write the header
     sheet = ss.insertSheet(SHEET_TAB_NAME);
     sheet.appendRow(HEADER_ROW);
     _styleHeader(sheet);
@@ -142,7 +142,7 @@ function doPost(e) {
   }
 }
 
-// ── GET handler — health check / browser test ─────────────────────────────────
+// ── GET handler  health check / browser test ─────────────────────────────────
 function doGet(e) {
   return _respond({
     ok: true,

@@ -1,4 +1,4 @@
-# 📊 src/data/
+# [data] src/data/
 
 All site content lives here. Edit these files to update the website **without touching any component code**.
 
@@ -30,7 +30,7 @@ Open `eventsData.js` and add a new object to the `events` array:
   date: 'April 2026',
   description: 'One paragraph description.',
   status: 'upcoming',             // 'upcoming' | 'completed'
-  icon: '🚀',
+  icon: '>>',
   tags: ['Tag1', 'Tag2'],
 }
 ```
@@ -79,5 +79,5 @@ When the session is conducted, move it to `conductedEvents` and fill in speakers
 
 | Event | Status | File |
 |---|---|---|
-| KSS #153 — Impact of AI | ✅ Completed | `activities/insightSession.js` |
-| Workshop: Git & GitHub | ✅ Completed | `activities/workshop.js` + `eventsData.js` |
+| KSS #153  Impact of AI | [ok] Completed | `activities/insightSession.js` |
+| Workshop: Git & GitHub | [ok] Completed | `activities/workshop.js` + `eventsData.js` |

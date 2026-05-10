@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 /* ─────────────────────────────────────────────────────────────────
    Google Antigravity-style interactive particle dot network
-   Light mode: dark dots on light bg — fully visible
+   Light mode: dark dots on light bg � fully visible
    Dark mode : glowing cyan/purple dots on dark bg
 ───────────────────────────────────────────────────────────────── */
 
