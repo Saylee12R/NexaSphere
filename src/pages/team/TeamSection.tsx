@@ -147,10 +147,7 @@ export default function TeamSection({ onApply }: TeamSectionProps): ReactNode {
         </div>
       </div>
 
-      {selectedMember ? createPortal(
-        <TeamMemberModal member={selectedMember} onClose={() => setSelectedMember(null)} />,
-        document.body
-      ) : null}
+      {selectedMember ? <TeamMemberModal member={selectedMember} onClose={() => setSelectedMember(null)} /> : null}
     </section>
   );
 }

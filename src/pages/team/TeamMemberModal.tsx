@@ -1,5 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ReactNode, MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
+import * as LucideIcons from 'lucide-react';
+import type { CoreTeamMember } from '../../types/api';
+
+export interface TeamMemberModalProps {
+  member: CoreTeamMember;
+  onClose: () => void;
+}
 
 function DynamicIcon({ name, ...props }: { name: keyof typeof LucideIcons; [key: string]: unknown }): ReactNode {
   const Icon = (LucideIcons as Record<string, React.ComponentType<Record<string, unknown>>>)[name] ?? LucideIcons.HelpCircle;

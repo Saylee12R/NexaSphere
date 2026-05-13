@@ -88,7 +88,7 @@ function FloatingOrbs({ color }) {
   );
 }
 
-function ScanLine() {
+function ScanLine({ color }) {
   return (
     <>
       <style>{`
@@ -99,7 +99,7 @@ function ScanLine() {
       `}</style>
       <div style={{
         position: 'absolute', left: 0, right: 0, height: '2px',
-        background: 'linear-gradient(90deg, transparent, var(--cyan), transparent)',
+        background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
         opacity: 0.3, pointerEvents: 'none', zIndex: 0,
         animation: 'scanline 4s linear infinite',
       }} />
@@ -332,13 +332,13 @@ export default function ActivityDetailPage({ activity, onBack, onSelectEvent }) 
       
       <div style={{
         position: 'relative',
-        background: `linear-gradient(180deg, rgba(${rgb},0.10) 0%, rgba(${rgb},0.03) 60%, transparent 100%)`,
-        borderBottom: `1px solid rgba(${rgb},0.2)`,
+        background: `linear-gradient(180deg, rgba(${rgb},0.15) 0%, rgba(${rgb},0.06) 60%, transparent 100%)`,
+        borderBottom: `1px solid rgba(${rgb},0.3)`,
         padding: '60px 0 52px',
         overflow: 'hidden',
       }}>
         <FloatingOrbs color={color} />
-        <ScanLine />
+        <ScanLine color={color} />
 
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           
@@ -446,13 +446,13 @@ export default function ActivityDetailPage({ activity, onBack, onSelectEvent }) 
           <div style={{ maxWidth: '760px' }}>
             <h2 style={{
               fontFamily: 'Orbitron, monospace', fontSize: '1.1rem', fontWeight: 700,
-              color: 'var(--text-secondary)', marginBottom: '24px', letterSpacing: '0.08em',
+              color, marginBottom: '24px', letterSpacing: '0.08em',
               textTransform: 'uppercase',
               display: 'flex', alignItems: 'center', gap: '10px',
             }}>
               <span style={{
                 display: 'inline-block', width: '32px', height: '2px',
-                background: 'linear-gradient(90deg, var(--text-secondary), transparent)',
+                background: `linear-gradient(90deg, ${color}, transparent)`,
               }} />
               Coming Up
             </h2>

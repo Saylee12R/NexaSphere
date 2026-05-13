@@ -40,6 +40,8 @@ function ActivityCard({ a, idx, onNav }) {
     setTimeout(() => onNav('activity', a.title), 160);
   };
 
+  const color = a.color || 'var(--c1)';
+
   return (
     <div
       ref={ref}
@@ -49,24 +51,51 @@ function ActivityCard({ a, idx, onNav }) {
         perspective: '800px',
         animation: `ag 7s ease-in-out ${agDelay}s infinite`,
         willChange: 'transform',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: '420px'
       }}
       onMouseMove={hasContent ? onMove : undefined}
       onMouseLeave={hasContent ? onLeave : undefined}
       onClick={click}
     >
-      <div className="card-accent-line"/>
-      <div className="card-num">{String(idx + 1).padStart(2, '0')}</div>
-      <div className="activity-icon"><DynamicIcon name={a.icon} size={42} /></div>
-      <div className="activity-title">{a.title}</div>
-      <p className="activity-desc">{a.description}</p>
+      <div className="card-accent-line" style={{ background: color }}/>
+      <div className="card-num" style={{ color: `${color}80` }}>{String(idx + 1).padStart(2, '0')}</div>
+      <div className="activity-icon" style={{ color: color, marginBottom: '6px' }}><DynamicIcon name={a.icon} size={34} /></div>
+      <div className="activity-title" style={{ color: color, fontSize: '.9rem', fontWeight: 700 }}>{a.title}</div>
+      <p className="activity-desc" style={{ flexGrow: 1, textAlign: 'justify', fontSize: '.78rem', marginBottom: '20px' }}>{a.description}</p>
+      
+      {a.chips && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+          {a.chips.map(chip => (
+            <span key={chip} style={{ 
+              fontSize: '.6rem', padding: '3px 8px', borderRadius: '12px', 
+              background: `${color}18`, color: color, border: `1px solid ${color}35`,
+              fontFamily: "'Space Mono', monospace", fontWeight: 600
+            }}>{chip}</span>
+          ))}
+        </div>
+      )}
+
+      {a.features && (
+        <ul style={{ listStyle: "none", padding: 0, margin: "0 0 16px" }}>
+          {a.features.map((f, i) => (
+            <li key={i} style={{ fontSize: '.75rem', color: "var(--t2)", padding: "3px 0", display: "flex", gap: "6px" }}>
+              <span style={{ color: color, fontWeight: 700 }}>→</span> {f}
+            </li>
+          ))}
+        </ul>
+      )}
+
       {hasContent ? (
-        <div className="activity-cta"><span>Explore</span><span>→</span></div>
+        <div className="activity-cta" style={{ color: color, marginTop: 'auto' }}><span>View Session</span><span>→</span></div>
       ) : (
-        <div className="activity-cta" style={{ opacity: 0.45, cursor: 'default' }}>
+        <div className="activity-cta" style={{ opacity: 0.45, cursor: 'default', marginTop: 'auto' }}>
           <span>Coming Soon</span>
         </div>
       )}
-      <div className="corner-tl"/><div className="corner-br"/>
+      <div className="corner-tl" style={{ borderColor: color }}/><div className="corner-br" style={{ borderColor: color }}/>
     </div>
   );
 }

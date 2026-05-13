@@ -141,11 +141,7 @@
 }
 #scroll-progress { animation: progressGlow 2s ease-in-out infinite; }
 
-.activity-card:hover .activity-icon {
-  transform: scale(1.35) rotate(15deg) !important;
-  filter: drop-shadow(0 0 12px var(--c1g)) !important;
-  transition: transform var(--trans-bounce), filter var(--trans-smooth) !important;
-}
+
 .activity-card:hover {
   transform: translateY(-10px) rotateX(calc(var(--ry,0)*1deg)) rotateY(calc(var(--rx,0)*1deg)) !important;
   box-shadow: 0 0 0 1.5px var(--c1b), 0 0 40px rgba(204,17,17,.18), 0 32px 70px rgba(0,0,0,.6) !important;
