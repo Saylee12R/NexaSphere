@@ -1,13 +1,12 @@
 package org.nexasphere.util;
 
+import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 
-public final class Sanitizer {
+@Component
+public class Sanitizer {
 
-    private Sanitizer() {
-    }
-
-    public static String clean(String input) {
+    public String clean(String input) {
         if (input == null) {
             return null;
         }

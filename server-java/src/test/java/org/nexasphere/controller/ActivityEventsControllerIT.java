@@ -46,7 +46,7 @@ class ActivityEventsControllerIT {
     @Test
     void createEvent_ValidAdmin_Succeeds() throws Exception {
         String token = tokenService.createSession("admin@nexasphere.org").token();
-        
+
         ActivityEvent event = new ActivityEvent();
         event.setName("New KSS");
         event.setDateText("April 2025");

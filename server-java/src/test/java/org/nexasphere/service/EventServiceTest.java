@@ -28,10 +28,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
 
-    @Mock EventRepository repo;
-    @Mock AdminEventPublisher publisher;
-    @Mock Sanitizer sanitizer;
-    @InjectMocks EventService service;
+    @Mock
+    EventRepository repo;
+    @Mock
+    AdminEventPublisher publisher;
+    @Mock
+    Sanitizer sanitizer;
+    @InjectMocks
+    EventService service;
 
     @BeforeEach
     void setupSanitizer() {
@@ -126,8 +130,10 @@ class EventServiceTest {
 
     @Test
     void getAllEvents_returnsSortedList() {
-        EventEntity e1 = sampleEvent(); e1.setId("e1");
-        EventEntity e2 = sampleEvent(); e2.setId("e2");
+        EventEntity e1 = sampleEvent();
+        e1.setId("e1");
+        EventEntity e2 = sampleEvent();
+        e2.setId("e2");
         when(repo.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(e1, e2));
 
         List<EventEntity> result = service.getAllEvents();

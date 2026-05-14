@@ -20,6 +20,32 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
     return()=>obs.disconnect();
   },[]);
 
+  // Auto-detect: if date has passed, treat as completed regardless of stored status
+  const now = Date.now();
+  const parseDate = ev => {
+    const raw = ev.dateText ?? ev.date ?? '';
+    const d = new Date(raw);
+    return isNaN(d) ? null : d;
+  };
+  const getEffectiveStatus = ev => {
+    if (ev.status === 'completed') return 'completed';
+    const d = parseDate(ev);
+    if (d && d.getTime() < now) return 'completed'; // date passed → auto-complete
+    return ev.status || 'upcoming';
+  };
+
+  // Sort: upcoming first (earliest date first), then completed (most recent first)
+  const sortedEvents = [...events]
+    .map(ev => ({ ...ev, _effectiveStatus: getEffectiveStatus(ev) }))
+    .sort((a, b) => {
+      const aIsUpcoming = a._effectiveStatus !== 'completed';
+      const bIsUpcoming = b._effectiveStatus !== 'completed';
+      if (aIsUpcoming !== bIsUpcoming) return bIsUpcoming ? 1 : -1;
+      const da = parseDate(a)?.getTime() ?? 0;
+      const db = parseDate(b)?.getTime() ?? 0;
+      return aIsUpcoming ? da - db : db - da;
+    });
+
   return (
     <section className="section" id="section-events">
       <div className="container">
@@ -28,11 +54,11 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
           <p className="section-subtitle pop-in" style={{animationDelay:'.1s'}}>Where Ideas Come to Life</p>
         </div>
         <div className="events-timeline">
-          {events.map((ev,i)=>{
+          {sortedEvents.map((ev,i)=>{
             const isKSS = ev.id === 1 || ev.id === 'kss-153' || String(ev.shortName || '').toLowerCase().includes('kss');
             return (
               <div className="timeline-item" key={ev.id}>
-                <div className={`timeline-dot${ev.status==='upcoming'?' upcoming':''}`}/>
+                <div className={`timeline-dot${ev._effectiveStatus === 'upcoming' ? ' upcoming' : ''}`}/>
                 <div
                   className={`timeline-card shimmer ${i%2===0?'pop-left':'pop-right'}`}
                   style={{
@@ -65,12 +91,12 @@ export default function EventsSection({ onEventClick, events = fallbackEvents })
                     )}
                   </div>
                   <div className="timeline-event-date" style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                    <DynamicIcon name="Calendar" size={14} /> {ev.date}
+                    <DynamicIcon name="Calendar" size={14} /> {ev.dateText ?? ev.date}
                   </div>
                   <p className="timeline-event-desc">{ev.description}</p>
                   <div style={{display:'flex',alignItems:'center',gap:'7px',flexWrap:'wrap'}}>
-                    <span className={`timeline-badge ${ev.status}`}>
-                      {ev.status === 'completed' ? (
+                    <span className={`timeline-badge ${ev._effectiveStatus}`}>
+                      {ev._effectiveStatus === 'completed' ? (
                         <><DynamicIcon name="CheckCircle" size={14} style={{marginRight:'4px'}} /> Completed</>
                       ) : (
                         <><DynamicIcon name="Calendar" size={14} style={{marginRight:'4px'}} /> Upcoming</>
