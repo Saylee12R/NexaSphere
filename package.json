@@ -14,8 +14,10 @@
     "e2e:debug": "playwright test --debug"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@sentry/react": "^7.84.0",
     "@sentry/tracing": "^7.84.0",
+    "@tensorflow/tfjs": "^4.22.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "react": "^18.2.0",
