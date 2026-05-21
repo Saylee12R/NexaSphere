@@ -172,7 +172,7 @@ function normalizePhone(value) {
 }
 
 async function canManageActivityEvent({ name, email, phone, password }) {
-  const expectedPassword = process.env.ADMIN_EVENT_PASSWORD || 'Admin@123';
+  const expectedPassword = process.env.ADMIN_EVENT_PASSWORD;
   if (String(password || '') !== expectedPassword) return false;
   const n = String(name || '').trim().toLowerCase();
   const e = String(email || '').trim().toLowerCase();

@@ -75,10 +75,7 @@ const getDb = (key, defaultVal) => {
 const setDb = (key, val) => localStorage.setItem(`ns_db_${key}`, JSON.stringify(val));
 
 async function fetchWithAuth(url, options = {}) {
-  // If we are using the mock token (offline mode), bypass fetch entirely
-  const isOffline = auth.getToken() === 'mock-jwt-token-for-nexasphere-admin';
-
-  if (!isOffline) {
+  if (!auth.isOffline()) {
     try {
       const res = await fetch(`${API_BASE}${url}`, {
         ...options,
@@ -100,7 +97,7 @@ async function fetchWithAuth(url, options = {}) {
       }
       return res.json();
     } catch (e) {
-      if (import.meta.env.DEV) console.warn('Live API failed, falling back to local storage offline mode...', e);
+      throw e;
     }
   }
 
