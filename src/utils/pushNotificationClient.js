@@ -1,8 +1,9 @@
-import { captureHandledException } from './errorTracking';
 /**
  * Frontend Push Notification Service
  * Handles service worker registration and push notification setup
  */
+
+import { captureHandledException } from './errorTracking';
 
 /**
  * Register service worker
@@ -19,8 +20,7 @@ export async function registerServiceWorker() {
 
     return registration;
   } catch (error) {
-captureHandledException(error, 'Service Worker registration failed:');
-
+    captureHandledException(error, 'Service Worker registration failed:');
     return null;
   }
 }
@@ -42,8 +42,7 @@ export async function requestNotificationPermission() {
       const permission = await Notification.requestPermission();
       return permission;
     } catch (error) {
-captureHandledException(error, 'Failed to request notification permission:');
-
+      captureHandledException(error, 'Failed to request notification permission:');
       return null;
     }
   }
@@ -63,8 +62,7 @@ export async function getPushSubscription(registration) {
     const subscription = await registration.pushManager.getSubscription();
     return subscription;
   } catch (error) {
-captureHandledException(error, 'Failed to get push subscription:');
-
+    captureHandledException(error, 'Failed to get push subscription:');
     return null;
   }
 }
@@ -83,7 +81,6 @@ export async function subscribeToPushNotifications(registration, vapidPublicKey)
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
 
-
     // Send subscription to server
     await fetch('/api/notifications/subscribe', {
       method: 'POST',
@@ -95,8 +92,7 @@ export async function subscribeToPushNotifications(registration, vapidPublicKey)
 
     return subscription;
   } catch (error) {
-captureHandledException(error, 'Failed to subscribe to push notifications:');
-
+    captureHandledException(error, 'Failed to subscribe to push notifications:');
     return null;
   }
 }
@@ -126,8 +122,7 @@ export async function unsubscribeFromPushNotifications(registration) {
       return true;
     }
   } catch (error) {
-captureHandledException(error, 'Failed to unsubscribe from push notifications:');
-
+    captureHandledException(error, 'Failed to unsubscribe from push notifications:');
   }
 
   return false;
@@ -188,8 +183,7 @@ export async function initializePushNotifications(vapidPublicKey) {
 
     return { registration, subscription };
   } catch (error) {
-captureHandledException(error, 'Failed to initialize push notifications:');
-
+    captureHandledException(error, 'Failed to initialize push notifications:');
     return null;
   }
 }

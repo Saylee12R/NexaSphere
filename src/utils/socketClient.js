@@ -1,10 +1,10 @@
-import { captureHandledException } from './errorTracking';
 /**
  * Socket.IO Client
  * Handles WebSocket connections and real-time updates
  */
 
 import io from 'socket.io-client';
+import { captureHandledException } from './errorTracking';
 
 let socket = null;
 let eventHandlers = {};
@@ -26,12 +26,12 @@ export function initializeSocket(serverUrl = window.location.origin) {
     identifyUser();
   });
 
-  socket.on('disconnect', (reason) => {
+  socket.on('disconnect', (_reason) => {
+    // Disconnect handled silently; reconnection is automatic
   });
 
   socket.on('error', (error) => {
-captureHandledException(error, 'Socket.IO error:');
-
+    captureHandledException(error, 'Socket.IO error:');
   });
 
   // Setup custom event listeners
