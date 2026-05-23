@@ -17,7 +17,7 @@ import java.util.UUID;
 @Service
 public class AdminAuthService {
 
-    @Value("${ADMIN_EMAIL:nexasphere@glbajajgroup.org}")
+    @Value("${ADMIN_EMAIL}")
     private String adminEmail;
 
     @Value("${ADMIN_PASSWORD:admin@123}")

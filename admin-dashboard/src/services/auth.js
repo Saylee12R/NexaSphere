@@ -51,6 +51,11 @@ export const auth = {
       }
       throw err;
     }
+
+    const data = await res.json();
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(EMAIL_KEY, cleanEmail);
+    return data;
   },
 
   logout() {
