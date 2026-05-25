@@ -56,7 +56,8 @@ const Chatbot = () => {
     setInput('');
 
     try {
-      const response = await fetch('http://localhost:8000/ai/chat', {
+      const base = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+      const response = await fetch(`${base}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: currentInput }),
