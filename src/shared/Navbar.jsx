@@ -136,10 +136,6 @@ if (compact) return (
 
 <div className="ns-nav-actions">
   <NotificationBell />
-  <BookmarkToggle onToggle={onToggleBookmarks} />
-
-<div className="ns-nav-actions">
-  <NotificationBell />
 
   <BookmarkToggle onToggle={onToggleBookmarks} />
 
