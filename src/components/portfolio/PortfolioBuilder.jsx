@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../../utils/apiClient.js';
 import { projectsData } from '../../data/projectsData';
 import { roadmapData } from '../../data/roadmapData';
+import { RepoCardSkeleton } from '../ui/skeleton/RepoCardSkeleton';
 
 export default function PortfolioBuilder() {
   const [username, setUsername] = useState('');
@@ -542,7 +543,11 @@ export default function PortfolioBuilder() {
                 <div style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '12px' }}>{ghError}</div>
               )}
 
-              {ghRepos.length > 0 && (
+              {isFetchingGh ? (
+                <div className="checklist-grid" role="group" aria-label="Loading GitHub Repositories">
+                  <RepoCardSkeleton count={3} />
+                </div>
+              ) : ghRepos.length > 0 && (
                 <div className="checklist-grid" role="group" aria-label="GitHub Repositories">
                   {ghRepos.map(repo => {
                     const isActive = customProjects.some(p => p.id === repo.id);

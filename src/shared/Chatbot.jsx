@@ -6,10 +6,12 @@ import SearchBar from '../components/history/SearchBar';
 import PinnedChats from '../components/history/PinnedChats';
 import { savePrompt } from '../lib/promptStore';
 import { initializeWorkspaces } from '../lib/workspaceService';
+import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'bot', text: 'Nexa-Intelligence Online. How can I assist your journey?' }
   ]);
@@ -50,21 +52,40 @@ const Chatbot = () => {
   }, [messages, currentWorkspace]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isSending) return;
     const userMsg = { role: 'user', text: input };
     setMessages(prev => [...prev, userMsg]);
     const currentInput = input;
     setInput('');
+    setIsSending(true);
+
+    const aiChatUrl = buildUrl(getAiApiBase(), '/ai/chat');
+
+    if (!aiChatUrl) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'bot', text: 'Nexa-AI is offline right now. The AI service URL is not configured for this deployment.' }
+      ]);
+      setIsSending(false);
+      return;
+    }
 
     try {
       const data = await apiClient('http://localhost:8000/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: currentInput }),
+        signal: controller.signal,
       });
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'bot', text: 'Nexa-AI: Core Link Failure. Try again.' }]);
+      console.error('AI chat request failed', e);
+      setMessages(prev => [
+        ...prev,
+        { role: 'bot', text: 'Nexa-AI: Core link unavailable right now. Please try again in a moment.' }
+      ]);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -142,9 +163,12 @@ const Chatbot = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Query system..."
+                placeholder={isSending ? 'Transmitting...' : 'Query system...'}
+                disabled={isSending}
               />
-              <button onClick={handleSend} className="send-btn">🚀</button>
+              <button onClick={handleSend} className="send-btn" disabled={isSending}>
+                {isSending ? '...' : '🚀'}
+              </button>
             </div>
           </div>
         </div>
