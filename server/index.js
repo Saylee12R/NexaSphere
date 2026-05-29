@@ -44,6 +44,19 @@ const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
 const app = express();
+app.use(helmet());
+
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : true,
+    credentials: true,
+  }),
+);
+app.use(express.json({ limit: "512kb" }));
 const adminEvents = new EventEmitter();
 
 app.use(helmet());
@@ -257,6 +270,26 @@ app.get('/api/admin/membership', adminAuth, async (req, res) => {
       throw new Error(`Google Apps Script returned ${response.status}`);
     }
 
+app.post("/api/admin/login", authRateLimiter, adminAuthMiddleware.login);
+app.post("/api/admin/logout", adminAuthMiddleware.logout);
+app.get("/api/admin/me", adminAuth, (req, res) => {
+  return res.json({ username: req.adminSession.username });
+});
+app.use("/api/admin/analytics", adminAuth, analyticsRouter);
+app.use("/api/admin/metrics", adminAuth, adminStreamRouter);
+
+app.get("/api/admin/events", adminAuth, async (req, res) => {
+  const { page, limit } = parsePagination(req.query);
+  const { events, total } = await listEventsStore({ page, limit });
+  return res.json({
+    events,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
+    },
+  });
     const data = await response.json();
     return res.json({ responses: data.responses || [] });
   } catch (err) {
