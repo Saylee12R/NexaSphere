@@ -6,6 +6,7 @@ import SearchBar from '../components/history/SearchBar';
 import PinnedChats from '../components/history/PinnedChats';
 import { savePrompt } from '../lib/promptStore';
 import { initializeWorkspaces } from '../lib/workspaceService';
+import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -121,12 +122,13 @@ const Chatbot = () => {
           onClick={() => setIsOpen(true)}
           aria-label="Open Nexa AI chat"
           aria-expanded={isOpen}
+          aria-controls="chatbot-window"
         >
           <div className="pulse-ring" aria-hidden="true"></div>
           💬
         </button>
       ) : (
-        <div className="chat-window-glass">
+        <div id="chatbot-window" className="chat-window-glass">
           <PromptHistorySidebar
             isOpen={showSidebar}
             onSelectPrompt={handleSelectPrompt}
@@ -141,6 +143,7 @@ const Chatbot = () => {
                 title="Toggle History"
                 aria-label={showSidebar ? 'Close conversation history' : 'Open conversation history'}
                 aria-expanded={showSidebar}
+                aria-controls="prompt-history-sidebar"
               >
                 📋
               </button>

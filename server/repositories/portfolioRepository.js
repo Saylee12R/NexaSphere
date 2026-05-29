@@ -226,7 +226,7 @@ export const portfolioRepository = {
             'SELECT passkey_hash FROM portfolios WHERE username = $1',
             [sanitizedUsername]
           );
-          if (!rows.length) return true; // Username does not exist, so it's a new registration (allow it)
+          if (!rows.length) return false;
           return await verifyHash(passkey, rows[0].passkey_hash);
         });
       } catch (err) {

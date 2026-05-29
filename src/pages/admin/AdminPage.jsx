@@ -9,7 +9,7 @@ import socketClient from '../../utils/socketClient';
 export default function AdminPage({ onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('ns_admin_token'));
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('ns_admin_logged_in') === 'true');
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [data, setData] = useState({
     stats: null,
@@ -17,11 +17,10 @@ export default function AdminPage({ onBack }) {
     events: []
   });
 
-  const fetchAnalytics = async (authToken) => {
+  const fetchAnalytics = async () => {
     try {
       setLoading(true);
       const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
-      const headers = { 'Authorization': `Bearer ${authToken}` };
       
       const [stats, growth, events] = await Promise.all([
         apiClient(`${base}/api/admin/analytics/stats`, { headers }),
@@ -39,13 +38,13 @@ export default function AdminPage({ onBack }) {
   };
 
   useEffect(() => {
-    if (token) {
-      fetchAnalytics(token);
+    if (isLoggedIn) {
+      fetchAnalytics();
     }
-  }, [token]);
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isLoggedIn) return;
 
     const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
     const url = `${base}/api/admin/metrics/stream`;
@@ -58,13 +57,13 @@ export default function AdminPage({ onBack }) {
       if (closed) return;
       try {
         const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
         });
 
         if (!response.ok) {
           if (response.status === 401) {
-            setToken(null);
-            localStorage.removeItem('ns_admin_token');
+            setIsLoggedIn(false);
+            localStorage.removeItem('ns_admin_logged_in');
             return;
           }
           throw new Error(`SSE connection failed: ${response.status}`);
@@ -165,7 +164,7 @@ export default function AdminPage({ onBack }) {
     return () => {
       sseClient.close();
     };
-  }, [token]);
+  }, [isLoggedIn]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -175,7 +174,8 @@ export default function AdminPage({ onBack }) {
       const result = await apiClient(`${base}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData)
+        body: JSON.stringify(loginData),
+        credentials: 'include'
       });
 
       localStorage.setItem('ns_admin_token', result.token);
@@ -187,14 +187,23 @@ export default function AdminPage({ onBack }) {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('ns_admin_token');
-    setToken(null);
+  const handleLogout = async () => {
+    try {
+      const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
+      await fetch(`${base}/api/admin/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error(err);
+    }
+    localStorage.removeItem('ns_admin_logged_in');
+    setIsLoggedIn(false);
     setData({ stats: null, growth: [], events: [] });
     socketClient.destroySocket();
   };
 
-  if (!token) {
+  if (!isLoggedIn) {
     return (
       <div className="analytics-dashboard" style={{ maxWidth: 400, marginTop: '10vh' }}>
         <button onClick={onBack} className="btn-back">← Back</button>
@@ -236,7 +245,7 @@ export default function AdminPage({ onBack }) {
           <p style={{ opacity: 0.7 }}>Visualizing platform growth and event performance.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-outline" onClick={() => fetchAnalytics(token)} disabled={loading}>Refresh</button>
+          <button className="btn btn-outline" onClick={fetchAnalytics} disabled={loading}>Refresh</button>
           <button className="btn btn-outline" onClick={handleLogout} style={{ borderColor: 'rgba(239, 68, 68, 0.5)', color: '#ef4444' }}>Logout</button>
         </div>
       </header>

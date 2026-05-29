@@ -6,6 +6,7 @@ import './styles/animations.css';
 import './styles/chatbot.css';
 import './styles/components.css';
 import './styles/portfolio.css';
+import './styles/pwa.css';
 
 import './styles/aurora.css';
 import './styles/motion.css';
@@ -55,18 +56,22 @@ import { activityPages } from './data/activities/index';
 import { events as fallbackEvents } from './data/eventsData';
 import nexasphereLogo from './assets/images/logos/nexasphere-logo.png';
 
-import Terminal from './components/developer/Terminal';
+const Terminal = dynamic(() => import('./components/developer/Terminal'), { ssr: false });
 import { useDeveloperMode } from './hooks/useDeveloperMode';
 
 import { BookmarkProvider } from './context/BookmarkContext';
 import BookmarksDrawer from './components/bookmarks/BookmarksDrawer';
 import { useTheme } from './hooks/useTheme';
 import { useInteractionEffects } from './hooks/useInteractionEffects';
+import { useBackToTop } from './hooks/useScrollLogic';
 
 import MoveToTop from "./shared/MoveToTop";
+import OfflineBanner  from './components/pwa/OfflineBanner.jsx';
+import InstallPrompt  from './components/pwa/InstallPrompt.jsx';
+import UpdatePrompt   from './components/pwa/UpdatePrompt.jsx';
 
-const MNH = 88, DNH = 64;
-const TABS = ['Home','Dashboard','Analytics','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'];
+const MNH = 88, DNH = 86;
+const TABS = ['Home', 'Dashboard', 'Activities', 'Events', 'Projects', 'Roadmaps', 'Portfolio', 'Collab', 'About', 'Team', 'Contact'];
 
 
 /* ── Page wipe transition ── */
@@ -224,8 +229,8 @@ function Cursor() {
   );
 }
 
+/* ── Thin router shell — no hooks here, so early return is safe ── */
 export default function App() {
-  /* ── Certificate verify route detection ── */
   const verifyCertId = (() => {
     const path = window.location.pathname;
     const m = path.match(/^\/verify\/([A-Za-z0-9_%-]+)/);
@@ -240,6 +245,12 @@ export default function App() {
       />
     );
   }
+
+  return <MainApp />;
+}
+
+/* ── Main app — all hooks live here, always called unconditionally ── */
+function MainApp() {
 
   const [cinDone, setCinDone] = useState(false);
   const [activeTab, setActiveTab] = useState('Home');
@@ -483,8 +494,24 @@ export default function App() {
   const nh = mobile ? MNH : DNH;
   const cur = page?.activityKey ? activityPages[page.activityKey] : null;
 
+  /* ── SW update prompt state ────────────────────────────────────────────── */
+  const [swUpdateFn, setSwUpdateFn] = useState(null);
+
+  useEffect(() => {
+    const handleSwUpdate = (e) => {
+      if (e.detail?.updateSW) setSwUpdateFn(() => e.detail.updateSW);
+    };
+    window.addEventListener('nexasphere:sw-update', handleSwUpdate);
+    return () => window.removeEventListener('nexasphere:sw-update', handleSwUpdate);
+  }, []);
+
   return (
     <BookmarkProvider>
+      {/* ── PWA Components ── */}
+      <OfflineBanner />
+      <InstallPrompt />
+      {swUpdateFn && <UpdatePrompt updateSW={swUpdateFn} />}
+
       {/* Chatbot – kept at very top */}
       <Chatbot />
 

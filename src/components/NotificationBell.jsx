@@ -58,6 +58,7 @@ export default function NotificationBell() {
         whileTap={{ scale: 0.94 }}
         aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
         aria-expanded={isOpen}
+        aria-controls="notification-panel"
         style={{
           position: 'relative',
           background: isOpen ? 'rgba(204,17,17,0.18)' : 'rgba(255,255,255,0.12)',
@@ -119,6 +120,7 @@ export default function NotificationBell() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id="notification-panel"
             initial={{ opacity: 0, y: -10, scale: 0.96 }}
             animate={{ opacity: 1, y: 0,   scale: 1    }}
             exit   ={{ opacity: 0, y: -8,  scale: 0.96 }}
