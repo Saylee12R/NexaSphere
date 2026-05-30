@@ -1,28 +1,64 @@
-/**
- * Root vite.config.js — BACKWARDS-COMPAT STUB ONLY
- *
- * This file delegates to the canonical workspace configs:
- *   Website:         cd website && npm run dev     (port 5175)
- *   Admin Dashboard: cd admin-dashboard && npm run dev  (port 5001)
- *
- * Or use the root convenience scripts:
- *   npm run dev:website
- *   npm run dev:admin
- *   npm run dev:all       ← starts both concurrently
- */
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  // Redirect Vite root to the website workspace
-  root: './website',
-  base: process.env.VITE_BASE_PATH || '/',
-  plugins: [react()],
+  resolve: {
+    alias: {
+      "next/image": "/src/shared/next-image.jsx",
+      "next/dynamic": "/src/shared/next-dynamic.jsx",
+    },
+  },
+  // Supports Vercel (/) and GitHub Pages (/NexaSphere/) via env var
+  base: process.env.VITE_BASE_PATH || "/",
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "prompt",
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
+      manifest: {
+        name: "NexaSphere — GL Bajaj Tech Ecosystem",
+        short_name: "NexaSphere",
+        description:
+          "NexaSphere is the premier tech community of GL Bajaj Group of Institutions.",
+        theme_color: "#0A0A0A",
+        background_color: "#0A0A0A",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        icons: [
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
   server: {
     port: 5175,
     proxy: {
-      '/api': 'http://localhost:8787',
-      '/healthz': 'http://localhost:8787',
+      "/api": "http://localhost:8080",
+      "/healthz": "http://localhost:8080",
     },
   },
 });

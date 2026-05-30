@@ -1,11 +1,76 @@
-/**
- * PWA Component Styles for NexaSphere
- * =====================================
- * Covers:
- *  - Offline banner (slide-down, syncing states)
- *  - Install prompt card
- *  - SW update toast
- */
+/* ────────────────────────────────────────────────────────
+   NexaSphere PWA Banners & Connection Status Styling
+   ──────────────────────────────────────────────────────── */
+
+/* --- Keyframe Animations --- */
+@keyframes pwaSlideDown {
+  0% {
+    transform: translate(-50%, -100%) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pwaBounceIn {
+  0% {
+    transform: translateY(40px) scale(0.85);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-8px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pwaFadeOut {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes pwaPulseGlowing {
+  0% {
+    box-shadow: 0 0 12px rgba(230, 57, 70, 0.25), 0 0 24px rgba(230, 57, 70, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(230, 57, 70, 0.6), 0 0 36px rgba(230, 57, 70, 0.28);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(230, 57, 70, 0.25), 0 0 24px rgba(230, 57, 70, 0.1);
+  }
+}
+
+@keyframes pwaGreenPulse {
+  0% {
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.2), 0 0 20px rgba(76, 175, 80, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.5), 0 0 30px rgba(76, 175, 80, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.2), 0 0 20px rgba(76, 175, 80, 0.08);
+  }
+}
+
+@keyframes pwa-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pwa-dot-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
 
 /* ── Shared tokens ──────────────────────────────────────────────────────────── */
 :root {
@@ -175,9 +240,6 @@
   animation: pwa-spin 0.7s linear infinite;
   flex-shrink: 0;
 }
-@keyframes pwa-spin {
-  to { transform: rotate(360deg); }
-}
 
 /* Status dot */
 .pwa-dot {
@@ -188,10 +250,6 @@
   background: var(--pwa-c1);
   animation: pwa-dot-blink 1s ease-in-out infinite;
   flex-shrink: 0;
-}
-@keyframes pwa-dot-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.25; }
 }
 
 /* ── Install Prompt ──────────────────────────────────────────────────────────── */
@@ -414,7 +472,218 @@
   color: var(--t1, #fafafa);
 }
 
+/* ── Global PWA Container styling (PR version) ── */
+.pwa-toast-container {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.pwa-toast-container * {
+  pointer-events: auto;
+}
+
+.pwa-toast-container.bottom-right {
+  bottom: 24px;
+  right: 24px;
+  max-width: 380px;
+  width: calc(100vw - 48px);
+}
+
+.pwa-toast-container.top-center {
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 500px;
+  width: calc(100vw - 32px);
+}
+
+/* ── Glassmorphic Premium Toast Card ── */
+.pwa-toast-card {
+  background: rgba(18, 18, 18, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r2, 14px);
+  padding: 16px 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), var(--shcard);
+  animation: pwaBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  color: var(--t1, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+[data-theme="light"] .pwa-toast-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--t1, #1a1a1a);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), var(--shcard);
+}
+
+.pwa-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pwa-toast-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.pwa-toast-icon.warning {
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  color: var(--c1, #E63946);
+}
+
+.pwa-toast-icon.success {
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  color: var(--success, #4CAF50);
+}
+
+.pwa-toast-icon.info {
+  background: rgba(33, 150, 243, 0.15);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  color: var(--info, #2196F3);
+}
+
+.pwa-toast-body {
+  flex-grow: 1;
+}
+
+.pwa-toast-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  color: var(--t1, #ffffff);
+}
+
+.pwa-toast-description {
+  font-size: 0.88rem;
+  color: var(--t2, #B0B0B0);
+  line-height: 1.45;
+}
+
+.pwa-toast-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── Connection Status Banners ── */
+.pwa-conn-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(10, 10, 10, 0.76);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  padding: 12px 24px;
+  border-radius: var(--r3, 22px);
+  border: 1px solid rgba(230, 57, 70, 0.22);
+  color: var(--t1, #ffffff);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.pwa-conn-banner.offline {
+  border-color: rgba(230, 57, 70, 0.35);
+  animation: pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards, pwaPulseGlowing 3s infinite ease-in-out;
+}
+
+.pwa-conn-banner.online {
+  border-color: rgba(76, 175, 80, 0.35);
+  animation: pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards, pwaGreenPulse 3s infinite ease-in-out;
+}
+
+[data-theme="light"] .pwa-conn-banner {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--t1, #1a1a1a);
+  border: 1px solid rgba(230, 57, 70, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .pwa-conn-banner.offline {
+  border-color: rgba(230, 57, 70, 0.25);
+}
+
+[data-theme="light"] .pwa-conn-banner.online {
+  border-color: rgba(76, 175, 80, 0.25);
+}
+
+.pwa-conn-banner.dismissing {
+  animation: pwaFadeOut 0.4s ease forwards !important;
+}
+
+.pwa-conn-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pwa-conn-banner.offline .pwa-conn-status-dot {
+  background: var(--c1, #E63946);
+  box-shadow: 0 0 10px var(--c1, #E63946);
+}
+
+.pwa-conn-banner.online .pwa-conn-status-dot {
+  background: var(--success, #4CAF50);
+  box-shadow: 0 0 10px var(--success, #4CAF50);
+}
+
+.pwa-conn-message {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .pwa-toast-container.bottom-right {
+    bottom: 84px;
+    right: 24px;
+  }
+
+  .pwa-toast-container.top-center {
+    top: 76px;
+  }
+
+  .pwa-toast-card {
+    padding: 14px 16px;
+    gap: 8px;
+  }
+
+  .pwa-toast-title {
+    font-size: 1.05rem;
+  }
+
+  .pwa-toast-description {
+    font-size: 0.84rem;
+  }
+
+  .pwa-conn-banner {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .pwa-conn-message {
+    font-size: 0.88rem;
+  }
+}
 
 @media (max-width: 480px) {
   .pwa-install-prompt {
