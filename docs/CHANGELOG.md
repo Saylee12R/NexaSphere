@@ -69,5 +69,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/Piyush025s07/NexaSphere-GSSOc/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Piyush025s07/NexaSphere-GSSOc/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Ayushh-Sharmaa/NexaSphere/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Ayushh-Sharmaa/NexaSphere/releases/tag/v0.1.0
