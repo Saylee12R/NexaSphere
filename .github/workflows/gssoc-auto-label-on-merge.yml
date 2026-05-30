@@ -109,6 +109,52 @@ jobs:
               console.log(`🎓 Applied mentor:Ayushh-Sharmaa to PR #${prNum}`);
             }
 
+            // ── Detect component label from PR changed files ─────────────────
+            const COMPONENT_LABELS = [
+              { name: 'admin-dashboard', color: '0052cc', description: 'Issues/PRs related to the Admin Dashboard portal' },
+              { name: 'website',         color: 'a855f7', description: 'Issues/PRs related to the main NexaSphere website' },
+              { name: 'spotify',         color: '1db954', description: 'Issues/PRs related to Spotify clone/integration' },
+              { name: 'ai',              color: '6366f1', description: 'Issues/PRs related to AI/ML features' },
+            ];
+            for (const lbl of COMPONENT_LABELS) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: lbl.name });
+              } catch (e) {
+                if (e.status === 404) await github.rest.issues.createLabel({ owner, repo, ...lbl });
+              }
+            }
+
+            const componentLabelsOnPR = new Set(labelNames.filter(n =>
+              ['admin-dashboard', 'website', 'spotify', 'ai'].includes(n)
+            ));
+
+            // Detect from file paths
+            try {
+              const { data: prFiles } = await github.rest.pulls.listFiles({
+                owner, repo, pull_number: prNum,
+              });
+              const paths = prFiles.map(f => f.filename);
+              if (paths.some(p => p.startsWith('admin-dashboard/'))) componentLabelsOnPR.add('admin-dashboard');
+              if (paths.some(p => p.startsWith('website/') || p.startsWith('src/') || p.startsWith('public/'))) componentLabelsOnPR.add('website');
+              if (paths.some(p => /\b(spotify|music|playlist|song)\b/i.test(p))) componentLabelsOnPR.add('spotify');
+              if (paths.some(p => /\b(ai|ml|chatbot|tensorflow|pytorch)\b/i.test(p))) componentLabelsOnPR.add('ai');
+            } catch (err) {
+              console.log(`⚠️  Could not fetch PR files: ${err.message}`);
+            }
+
+            // If still no component, default to 'website'
+            if (componentLabelsOnPR.size === 0) {
+              componentLabelsOnPR.add('website');
+              console.log(`ℹ️  No component detected — defaulting PR #${prNum} to 'website' label`);
+            }
+
+            // Apply any missing component labels to the PR
+            const missingComponentsOnPR = Array.from(componentLabelsOnPR).filter(l => !labelNames.includes(l));
+            if (missingComponentsOnPR.length > 0) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: prNum, labels: missingComponentsOnPR });
+              console.log(`🏷️  Applied component labels to PR #${prNum}: ${missingComponentsOnPR.join(', ')}`);
+            }
+
             // ── Find linked issues from PR body ───────────────────────────────
             // Matches: closes/fixes/resolves #123 (case-insensitive)
             const body = pr.body || '';
@@ -170,6 +216,11 @@ jobs:
                 const typeLabels = labelNames.filter(n => n.startsWith('type:'));
                 for (const tl of typeLabels) {
                   if (!issueLabelNames.includes(tl)) issueLabelsToAdd.push(tl);
+                }
+
+                // Propagate component labels from PR to issue
+                for (const cl of componentLabelsOnPR) {
+                  if (!issueLabelNames.includes(cl)) issueLabelsToAdd.push(cl);
                 }
 
                 // Mentor label

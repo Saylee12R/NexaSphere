@@ -41,7 +41,6 @@ public class EventsController {
     }
 
     @PutMapping("/{id}")
-    @SuppressWarnings("null") // repo.save() return is unannotated in Spring Data JPA
     public ResponseEntity<EventEntity> update(
             @PathVariable @NonNull String id,
             @Valid @RequestBody EventEntity event) {

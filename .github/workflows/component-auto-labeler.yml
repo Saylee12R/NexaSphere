@@ -102,15 +102,19 @@ jobs:
               if (checkSpotify(combinedText)) toAdd.push('spotify');
               if (checkAI(combinedText))      toAdd.push('ai');
 
-              if (toAdd.length > 0) {
-                await github.rest.issues.addLabels({
-                  owner,
-                  repo,
-                  issue_number: issueNumber,
-                  labels: toAdd
-                });
-                console.log(`🏷️ Applied component labels to Issue #${issueNumber}: ${toAdd.join(', ')}`);
+              // ── Fallback: apply 'website' if no component matched ──────────
+              if (toAdd.length === 0) {
+                toAdd.push('website');
+                console.log(`ℹ️  No component keyword match for issue #${issueNumber} — applying fallback 'website' label`);
               }
+
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                labels: toAdd
+              });
+              console.log(`🏷️ Applied component labels to Issue #${issueNumber}: ${toAdd.join(', ')}`);
             }
 
             // ── 4. Handle Auto-Labeling for Pull Requests ─────────────────────
@@ -136,7 +140,13 @@ jobs:
                 if (filePaths.some(p => p.startsWith('admin-dashboard/'))) {
                   toAdd.add('admin-dashboard');
                 }
-                if (filePaths.some(p => p.startsWith('website/'))) {
+                // Website paths: website/ dir, root src/, public/, index.html, vite configs
+                if (filePaths.some(p =>
+                  p.startsWith('website/') ||
+                  p.startsWith('src/') ||
+                  p.startsWith('public/') ||
+                  /^(index\.html|vite\.config\.[jt]s|tailwind\.config\.[jt]s)$/.test(p)
+                )) {
                   toAdd.add('website');
                 }
                 if (filePaths.some(p => /\b(spotify|sppoy|music|playlist|song)\b/i.test(p))) {
@@ -155,14 +165,18 @@ jobs:
               if (checkSpotify(combinedText)) toAdd.add('spotify');
               if (checkAI(combinedText))      toAdd.add('ai');
 
-              if (toAdd.size > 0) {
-                const labelsArray = Array.from(toAdd);
-                await github.rest.issues.addLabels({
-                  owner,
-                  repo,
-                  issue_number: prNumber,
-                  labels: labelsArray
-                });
-                console.log(`🏷️ Applied component labels to PR #${prNumber}: ${labelsArray.join(', ')}`);
+              // ── Fallback: apply 'website' if no component matched ──────────
+              if (toAdd.size === 0) {
+                toAdd.add('website');
+                console.log(`ℹ️  No component keyword match for PR #${prNumber} — applying fallback 'website' label`);
               }
+
+              const labelsArray = Array.from(toAdd);
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: prNumber,
+                labels: labelsArray
+              });
+              console.log(`🏷️ Applied component labels to PR #${prNumber}: ${labelsArray.join(', ')}`);
             }
