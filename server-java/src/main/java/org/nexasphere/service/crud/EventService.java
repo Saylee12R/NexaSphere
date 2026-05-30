@@ -53,11 +53,18 @@ public class EventService {
 
         existing.setName(updates.getName());
         existing.setShortName(updates.getShortName());
+        existing.setHasDetailPage(updates.isHasDetailPage());
+        existing.setStartDate(updates.getStartDate());
+        existing.setEndDate(updates.getEndDate());
         existing.setDateText(updates.getDateText());
         existing.setDescription(updates.getDescription());
         existing.setStatus(updates.getStatus());
         existing.setIcon(updates.getIcon());
+        existing.setCategory(updates.getCategory());
+        existing.setLocation(updates.getLocation());
+        existing.setCapacity(updates.getCapacity());
         existing.setTags(updates.getTags());
+        existing.setGradientColors(updates.getGradientColors());
 
         EventEntity saved = repo.save(existing);
         publisher.publish(new EventUpdatedEvent(adminEmail, snapshot, Objects.requireNonNull(saved)));
@@ -76,6 +83,8 @@ public class EventService {
         e.setShortName(sanitizer.clean(e.getShortName()));
         e.setDateText(sanitizer.clean(e.getDateText()));
         e.setDescription(sanitizer.clean(e.getDescription()));
+        e.setCategory(sanitizer.clean(e.getCategory()));
+        e.setLocation(sanitizer.clean(e.getLocation()));
     }
 
     private EventEntity snapshot(EventEntity src) {
@@ -83,11 +92,18 @@ public class EventService {
         copy.setId(src.getId());
         copy.setName(src.getName());
         copy.setShortName(src.getShortName());
+        copy.setHasDetailPage(src.isHasDetailPage());
+        copy.setStartDate(src.getStartDate());
+        copy.setEndDate(src.getEndDate());
         copy.setDateText(src.getDateText());
         copy.setDescription(src.getDescription());
         copy.setStatus(src.getStatus());
         copy.setIcon(src.getIcon());
+        copy.setCategory(src.getCategory());
+        copy.setLocation(src.getLocation());
+        copy.setCapacity(src.getCapacity());
         copy.setTags(src.getTags() == null ? null : List.copyOf(src.getTags()));
+        copy.setGradientColors(src.getGradientColors() == null ? null : List.copyOf(src.getGradientColors()));
         return copy;
     }
 }

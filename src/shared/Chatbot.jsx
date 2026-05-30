@@ -7,7 +7,6 @@ import PinnedChats from '../components/history/PinnedChats';
 import { savePrompt } from '../lib/promptStore';
 import { initializeWorkspaces } from '../lib/workspaceService';
 import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
-
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -21,29 +20,24 @@ const Chatbot = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [currentWorkspace, setCurrentWorkspace] = useState('default');
   const scrollRef = useRef(null);
-
   // Initialize workspaces on mount
   useEffect(() => {
     initializeWorkspaces();
   }, []);
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isOpen]);
-
   // Auto-save last prompt-response pair when new bot message arrives
   useEffect(() => {
     if (messages.length >= 2) {
       const lastBotMsg = [...messages].reverse().find((m) => m.role === 'bot');
       const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-
       if (lastBotMsg && lastUserMsg) {
         const lastBotIndex = messages.indexOf(lastBotMsg);
         const lastUserIndex = messages.indexOf(lastUserMsg);
-
         // Only save if the bot message is more recent than the last saved one
         if (lastBotIndex > lastUserIndex) {
           savePrompt(lastUserMsg.text, lastBotMsg.text, currentWorkspace).catch((err) => {
@@ -53,7 +47,6 @@ const Chatbot = () => {
       }
     }
   }, [messages, currentWorkspace]);
-
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
     const userMsg = { role: 'user', text: input };
@@ -61,9 +54,7 @@ const Chatbot = () => {
     const currentInput = input;
     setInput('');
     setIsSending(true);
-
     const aiChatUrl = buildUrl(getAiApiBase(), '/ai/chat');
-
     if (!aiChatUrl) {
       setMessages((prev) => [
         ...prev,
@@ -75,7 +66,6 @@ const Chatbot = () => {
       setIsSending(false);
       return;
     }
-
     try {
       const data = await apiClient('http://localhost:8000/ai/chat', {
         method: 'POST',
@@ -97,7 +87,6 @@ const Chatbot = () => {
       setIsSending(false);
     }
   };
-
   const handleSelectPrompt = (prompt) => {
     setMessages([
       {
@@ -109,7 +98,6 @@ const Chatbot = () => {
     ]);
     setShowSidebar(false);
   };
-
   return (
     <div className="ns-chatbot-wrapper">
       {!isOpen ? (
@@ -130,7 +118,6 @@ const Chatbot = () => {
             onSelectPrompt={handleSelectPrompt}
             currentWorkspace={currentWorkspace}
           />
-
           <div className={`chat-main ${showSidebar ? 'sidebar-open' : ''}`}>
             <div className="chat-header">
               <button
@@ -164,12 +151,9 @@ const Chatbot = () => {
                 ×
               </button>
             </div>
-
             <div className="chat-content">
               <PinnedChats onSelectPrompt={handleSelectPrompt} workspace={currentWorkspace} />
-
               <SearchBar onSelectPrompt={handleSelectPrompt} workspace={currentWorkspace} />
-
               <div className="chat-messages" ref={scrollRef}>
                 {messages.map((m, i) => (
                   <div key={i} className={`msg-bubble ${m.role}`}>
@@ -178,7 +162,6 @@ const Chatbot = () => {
                 ))}
               </div>
             </div>
-
             <div className="chat-input-container">
               <select
                 value={currentWorkspace}
@@ -212,5 +195,4 @@ const Chatbot = () => {
     </div>
   );
 };
-
 export default Chatbot;

@@ -69,8 +69,34 @@ public class EventsController {
                 existing.setIcon(event.getIcon());
             }
 
+            existing.setHasDetailPage(event.isHasDetailPage());
+
+            if (event.getStartDate() != null) {
+                existing.setStartDate(event.getStartDate());
+            }
+
+            if (event.getEndDate() != null) {
+                existing.setEndDate(event.getEndDate());
+            }
+
+            if (event.getCategory() != null) {
+                existing.setCategory(event.getCategory());
+            }
+
+            if (event.getLocation() != null) {
+                existing.setLocation(event.getLocation());
+            }
+
+            if (event.getCapacity() != null) {
+                existing.setCapacity(event.getCapacity());
+            }
+
             if (event.getTags() != null && !event.getTags().isEmpty()) {
                 existing.setTags(event.getTags());
+            }
+
+            if (event.getGradientColors() != null) {
+                existing.setGradientColors(event.getGradientColors());
             }
 
             // save merged entity

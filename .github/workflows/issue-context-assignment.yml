@@ -43,6 +43,24 @@ jobs:
               return;
             }
 
+            // ── Verify if commenter is the creator of the issue ─────────────────
+            const creator = issue.user.login;
+            if (commenter !== creator) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issueNum,
+                body: [
+                  `## ⚠️ Assignment Request Rejected`,
+                  ``,
+                  `Sorry @${commenter}, only the **creator of this issue** (@${creator}) is permitted to claim assignment via comments.`,
+                  ``,
+                  `Please check issues that you have created, or ask a maintainer for a manual assignment.`,
+                  ``,
+                  `_GSSoC'26 automation · Mentor: [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)_`,
+                ].join('\n'),
+              });
+              return;
+            }
+
             // ── Helper: ensure label exists ───────────────────────────────────
             async function ensureLabel(name, color, description) {
               try {

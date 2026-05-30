@@ -27,6 +27,12 @@ public class EventEntity {
     @Size(max = 60)
     private String shortName;
 
+    private boolean hasDetailPage = true;
+
+    private LocalDateTime startDate;
+
+    private LocalDateTime endDate;
+
     @NotBlank
     @Size(max = 120)
     private String dateText;
@@ -41,11 +47,24 @@ public class EventEntity {
 
     private String icon = "📌";
 
+    @Size(max = 40)
+    private String category;
+
+    @Size(max = 200)
+    private String location;
+
+    private Integer capacity;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "event_tags", joinColumns = @JoinColumn(name = "event_id"))
     @Column(name = "tags")
     @Size(max = 12)
     private List<@Size(max = 40) String> tags = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "event_gradients", joinColumns = @JoinColumn(name = "event_id"))
+    @Column(name = "color_hex")
+    private List<@Size(max = 9) String> gradientColors = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

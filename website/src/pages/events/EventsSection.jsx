@@ -1,18 +1,28 @@
-import { useEffect } from "react";
-import { DynamicIcon } from "../../shared/Icons";
+import { useEffect } from 'react';
+import { DynamicIcon } from '../../shared/Icons';
 
 export default function EventsSection({ onEventClick, events = [] }) {
+  const buildGradient = (ev) => {
+    if (ev.gradientColors?.length > 1) {
+      return `linear-gradient(135deg, ${ev.gradientColors.join(', ')})`;
+    }
+    if (ev.gradientColors?.length === 1) {
+      return `linear-gradient(135deg, ${ev.gradientColors[0]}, ${ev.gradientColors[0]}88)`;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting && !e.target.classList.contains("fired")) {
-            e.target.classList.add("fired");
+          if (e.isIntersecting && !e.target.classList.contains('fired')) {
+            e.target.classList.add('fired');
             e.target.addEventListener(
-              "animationend",
+              'animationend',
               () => {
-                e.target.style.opacity = "1";
-                e.target.style.transform = "none";
+                e.target.style.opacity = '1';
+                e.target.style.transform = 'none';
               },
               { once: true }
             );
@@ -24,7 +34,7 @@ export default function EventsSection({ onEventClick, events = [] }) {
     );
     document
       .querySelectorAll(
-        "#section-events .pop-in,#section-events .pop-left,#section-events .pop-right,#section-events .pop-word"
+        '#section-events .pop-in,#section-events .pop-left,#section-events .pop-right,#section-events .pop-word'
       )
       .forEach((el) => obs.observe(el));
     return () => obs.disconnect();
@@ -33,23 +43,23 @@ export default function EventsSection({ onEventClick, events = [] }) {
   // Auto-detect: if date has passed, treat as completed regardless of stored status
   const now = Date.now();
   const parseDate = (ev) => {
-    const raw = ev.dateText ?? ev.date ?? "";
+    const raw = ev.dateText ?? ev.date ?? '';
     const d = new Date(raw);
     return isNaN(d) ? null : d;
   };
   const getEffectiveStatus = (ev) => {
-    if (ev.status === "completed") return "completed";
+    if (ev.status === 'completed') return 'completed';
     const d = parseDate(ev);
-    if (d && d.getTime() < now) return "completed"; // date passed → auto-complete
-    return ev.status || "upcoming";
+    if (d && d.getTime() < now) return 'completed'; // date passed → auto-complete
+    return ev.status || 'upcoming';
   };
 
   // Sort: upcoming first (earliest date first), then completed (most recent first)
   const sortedEvents = [...events]
     .map((ev) => ({ ...ev, _effectiveStatus: getEffectiveStatus(ev) }))
     .sort((a, b) => {
-      const aIsUpcoming = a._effectiveStatus !== "completed";
-      const bIsUpcoming = b._effectiveStatus !== "completed";
+      const aIsUpcoming = a._effectiveStatus !== 'completed';
+      const bIsUpcoming = b._effectiveStatus !== 'completed';
       if (aIsUpcoming !== bIsUpcoming) return bIsUpcoming ? 1 : -1;
       const da = parseDate(a)?.getTime() ?? 0;
       const db = parseDate(b)?.getTime() ?? 0;
@@ -61,69 +71,107 @@ export default function EventsSection({ onEventClick, events = [] }) {
       <div className="container">
         <div className="section-heading">
           <h2 className="section-title pop-word">Our Events</h2>
-          <p
-            className="section-subtitle pop-in"
-            style={{ animationDelay: ".1s" }}
-          >
+          <p className="section-subtitle pop-in" style={{ animationDelay: '.1s' }}>
             Where Ideas Come to Life
           </p>
         </div>
         <div className="events-timeline">
           {sortedEvents.map((ev, i) => {
             const hasDetailPage = !!ev.hasDetailPage;
+            const dynamicGradient = buildGradient(ev);
+            const glowColor = ev.gradientColors?.[0] || null;
             return (
               <div className="timeline-item" key={ev.id}>
                 <div
-                  className={`timeline-dot${ev._effectiveStatus === "upcoming" ? " upcoming" : ""}`}
+                  className={`timeline-dot${ev._effectiveStatus === 'upcoming' ? ' upcoming' : ''}`}
                 />
                 <div
-                  className={`timeline-card shimmer ${i % 2 === 0 ? "pop-left" : "pop-right"}`}
+                  className={`timeline-card shimmer ${i % 2 === 0 ? 'pop-left' : 'pop-right'}`}
                   style={{
                     animationDelay: `${i * 0.11}s`,
-                    cursor: hasDetailPage ? "pointer" : "default",
-                    transition: "all .28s ease",
+                    cursor: hasDetailPage ? 'pointer' : 'default',
+                    transition: 'all .28s ease',
+                    ...(dynamicGradient
+                      ? {
+                          position: 'relative',
+                          overflow: 'hidden',
+                          borderColor: 'transparent',
+                        }
+                      : {}),
                   }}
                   onClick={hasDetailPage ? () => onEventClick?.(ev) : undefined}
                   onMouseEnter={
                     hasDetailPage
                       ? (e) => {
-                          e.currentTarget.style.borderColor = "var(--c1b)";
-                          e.currentTarget.style.boxShadow =
-                            "0 6px 24px var(--c1g)";
-                          e.currentTarget.style.transform = "translateY(-3px)";
+                          e.currentTarget.style.borderColor = glowColor || 'var(--c1b)';
+                          e.currentTarget.style.boxShadow = `0 6px 24px ${glowColor ? glowColor + '44' : 'var(--c1g)'}`;
+                          e.currentTarget.style.transform = 'translateY(-3px)';
                         }
                       : undefined
                   }
                   onMouseLeave={
                     hasDetailPage
                       ? (e) => {
-                          e.currentTarget.style.borderColor = "";
-                          e.currentTarget.style.boxShadow = "";
-                          e.currentTarget.style.transform = "";
+                          e.currentTarget.style.borderColor = dynamicGradient ? 'transparent' : '';
+                          e.currentTarget.style.boxShadow = '';
+                          e.currentTarget.style.transform = '';
                         }
                       : undefined
                   }
                 >
+                  {dynamicGradient && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: 'inherit',
+                        padding: '1px',
+                        background: dynamicGradient,
+                        WebkitMask:
+                          'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude',
+                        opacity: 0.6,
+                        pointerEvents: 'none',
+                        transition: 'opacity 0.3s',
+                      }}
+                    />
+                  )}
+                  {dynamicGradient && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        inset: -8,
+                        background: dynamicGradient,
+                        filter: 'blur(16px)',
+                        opacity: 0.12,
+                        pointerEvents: 'none',
+                        transition: 'opacity 0.3s',
+                      }}
+                    />
+                  )}
                   <div
                     className="timeline-event-name"
                     style={{
-                      fontSize: "1.05rem",
+                      fontSize: '1.05rem',
                       fontWeight: 800,
-                      color: "var(--c1)",
-                      marginBottom: "4px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "8px",
+                      color: 'var(--c1)',
+                      marginBottom: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
                     }}
                   >
                     <span>{ev.name}</span>
                     {hasDetailPage && (
                       <span
                         style={{
-                          color: "var(--c1)",
+                          color: 'var(--c1)',
                           opacity: 0.8,
-                          fontSize: "0.9rem",
+                          fontSize: '0.9rem',
                         }}
                       >
                         →
@@ -133,59 +181,55 @@ export default function EventsSection({ onEventClick, events = [] }) {
                   <div
                     className="timeline-event-date"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      fontSize: ".74rem",
-                      color: "var(--t3)",
-                      marginBottom: "8px",
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '.74rem',
+                      color: 'var(--t3)',
+                      marginBottom: '8px',
                     }}
                   >
                     <DynamicIcon
-                      name={ev.icon || "Calendar"}
+                      name={ev.icon || 'Calendar'}
                       size={13}
-                      style={{ color: "var(--c1)" }}
+                      style={{ color: 'var(--c1)' }}
                     />
                     {ev.dateText ?? ev.date}
                   </div>
                   <p
                     className="timeline-event-desc"
                     style={{
-                      fontSize: ".84rem",
-                      lineHeight: "1.55",
-                      marginBottom: "12px",
+                      fontSize: '.84rem',
+                      lineHeight: '1.55',
+                      marginBottom: '12px',
                     }}
                   >
                     {ev.description}
                   </p>
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "7px",
-                      flexWrap: "wrap",
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      flexWrap: 'wrap',
                     }}
                   >
                     <span
                       className={`timeline-badge ${ev._effectiveStatus}`}
-                      style={{ fontSize: ".64rem", padding: "1px 8px" }}
+                      style={{ fontSize: '.64rem', padding: '1px 8px' }}
                     >
-                      {ev._effectiveStatus === "completed" ? (
+                      {ev._effectiveStatus === 'completed' ? (
                         <>
                           <DynamicIcon
                             name="CheckCircle"
                             size={11}
-                            style={{ marginRight: "4px" }}
-                          />{" "}
+                            style={{ marginRight: '4px' }}
+                          />{' '}
                           Completed
                         </>
                       ) : (
                         <>
-                          <DynamicIcon
-                            name="Calendar"
-                            size={11}
-                            style={{ marginRight: "4px" }}
-                          />{" "}
+                          <DynamicIcon name="Calendar" size={11} style={{ marginRight: '4px' }} />{' '}
                           Upcoming
                         </>
                       )}
@@ -194,12 +238,12 @@ export default function EventsSection({ onEventClick, events = [] }) {
                       <span
                         key={t}
                         style={{
-                          fontSize: ".64rem",
-                          padding: "1px 8px",
-                          borderRadius: "10px",
-                          background: "var(--c2a)",
-                          color: "var(--c2)",
-                          border: "1px solid var(--c2b)",
+                          fontSize: '.64rem',
+                          padding: '1px 8px',
+                          borderRadius: '10px',
+                          background: 'var(--c2a)',
+                          color: 'var(--c2)',
+                          border: '1px solid var(--c2b)',
                           fontWeight: 600,
                         }}
                       >
@@ -216,14 +260,14 @@ export default function EventsSection({ onEventClick, events = [] }) {
               <div className="timeline-dot upcoming" />
               <div
                 className="timeline-card pop-in"
-                style={{ textAlign: "center", color: "var(--t3)" }}
+                style={{ textAlign: 'center', color: 'var(--t3)' }}
               >
                 <DynamicIcon
                   name="Rocket"
                   size={24}
-                  style={{ color: "var(--c1)", marginBottom: "8px" }}
+                  style={{ color: 'var(--c1)', marginBottom: '8px' }}
                 />
-                <p style={{ marginTop: "6px", fontSize: ".84rem" }}>
+                <p style={{ marginTop: '6px', fontSize: '.84rem' }}>
                   More events are being planned. Watch this space!
                 </p>
               </div>

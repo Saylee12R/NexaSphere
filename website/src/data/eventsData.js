@@ -15,10 +15,11 @@ export const events = [
       "NexaSphere's inaugural Knowledge Sharing Session — an interactive peer-to-peer learning event where members presented on the Impact of AI, fostering curiosity, collaboration, and community building.",
     status: 'completed',
     icon: 'Brain',
-    category: 'workshop',
+    category: 'kss',
     tags: ['AI', 'Learning', 'Community'],
     location: 'Conference Hall',
-    capacity: 50
+    capacity: 50,
+    gradientColors: ['#6b21a8', '#7c3aed', '#a855f7'],
   },
   {
     id: 2,
@@ -34,7 +35,8 @@ export const events = [
     category: 'workshop',
     tags: ['Git', 'GitHub', 'Workshop'],
     location: 'Computer Lab, CSE Block',
-    capacity: 30
+    capacity: 30,
+    gradientColors: ['#0369a1', '#0ea5e9', '#38bdf8'],
   },
   {
     id: 3,
@@ -43,13 +45,15 @@ export const events = [
     date: 'June 10-12, 2026',
     startDate: '2026-06-10T09:00:00',
     endDate: '2026-06-12T18:00:00',
-    description: '48-hour coding marathon to build innovative solutions for real-world problems. Collaborate with teams, get mentorship, and win exciting prizes.',
+    description:
+      '48-hour coding marathon to build innovative solutions for real-world problems. Collaborate with teams, get mentorship, and win exciting prizes.',
     status: 'upcoming',
     icon: 'Code',
     category: 'hackathon',
     tags: ['Hackathon', 'Coding', 'Innovation', 'Prizes'],
     location: 'Main Auditorium',
-    capacity: 100
+    capacity: 100,
+    gradientColors: ['#b91c1c', '#dc2626', '#f87171'],
   },
   {
     id: 4,
@@ -58,13 +62,15 @@ export const events = [
     date: 'June 5, 2026',
     startDate: '2026-06-05T15:00:00',
     endDate: '2026-06-05T17:30:00',
-    description: 'Structured debate on the future of AI and its impact on human creativity, jobs, and society.',
+    description:
+      'Structured debate on the future of AI and its impact on human creativity, jobs, and society.',
     status: 'upcoming',
     icon: 'MessageSquare',
     category: 'debate',
     tags: ['Debate', 'AI', 'Critical Thinking'],
     location: 'Seminar Room 203',
-    capacity: 40
+    capacity: 40,
+    gradientColors: ['#a16207', '#ca8a04', '#facc15'],
   },
   {
     id: 5,
@@ -73,13 +79,15 @@ export const events = [
     date: 'June 15, 2026',
     startDate: '2026-06-15T10:00:00',
     endDate: '2026-06-15T16:00:00',
-    description: 'Learn Git workflows, find your first issue, and make your first open source contribution with guidance from mentors.',
+    description:
+      'Learn Git workflows, find your first issue, and make your first open source contribution with guidance from mentors.',
     status: 'upcoming',
     icon: 'GitBranch',
     category: 'opensource',
     tags: ['Open Source', 'Git', 'GitHub', 'First PR'],
     location: 'Computer Lab',
-    capacity: 35
+    capacity: 50,
+    gradientColors: ['#1e40af', '#3b82f6', '#93c5fd'],
   },
   {
     id: 6,
@@ -88,13 +96,15 @@ export const events = [
     date: 'May 28, 2026',
     startDate: '2026-05-28T11:00:00',
     endDate: '2026-05-28T13:00:00',
-    description: 'Master the art of crafting effective prompts for generative AI tools like ChatGPT, Claude, and Gemini.',
+    description:
+      'Master the art of crafting effective prompts for generative AI tools like ChatGPT, Claude, and Gemini.',
     status: 'upcoming',
     icon: 'Sparkles',
     category: 'workshop',
     tags: ['AI', 'Prompt Engineering', 'Generative AI'],
     location: 'Online (Zoom)',
-    capacity: 100
+    capacity: 100,
+    gradientColors: ['#7e22ce', '#9333ea', '#c084fc'],
   },
   {
     id: 7,
@@ -109,6 +119,6 @@ export const events = [
     category: 'workshop',
     tags: ['React', 'Frontend', 'Web Development'],
     location: 'Computer Lab',
-    capacity: 50
-  }
+    capacity: 50,
+  },
 ];
