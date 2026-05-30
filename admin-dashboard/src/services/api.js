@@ -21,11 +21,15 @@
  */
 import { eventEmitter, EVENTS } from './eventEmitter';
 import { auth } from './auth';
+import { broadcastContentUpdate, initAdminSocket } from './socketClient';
 
 // Team images are served from the main app's public dir.
 // Using URL strings avoids broken asset imports in the admin monorepo build.
 const MAIN_APP = import.meta.env.VITE_MAIN_APP_URL || 'https://nexasphere-glbajaj.vercel.app';
 const teamImg = (name) => `${MAIN_APP}/assets/${name}`;
+
+// Initialize socket connection on module load (gracefully fails if server is down)
+initAdminSocket();
 
 const ayushImg = teamImg('ayush.png');
 const tanishkImg = teamImg('tanishk.png');
@@ -208,6 +212,20 @@ const getDb = (key, defaultVal) => {
 };
 const setDb = (key, val) => localStorage.setItem(`ns_db_${key}`, JSON.stringify(val));
 
+/**
+ * Notify other origins (website on a different port) of content changes.
+ * Dispatches a same-origin custom event AND posts a message to the
+ * sync-bridge iframe so the website can pick up the change.
+ */
+function notifyContentUpdated(key) {
+  window.dispatchEvent(new Event('ns-content-updated'));
+  // Post to the sync-bridge iframe embedded by the website
+  const bridge = document.querySelector('iframe[title="NexaSphere Sync Bridge"]');
+  if (bridge?.contentWindow) {
+    bridge.contentWindow.postMessage({ type: 'ns-sync', key }, '*');
+  }
+}
+
 let isLoggingOut = false;
 
 async function fetchWithAuth(url, options = {}) {
@@ -309,6 +327,12 @@ async function fetchWithAuth(url, options = {}) {
           setDb('core_team', team);
           resolve(newMem);
         }
+        if (method === 'PUT') {
+          const id = url.split('/').pop();
+          team = team.map((m) => (m.id === id ? { ...body, id } : m));
+          setDb('core_team', team);
+          resolve({ ...body, id });
+        }
         if (method === 'DELETE') {
           const id = url.split('/').pop();
           team = team.filter((m) => m.id !== id);
@@ -357,6 +381,8 @@ export const api = {
         type: 'success',
         message: 'Event created',
       });
+      broadcastContentUpdate('events');
+      notifyContentUpdated('ns_db_events');
       return result;
     },
     update: async (id, event) => {
@@ -375,6 +401,8 @@ export const api = {
         type: 'success',
         message: 'Event updated',
       });
+      broadcastContentUpdate('events');
+      notifyContentUpdated('ns_db_events');
       return result;
     },
     delete: async (id) => {
@@ -390,6 +418,8 @@ export const api = {
         type: 'success',
         message: 'Event deleted',
       });
+      broadcastContentUpdate('events');
+      notifyContentUpdated('ns_db_events');
     },
   },
 
@@ -414,7 +444,8 @@ export const api = {
         type: 'success',
         message: 'Activity event added',
       });
-      return result;
+      broadcastContentUpdate('activities');
+      notifyContentUpdated('ns_db_events');
     },
     delete: async (activityKey, eventId) => {
       if (auth.isOfflineMode()) {
@@ -434,6 +465,8 @@ export const api = {
         type: 'success',
         message: 'Activity event deleted',
       });
+      broadcastContentUpdate('activities');
+      notifyContentUpdated('ns_db_events');
     },
   },
 
@@ -467,7 +500,27 @@ export const api = {
         type: 'success',
         message: 'Member added',
       });
-      return result;
+      broadcastContentUpdate('team');
+      notifyContentUpdated('ns_db_core_team');
+    },
+    update: async (id, member) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      const result = await fetchWithAuth(`/api/admin/core-team/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(member),
+      });
+      eventEmitter.emit(EVENTS.CORE_TEAM_MEMBER_UPDATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Member updated',
+      });
+      broadcastContentUpdate('team');
+      notifyContentUpdated('ns_db_core_team');
     },
     remove: async (id) => {
       if (auth.isOfflineMode()) {
@@ -482,11 +535,84 @@ export const api = {
         type: 'success',
         message: 'Member removed',
       });
+      broadcastContentUpdate('team');
+      notifyContentUpdated('ns_db_core_team');
     },
   },
 
   membership: {
     getAll: () => fetchWithAuth('/api/admin/membership'),
+  },
+
+  recruitment: {
+    getAll: () => fetchWithAuth('/api/admin/submissions/recruitment'),
+    updateStatus: async (id, status) => {
+      const result = await fetchWithAuth(`/api/admin/submissions/recruitment/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: `Application status updated to ${status}`,
+      });
+      return result;
+    },
+  },
+
+  certificates: {
+    getTemplates: () => fetchWithAuth('/api/admin/certificates/templates'),
+    createTemplate: async (template) => {
+      const result = await fetchWithAuth('/api/admin/certificates/templates', {
+        method: 'POST',
+        body: JSON.stringify(template),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Template saved' });
+      return result;
+    },
+    updateTemplate: async (id, template) => {
+      const result = await fetchWithAuth(`/api/admin/certificates/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(template),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Template updated' });
+      return result;
+    },
+    deleteTemplate: async (id) => {
+      await fetchWithAuth(`/api/admin/certificates/templates/${id}`, { method: 'DELETE' });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Template deleted' });
+    },
+    getParticipants: (eventId) => fetchWithAuth(`/api/admin/certificates/participants/${eventId}`),
+    addParticipant: async (eventId, participant) => {
+      return fetchWithAuth(`/api/admin/certificates/participants/${eventId}`, {
+        method: 'POST',
+        body: JSON.stringify(participant),
+      });
+    },
+    bulkAddParticipants: async (eventId, participants) => {
+      return fetchWithAuth(`/api/admin/certificates/participants/${eventId}/bulk`, {
+        method: 'POST',
+        body: JSON.stringify(participants),
+      });
+    },
+    generate: async (data) => {
+      const result = await fetchWithAuth('/api/admin/certificates/generate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: `Generated ${result.generated} certificate(s)`,
+      });
+      return result;
+    },
+    getAll: () => fetchWithAuth('/api/admin/certificates'),
+    revoke: async (id) => {
+      const result = await fetchWithAuth(`/api/admin/certificates/${id}/revoke`, {
+        method: 'PATCH',
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Certificate revoked' });
+      return result;
+    },
   },
 };
 

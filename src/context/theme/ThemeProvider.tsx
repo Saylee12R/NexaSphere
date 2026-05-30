@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useLayoutEffect } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -14,8 +14,8 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(undefine
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme | null>(() => {
-    // Check if user has explicitly set a preference
-    const stored = localStorage.getItem('ns-theme') as Theme | null;
+    // Priority a: check localStorage
+    const stored = localStorage.getItem('nexasphere-theme') as Theme | null;
     return stored || null;
   });
 
@@ -53,14 +53,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resolvedTheme = theme || systemTheme;
   const isDark = resolvedTheme === 'dark';
 
-  useEffect(() => {
-    // Apply the resolved theme to documentElement
+  useLayoutEffect(() => {
+    // Apply the resolved theme to documentElement synchronously before paint
     document.documentElement.setAttribute('data-theme', resolvedTheme);
   }, [resolvedTheme]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('ns-theme', newTheme);
+    localStorage.setItem('nexasphere-theme', newTheme);
   };
 
   const toggleTheme = () => {
