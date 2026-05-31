@@ -17,10 +17,10 @@ Welcome to the NexaSphere documentation. Use the links below to find what you ne
 | Document | Description |
 |---|---|
 | [README.md](../README.md) | Project overview, tech stack, quick start |
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute (fork, branch, PR, GSSoC rules) |
-| [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | Community standards |
-| [SECURITY.md](../SECURITY.md) | Vulnerability reporting policy |
-| [CHANGELOG.md](../CHANGELOG.md) | Version history |
+| [CONTRIBUTING.md](./community/CONTRIBUTING.md) | How to contribute (fork, branch, PR, GSSoC rules) |
+| [CODE_OF_CONDUCT.md](./community/CODE_OF_CONDUCT.md) | Community standards |
+| [SECURITY.md](./community/SECURITY.md) | Vulnerability reporting policy |
+| [CHANGELOG.md](./CHANGELOG.md) | Version history |
 
 ## 🖥️ Backend
 
