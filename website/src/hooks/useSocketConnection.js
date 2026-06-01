@@ -1,6 +1,13 @@
 /**
- * Socket.IO React Hook
- * Provides reactive access to Socket.IO connections, room subscriptions, and event emitters
+ * useSocketConnection — Socket.IO Connection Manager Hook
+ *
+ * Manages the Socket.IO connection lifecycle (connect, disconnect, identify,
+ * join/leave rooms, emit events).
+ *
+ * NOTE: This hook was renamed from useSocket.js to useSocketConnection.js to
+ * resolve a naming conflict with useSocket.ts, which handles event listener
+ * subscriptions. Use this hook when you need connection state or need to emit.
+ * Use useSocket.ts when you need to subscribe to a specific socket event.
  */
 
 import { useEffect, useState, useCallback } from "react";
