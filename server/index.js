@@ -373,7 +373,24 @@ app.get('/api/portfolio/:username', async (req, res) => {
   }
 });
 
+// Hard cap on tracked username:ip pairs. When the limit is reached, the
+// oldest inserted entry is evicted before adding a new one, preventing the
+// Map from growing without bound when an attacker rotates through many
+// distinct usernames from the same or different IP addresses.
+const MAX_PASSKEY_TRACKED_KEYS = 10_000;
 const failedPasskeyAttempts = new Map();
+
+// Periodic sweep every 30 minutes: remove entries whose lockout period has
+// expired and whose attempt count has already been reset to 0, so they do
+// not accumulate for keys that are never visited again.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of failedPasskeyAttempts) {
+    if (entry.count === 0 && now > entry.lockoutUntil) {
+      failedPasskeyAttempts.delete(key);
+    }
+  }
+}, 30 * 60 * 1000).unref();
 
 function checkPasskeyLockout(username, ip) {
   const key = `${String(username || '').toLowerCase()}:${ip}`;
@@ -388,6 +405,10 @@ function checkPasskeyLockout(username, ip) {
 
 function recordFailedPasskeyAttempt(username, ip) {
   const key = `${String(username || '').toLowerCase()}:${ip}`;
+  // Evict the oldest entry when the Map is at capacity and this is a new key.
+  if (!failedPasskeyAttempts.has(key) && failedPasskeyAttempts.size >= MAX_PASSKEY_TRACKED_KEYS) {
+    failedPasskeyAttempts.delete(failedPasskeyAttempts.keys().next().value);
+  }
   const entry = failedPasskeyAttempts.get(key) || { count: 0, lockoutUntil: 0 };
   entry.count += 1;
   if (entry.count >= 5) {
