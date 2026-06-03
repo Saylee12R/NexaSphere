@@ -72,10 +72,7 @@ function requiredStrongPassword(name) {
 }
 
 function getClientIp(req) {
-  const ip =
-    String(req.ip || req.headers['x-forwarded-for'] || 'unknown')
-      .split(',')[0]
-      .trim() || 'unknown';
+  const ip = String(req.ip || 'unknown').trim();
   // Truncate to maximum 128 characters to prevent extremely large malicious headers from causing memory exhaustion
   return ip.slice(0, 128);
 }
@@ -222,12 +219,13 @@ async function login(req, res) {
 
 async function logout(req, res) {
   try {
-    const token =
-      req.cookies?.ns_admin_token ||
-      getCookie(req, 'ns_admin_token') ||
-      parseBearer(req.headers.authorization || '');
+    const token = req.adminSession?.token;
+
     if (token) {
       await revokeAdminSession(token);
+    } else {
+      // In case logout is called without authentication
+      return res.status(401).json({ error: 'No active session to revoke' });
     }
 
     res.clearCookie('ns_admin_token', {

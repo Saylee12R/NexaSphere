@@ -46,6 +46,7 @@ const Chatbot = () => {
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState([
     {
+      id: `msg-init`,
       role: 'bot',
       text: 'Nexa-Intelligence Online. How can I assist your journey?',
     },
@@ -88,7 +89,7 @@ const Chatbot = () => {
 
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
-    const userMsg = { role: 'user', text: input };
+    const userMsg = { id: `msg-${Date.now()}-user`, role: 'user', text: input };
     setMessages((prev) => [...prev, userMsg]);
     const currentInput = input;
     setInput('');
@@ -100,6 +101,7 @@ const Chatbot = () => {
       setMessages((prev) => [
         ...prev,
         {
+          id: `msg-${Date.now()}-bot`,
           role: 'bot',
           text: 'Nexa-AI is offline right now. The AI service URL is not configured for this deployment.',
         },
@@ -115,7 +117,10 @@ const Chatbot = () => {
         body: JSON.stringify({ message: currentInput }),
         signal: controller.signal,
       });
-      setMessages((prev) => [...prev, { role: 'bot', text: data.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: `msg-${Date.now()}-bot`, role: 'bot', text: data.reply },
+      ]);
     } catch (e) {
       console.error('AI chat request failed', e);
 
@@ -124,6 +129,7 @@ const Chatbot = () => {
       setMessages((prev) => [
         ...prev,
         {
+          id: `msg-${Date.now()}-bot`,
           role: 'bot',
           text: fallbackResponse,
         },
@@ -136,11 +142,12 @@ const Chatbot = () => {
   const handleSelectPrompt = (prompt) => {
     setMessages([
       {
+        id: 'msg-init',
         role: 'bot',
         text: 'Nexa-Intelligence Online. How can I assist your journey?',
       },
-      { role: 'user', text: prompt.userPrompt },
-      { role: 'bot', text: prompt.botResponse },
+      { id: `msg-${Date.now()}-user`, role: 'user', text: prompt.userPrompt },
+      { id: `msg-${Date.now() + 1}-bot`, role: 'bot', text: prompt.botResponse },
     ]);
     setShowSidebar(false);
   };
@@ -198,8 +205,8 @@ const Chatbot = () => {
               <SearchBar onSelectPrompt={handleSelectPrompt} workspace={currentWorkspace} />
 
               <div className="chat-messages" ref={scrollRef}>
-                {messages.map((m, i) => (
-                  <div key={i} className={`msg-bubble ${m.role}`}>
+                {messages.map((m) => (
+                  <div key={m.id} className={`msg-bubble ${m.role}`}>
                     {m.text}
                   </div>
                 ))}

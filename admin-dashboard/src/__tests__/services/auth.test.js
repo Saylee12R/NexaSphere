@@ -33,7 +33,7 @@ describe('auth.login', () => {
     expect(fetch).toHaveBeenCalledWith(`${API_BASE}/api/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@example.com', password: 'secret123' }),
+      body: JSON.stringify({ username: 'test@example.com', password: 'secret123' }),
     });
     expect(localStorage.getItem('ns_admin_token')).toBe(token);
     expect(localStorage.getItem('ns_admin_email')).toBe('test@example.com');
@@ -49,6 +49,11 @@ describe('auth.login', () => {
 
     await auth.login('a@b.com', 'x');
 
+    expect(fetch).toHaveBeenCalledWith(`${API_BASE}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'a@b.com', password: 'x' }),
+    });
     expect(localStorage.getItem('ns_admin_token')).toBe('tok');
     expect(localStorage.getItem('ns_admin_token_expiry')).toBeNull();
   });

@@ -18,7 +18,8 @@ export const activityEventsService = {
   },
 
   async deleteActivityEvent(activityKey, eventId, input) {
-    await this.assertCanManage(input);
+    const parsed = activityEventSchema.parse(input);
+    await this.assertCanManage(parsed);
     return activityEventsRepository.delete(activityKey, eventId);
   },
 };

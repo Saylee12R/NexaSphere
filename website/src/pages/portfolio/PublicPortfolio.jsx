@@ -326,7 +326,8 @@ export default function PublicPortfolio({ username, onBack }) {
         {/* Dynamic section grid layouts */}
         <main className="portfolio-grid">
           {/* Section A: Certified Skills & Badges */}
-          {visibleSections?.quests && skills && skills.length > 0 && (
+          {/* skillsAndQuests key controls both Skills and Quests sections */}
+          {visibleSections?.skillsAndQuests && skills && skills.length > 0 && (
             <section className="portfolio-panel" aria-labelledby="skills-heading">
               <h2 id="skills-heading" className="portfolio-section-title">
                 <svg

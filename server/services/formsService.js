@@ -1,4 +1,9 @@
-import { supabaseRequest, HAS_SUPABASE, requiredEnv, normalizePrivateKey } from '../storage/supabaseClient.js';
+import {
+  supabaseRequest,
+  HAS_SUPABASE,
+  requiredEnv,
+  normalizePrivateKey,
+} from '../storage/supabaseClient.js';
 import { google } from 'googleapis';
 import { ZodError } from 'zod';
 import { normalizeFormSubmission } from '../validators/formSchemas.js';
@@ -8,7 +13,9 @@ import { broadcastSSEEvent } from './sseService.js';
 import { emitToRoom, getRoom } from '../config/socket.js';
 
 function toSafeString(value, max = 4000) {
-  return String(value ?? '').trim().slice(0, max);
+  return String(value ?? '')
+    .trim()
+    .slice(0, max);
 }
 
 export const formsService = {
@@ -17,13 +24,15 @@ export const formsService = {
     try {
       await supabaseRequest('form_submissions', {
         method: 'POST',
-        body: [{
-          form_type: formType,
-          full_name: toSafeString(payload.fullName, 140),
-          college_email: toSafeString(payload.collegeEmail, 140),
-          whatsapp: toSafeString(payload.whatsapp, 40),
-          payload,
-        }],
+        body: [
+          {
+            form_type: formType,
+            full_name: toSafeString(payload.fullName, 140),
+            college_email: toSafeString(payload.collegeEmail, 140),
+            whatsapp: toSafeString(payload.whatsapp, 40),
+            payload,
+          },
+        ],
       });
       return true;
     } catch {
@@ -65,7 +74,7 @@ export const formsService = {
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: `${sheetName}!A1`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [row] },
     });
@@ -84,11 +93,7 @@ export const formsService = {
       // Trigger standard welcome verification email
       try {
         const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(body.collegeEmail)}`;
-        await sendWelcomeVerificationEmail(
-          body.collegeEmail,
-          body.fullName,
-          verifyUrl,
-        );
+        await sendWelcomeVerificationEmail(body.collegeEmail, body.fullName, verifyUrl);
       } catch (emailErr) {
         console.error('[Forms Service] Failed to send welcome verification email:', emailErr);
       }
@@ -112,7 +117,10 @@ export const formsService = {
       return { ok: true };
     } catch (e) {
       if (e instanceof ZodError) {
-        const issues = e.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
+        const issues = e.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        }));
         const err = new Error('Invalid form submission');
         err.details = issues;
         throw err;

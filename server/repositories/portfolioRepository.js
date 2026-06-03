@@ -18,7 +18,9 @@ let lastDbFailTime = 0;
 const DB_RETRY_TTL = 15000;
 
 export function canonicalizeUsername(username) {
-  return String(username || '').trim().toLowerCase();
+  return String(username || '')
+    .trim()
+    .toLowerCase();
 }
 
 async function hashPasskey(passkey) {
@@ -158,10 +160,15 @@ function mapRow(row) {
   return {
     username: row.username,
     theme: row.theme,
-    visibleSections: typeof row.visible_sections === 'string' ? JSON.parse(row.visible_sections) : row.visible_sections || {},
-    socialLinks: typeof row.social_links === 'string' ? JSON.parse(row.social_links) : row.social_links || {},
+    visibleSections:
+      typeof row.visible_sections === 'string'
+        ? JSON.parse(row.visible_sections)
+        : row.visible_sections || {},
+    socialLinks:
+      typeof row.social_links === 'string' ? JSON.parse(row.social_links) : row.social_links || {},
     customDomain: row.custom_domain || '',
-    seoMetadata: typeof row.seo_metadata === 'string' ? JSON.parse(row.seo_metadata) : row.seo_metadata || {},
+    seoMetadata:
+      typeof row.seo_metadata === 'string' ? JSON.parse(row.seo_metadata) : row.seo_metadata || {},
     skills: typeof row.skills === 'string' ? JSON.parse(row.skills) : row.skills || [],
     badges: typeof row.badges === 'string' ? JSON.parse(row.badges) : row.badges || [],
     projects: typeof row.projects === 'string' ? JSON.parse(row.projects) : row.projects || [],
@@ -181,10 +188,9 @@ export const portfolioRepository = {
     if (isDbAvailable) {
       try {
         return await withDb(async (client) => {
-          const { rows } = await client.query(
-            'SELECT * FROM portfolios WHERE username = $1',
-            [sanitizedUsername]
-          );
+          const { rows } = await client.query('SELECT * FROM portfolios WHERE username = $1', [
+            sanitizedUsername,
+          ]);
           if (!rows.length) return null;
           return mapRow(rows[0]);
         });
@@ -260,13 +266,18 @@ export const portfolioRepository = {
     return await verifyHash(passkey, portfolio.passkeyHash);
   },
 
-  async createOrUpdate(data) {
+  async createOrUpdate(data, isNewRegistration) {
     const isDbAvailable = await ensureReady();
     const sanitizedUsername = canonicalizeUsername(data.username);
     const passkeyHash = await hashPasskey(data.passkey);
 
     const theme = data.theme || 'glassmorphic';
-    const visibleSections = data.visibleSections || { quests: true, roadmaps: true, projects: true, analytics: false };
+    const visibleSections = data.visibleSections || {
+      quests: true,
+      roadmaps: true,
+      projects: true,
+      analytics: false,
+    };
     const socialLinks = data.socialLinks || {};
     const customDomain = data.customDomain || '';
     const seoMetadata = data.seoMetadata || {};
@@ -280,41 +291,135 @@ export const portfolioRepository = {
     if (isDbAvailable) {
       try {
         return await withDb(async (client) => {
-          const { rows } = await client.query(
-            `INSERT INTO portfolios (
-              username, passkey_hash, theme, visible_sections, social_links,
-              custom_domain, seo_metadata, skills, badges, projects, roadmaps, bio, title, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
-            ON CONFLICT (username) DO UPDATE SET
-              passkey_hash = EXCLUDED.passkey_hash,
-              theme = EXCLUDED.theme,
-              visible_sections = EXCLUDED.visible_sections,
-              social_links = EXCLUDED.social_links,
-              custom_domain = EXCLUDED.custom_domain,
-              seo_metadata = EXCLUDED.seo_metadata,
-              skills = EXCLUDED.skills,
-              badges = EXCLUDED.badges,
-              projects = EXCLUDED.projects,
-              roadmaps = EXCLUDED.roadmaps,
-              bio = EXCLUDED.bio,
-              title = EXCLUDED.title,
-              updated_at = NOW()
-            RETURNING *`,
-            [
-              sanitizedUsername, passkeyHash, theme, JSON.stringify(visibleSections), JSON.stringify(socialLinks),
-              customDomain, JSON.stringify(seoMetadata), JSON.stringify(skills), JSON.stringify(badges),
-              JSON.stringify(projects), JSON.stringify(roadmaps), bio, title
-            ]
-          );
-          return mapRow(rows[0]);
+          await client.query('BEGIN');
+          try {
+            let result;
+            if (isNewRegistration) {
+              result = await client.query(
+                `INSERT INTO portfolios (
+                  username, passkey_hash, theme, visible_sections, social_links,
+                  custom_domain, seo_metadata, skills, badges, projects, roadmaps, bio, title, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+                RETURNING *`,
+                [
+                  sanitizedUsername,
+                  passkeyHash,
+                  theme,
+                  JSON.stringify(visibleSections),
+                  JSON.stringify(socialLinks),
+                  customDomain,
+                  JSON.stringify(seoMetadata),
+                  JSON.stringify(skills),
+                  JSON.stringify(badges),
+                  JSON.stringify(projects),
+                  JSON.stringify(roadmaps),
+                  bio,
+                  title,
+                ]
+              );
+            } else {
+              result = await client.query(
+                `UPDATE portfolios SET
+                  passkey_hash = $2,
+                  theme = $3,
+                  visible_sections = $4,
+                  social_links = $5,
+                  custom_domain = $6,
+                  seo_metadata = $7,
+                  skills = $8,
+                  badges = $9,
+                  projects = $10,
+                  roadmaps = $11,
+                  bio = $12,
+                  title = $13,
+                  updated_at = NOW()
+                WHERE username = $1
+                RETURNING *`,
+                [
+                  sanitizedUsername,
+                  passkeyHash,
+                  theme,
+                  JSON.stringify(visibleSections),
+                  JSON.stringify(socialLinks),
+                  customDomain,
+                  JSON.stringify(seoMetadata),
+                  JSON.stringify(skills),
+                  JSON.stringify(badges),
+                  JSON.stringify(projects),
+                  JSON.stringify(roadmaps),
+                  bio,
+                  title,
+                ]
+              );
+            }
+            await client.query('COMMIT');
+            if (!result.rows.length) {
+              throw new Error('Portfolio update failed. Portfolio not found.');
+            }
+            return mapRow(result.rows[0]);
+          } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+          }
         });
       } catch (err) {
+        if (err.code === '23505') {
+          throw err; // Bubble up unique constraint violation
+        }
         console.error('Database INSERT/UPDATE failed. Falling back to local file.', err);
       }
     }
 
-    throw new Error('Portfolio storage is unavailable. Please try again later.');
-  }
+    // Local file fallback executed serially to prevent race conditions
+    return await portfolioMutex.runExclusive(async () => {
+      const portfolios = await readLocalPortfolios();
+
+      if (isNewRegistration && portfolios[sanitizedUsername]) {
+        const error = new Error('duplicate key value violates unique constraint');
+        error.code = '23505';
+        throw error;
+      }
+
+      const existing = portfolios[sanitizedUsername] || {};
+      const newPortfolio = {
+        username: sanitizedUsername,
+        passkeyHash,
+        theme,
+        visibleSections,
+        socialLinks,
+        customDomain,
+        seoMetadata,
+        skills,
+        badges,
+        projects,
+        roadmaps,
+        bio,
+        title,
+        createdAt: existing.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      portfolios[sanitizedUsername] = newPortfolio;
+      await fs.writeFile(PORTFOLIOS_FILE, JSON.stringify(portfolios, null, 2), 'utf8');
+
+      return mapRow({
+        username: newPortfolio.username,
+        theme: newPortfolio.theme,
+        visible_sections: newPortfolio.visibleSections,
+        social_links: newPortfolio.socialLinks,
+        custom_domain: newPortfolio.customDomain,
+        seo_metadata: newPortfolio.seoMetadata,
+        skills: newPortfolio.skills,
+        badges: newPortfolio.badges,
+        projects: newPortfolio.projects,
+        roadmaps: newPortfolio.roadmaps,
+        bio: newPortfolio.bio,
+        title: newPortfolio.title,
+        created_at: newPortfolio.createdAt,
+        updated_at: newPortfolio.updatedAt,
+      });
+    });
+  },
 };
 
 export const __portfolioRepositoryInternals = {

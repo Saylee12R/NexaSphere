@@ -30,7 +30,7 @@ router.delete(
 // Admin auth
 router.get('/api/admin/users', adminAuthMiddleware.requireAdmin, usersController.getAdminUsers);
 router.post('/api/admin/login', adminAuthMiddleware.login);
-router.post('/api/admin/logout', adminAuthMiddleware.logout);
+router.post('/api/admin/logout', adminAuthMiddleware.requireAdmin, adminAuthMiddleware.logout);
 
 router.get('/api/admin/events', adminAuthMiddleware.requireAdmin, eventsController.adminListEvents);
 router.post(

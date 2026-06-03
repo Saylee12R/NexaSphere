@@ -128,7 +128,12 @@ export function initStorageSyncBridge() {
   if (bridgeInitialized || typeof window === 'undefined') return;
   bridgeInitialized = true;
 
-  const adminOrigin = 'http://localhost:5001';
+  // Read admin origin from VITE_ADMIN_DASHBOARD_URL — already defined in
+  // .env.example for both local dev and production deployments.
+  // Falls back to http://localhost:5001 only when running locally.
+  const adminOrigin =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_DASHBOARD_URL) ||
+    'http://localhost:5001';
   const bridgeUrl = `${adminOrigin}/sync-bridge.html`;
 
   // Check if we're in a cross-origin context (different port)

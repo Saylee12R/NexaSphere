@@ -4,11 +4,13 @@ import { BannerOrbs } from '../../shared/MotionLayer';
 import Footer from '../../shared/Footer';
 import { DynamicIcon } from '../../shared/Icons';
 import PersonalizedFeed from '../../components/recommendation/PersonalizedFeed';
+import { useRecommendations } from '../../hooks/useRecommendations';
 import EventCalendarView from '../../components/calendar/EventCalendarView';
 
 export default function EventsPage({ onBack, onEventClick, events = fallbackEvents }) {
   const [view, setView] = useState('timeline');
   const [recommendationView, setRecommendationView] = useState(false);
+  const { recommendations, loading: recsLoading } = useRecommendations(sortedEvents);
 
   const buildGradient = (ev) => {
     if (ev.gradientColors?.length > 1) {
@@ -223,7 +225,11 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
 
       <div className="container">
         {recommendationView ? (
-          <PersonalizedFeed events={sortedEvents} onEventClick={onEventClick} />
+          <PersonalizedFeed
+            events={recommendations}
+            loading={recsLoading}
+            onEventClick={onEventClick}
+          />
         ) : view === 'timeline' ? (
           <div className="events-timeline ns-reveal">
             {sortedEvents.map((ev, i) => {

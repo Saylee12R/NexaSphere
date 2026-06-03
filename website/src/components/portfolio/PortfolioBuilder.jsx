@@ -14,7 +14,7 @@ export default function PortfolioBuilder() {
 
   // Section Visibilities
   const [visibleSections, setVisibleSections] = useState({
-    quests: true,
+    skillsAndQuests: true,
     roadmaps: true,
     projects: true,
   });
@@ -90,7 +90,13 @@ export default function PortfolioBuilder() {
         setTheme(data.theme || 'glassmorphic');
         setCustomDomain(data.customDomain || '');
         setVisibleSections(
-          data.visibleSections || { quests: true, roadmaps: true, projects: true }
+          data.visibleSections
+            ? {
+                ...data.visibleSections,
+                skillsAndQuests:
+                  data.visibleSections.skillsAndQuests ?? data.visibleSections.quests ?? true,
+              }
+            : { skillsAndQuests: true, roadmaps: true, projects: true }
         );
         setSocialLinks(data.socialLinks || { github: '', linkedin: '', twitter: '', resume: '' });
         setSeoMetadata(data.seoMetadata || { title: '', description: '' });
@@ -440,9 +446,9 @@ export default function PortfolioBuilder() {
               <label className="switch">
                 <input
                   type="checkbox"
-                  checked={visibleSections.quests}
+                  checked={visibleSections.skillsAndQuests}
                   onChange={(e) =>
-                    setVisibleSections((prev) => ({ ...prev, quests: e.target.checked }))
+                    setVisibleSections((prev) => ({ ...prev, skillsAndQuests: e.target.checked }))
                   }
                 />
                 <span className="slider"></span>
@@ -961,7 +967,7 @@ export default function PortfolioBuilder() {
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}
               >
-                {visibleSections.quests && selectedSkills.length > 0 && (
+                {visibleSections.skillsAndQuests && selectedSkills.length > 0 && (
                   <div className="portfolio-panel" style={{ padding: '16px' }}>
                     <div
                       style={{

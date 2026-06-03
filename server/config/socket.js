@@ -6,6 +6,7 @@
 import { Server } from 'socket.io';
 import logger from '../utils/logger.js';
 import { getAdminSession } from '../repositories/adminSessionsRepository.js';
+import { validationMiddleware } from '../sockets/validationMiddleware.js';
 
 let io = null;
 const connectedUsers = new Map();
@@ -102,10 +103,12 @@ export function applyBackpressureProtection(socket) {
 
   socket.data.lastEmitTimes ||= {};
   socket.data.firstQueuedTime = null;
+  socket.data.coalesceIndex = new Map();
 
-  // Listen to the transport drain event to clear the queued time
+  // Listen to the transport drain event to clear the queued time and coalesce index
   const onDrain = () => {
     socket.data.firstQueuedTime = null;
+    socket.data.coalesceIndex.clear();
   };
   socket.conn.on('drain', onDrain);
   socket.data.drainListener = onDrain;
@@ -141,30 +144,26 @@ export function applyBackpressureProtection(socket) {
 
     // C. Parser, Throttling & Coalescing
     const parsed = parseSocketPacket(packet);
+    let coalesceKey = null;
     if (parsed) {
       const { event, payload } = parsed;
       const policy = EVENT_POLICIES[event];
       if (policy) {
         const lastEmit = socket.data.lastEmitTimes[event] || 0;
 
+        const qualifier = getEventQualifier(event, payload);
+        coalesceKey = `${event}\x00${qualifier}`;
+
         if (policy.coalesce && now - lastEmit < policy.throttleMs) {
-          const qualifier = getEventQualifier(event, payload);
+          const existingIdx = socket.data.coalesceIndex.get(coalesceKey);
 
-          if (socket.conn.writeBuffer) {
-            const existingIdx = socket.conn.writeBuffer.findIndex((item) => {
-              const itemParsed = parseSocketPacket(item.data);
-              return (
-                itemParsed &&
-                itemParsed.event === event &&
-                getEventQualifier(event, itemParsed.payload) === qualifier
-              );
-            });
-
-            if (existingIdx !== -1) {
-              // Replace the old packet with the latest state (coalescing)
-              socket.conn.writeBuffer[existingIdx].data = packet;
-              return;
-            }
+          if (
+            existingIdx !== undefined &&
+            socket.conn.writeBuffer &&
+            socket.conn.writeBuffer[existingIdx]
+          ) {
+            socket.conn.writeBuffer[existingIdx].data = packet;
+            return;
           }
         }
 
@@ -172,7 +171,13 @@ export function applyBackpressureProtection(socket) {
       }
     }
 
-    return origWrite.call(socket.conn, packet, options);
+    const result = origWrite.call(socket.conn, packet, options);
+
+    if (coalesceKey && socket.data.coalesceIndex && socket.conn.writeBuffer) {
+      socket.data.coalesceIndex.set(coalesceKey, socket.conn.writeBuffer.length - 1);
+    }
+
+    return result;
   };
 }
 
@@ -251,6 +256,9 @@ export function initializeSocketIO(httpServer) {
 export function _onConnection(socket) {
   // Apply WebSocket backpressure, slow consumer protection and emit throttling
   applyBackpressureProtection(socket);
+
+  // Apply payload validation middleware to prevent DoS attacks
+  socket.use(validationMiddleware);
 
   logger.info('User connected', { socketId: socket.id, admin: !!socket.adminAuthenticated });
 
@@ -450,6 +458,12 @@ export function _onConnection(socket) {
 
   // Authenticate socket for admin rooms using admin token
   socket.on('admin:authenticate', async ({ token } = {}) => {
+    if (socket.adminAuthenticated) {
+      return socket.emit('admin:authenticated', {
+        success: false,
+        error: 'Already authenticated',
+      });
+    }
     if (!token) {
       return socket.emit('admin:authenticated', { success: false, error: 'Token is required' });
     }
@@ -478,6 +492,7 @@ export function _onConnection(socket) {
   socket.on('disconnecting', (reason) => {
     logger.info('Socket disconnecting', { socketId: socket.id, reason });
     connectedUsers.delete(socket.id);
+    joinRoomAttempts.delete(socket.id);
     _cleanupWorkspaceMembership(socket.id);
   });
   // Handle disconnection
@@ -497,6 +512,9 @@ export function _onConnection(socket) {
 
   // Error handling
   socket.on('error', (error) => {
+    if (error && error.message) {
+      socket.emit('validation_error', { error: error.message });
+    }
     logger.error('Socket error', { error: error.message, socketId: socket.id });
   });
 }
