@@ -7,11 +7,11 @@ export function getRedisClient() {
   if (!redisClient) {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     redisClient = new Redis(redisUrl);
-
+    
     redisClient.on('error', (err) => {
       logger.error('Redis connection error:', err);
     });
-
+    
     redisClient.on('connect', () => {
       logger.info('Connected to Redis');
     });
@@ -21,7 +21,7 @@ export function getRedisClient() {
 
 export async function getCachedQuery(key, queryFn, ttlSeconds = 300) {
   const client = getRedisClient();
-
+  
   // Try to read from cache first
   let cached = null;
   try {
@@ -32,49 +32,44 @@ export async function getCachedQuery(key, queryFn, ttlSeconds = 300) {
   } catch (err) {
     logger.warn('Redis cache read error, falling back to database query:', err);
   }
-
+  
   // Cache miss or Redis error — run queryFn exactly once
   const result = await queryFn();
-
+  
   // Best-effort cache write
   try {
-    client.set(key, JSON.stringify(result), 'EX', ttlSeconds).catch((err) => {
+    client.set(key, JSON.stringify(result), 'EX', ttlSeconds).catch(err => {
       logger.error('Error setting Redis cache:', err);
     });
   } catch (err) {
     logger.warn('Redis cache write error:', err);
   }
-
+  
   return result;
 }
 
 export function clearCache(keyPattern) {
   const client = getRedisClient();
-
+  
   return new Promise((resolve, reject) => {
     const stream = client.scanStream({
       match: keyPattern,
-      count: 100,
+      count: 100
     });
-
+    
     let deletedCount = 0;
     const deletePromises = [];
-
+    
     stream.on('data', (resultKeys) => {
       if (resultKeys.length > 0) {
         // Delete in batches as they arrive to avoid unbounded memory usage
-        const promise = client
-          .del(...resultKeys)
-          .then((count) => {
-            deletedCount += count;
-          })
-          .catch((err) => {
-            logger.error('Error deleting cache keys batch:', err);
-          });
+        const promise = client.del(...resultKeys)
+          .then(count => { deletedCount += count; })
+          .catch(err => { logger.error('Error deleting cache keys batch:', err); });
         deletePromises.push(promise);
       }
     });
-
+    
     stream.on('end', async () => {
       try {
         await Promise.all(deletePromises);
@@ -83,7 +78,7 @@ export function clearCache(keyPattern) {
         reject(err);
       }
     });
-
+    
     stream.on('error', (err) => {
       reject(err);
     });

@@ -17,14 +17,14 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
   }, [onClose]);
 
   useEffect(() => {
-    if (modalRef.current) {
-      const firstFocusable = modalRef.current.querySelector(
-        'button, input, textarea, select, a[href]'
-      );
+  if (modalRef.current) {
+    const firstFocusable = modalRef.current.querySelector(
+      'button, input, textarea, select, a[href]'
+    );
 
-      firstFocusable?.focus();
-    }
-  }, []);
+    firstFocusable?.focus();
+  }
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,12 +54,12 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
       }}
     >
       <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        aria-describedby="modal-description"
-        className="glass-panel pop-scale"
+  ref={modalRef}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-title"
+  aria-describedby="modal-description"
+  className="glass-panel pop-scale"
         style={{
           width: '100%',
           maxWidth: '500px',
@@ -90,11 +90,11 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
             </button>
           </div>
           <p
-            id="modal-description"
-            style={{ margin: '8px 0 0 0', color: 'var(--c1)', fontSize: '0.9rem' }}
-          >
-            Pitch yourself for the {team?.vacantRoles?.join(', ')} role(s)
-          </p>
+  id="modal-description"
+  style={{ margin: '8px 0 0 0', color: 'var(--c1)', fontSize: '0.9rem' }}
+>
+  Pitch yourself for the {team?.vacantRoles?.join(', ')} role(s)
+</p>
         </div>
 
         <div style={{ padding: '24px' }}>
