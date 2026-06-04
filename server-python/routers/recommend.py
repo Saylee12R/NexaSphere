@@ -2,10 +2,8 @@ import os
 import json
 import redis
 import logging
-from fastapi import APIRouter, HTTPException
-from services.recommendation_logic import compute_hybrid_recommendations
-
 import time
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -26,6 +24,50 @@ except redis.exceptions.ConnectionError:
 except Exception as e:
     logger.warning("Redis unavailable, using local cache")
 
+# Define fallback recommendation suggestions matching the expected output schema
+FALLBACK_RECOMMENDATIONS = [
+    {
+        "id": "evt_1",
+        "name": "AI Hackathon",
+        "tags": ["AI", "machine learning", "hackathon"],
+        "final_score": 0.0,
+        "content_score": 0.0,
+        "collab_score": 0.0
+    },
+    {
+        "id": "evt_2",
+        "name": "Web Dev Bootcamp",
+        "tags": ["web", "react", "javascript"],
+        "final_score": 0.0,
+        "content_score": 0.0,
+        "collab_score": 0.0
+    },
+    {
+        "id": "evt_3",
+        "name": "Cybersecurity Workshop",
+        "tags": ["security", "networking", "workshop"],
+        "final_score": 0.0,
+        "content_score": 0.0,
+        "collab_score": 0.0
+    },
+    {
+        "id": "evt_4",
+        "name": "Robotics Fest",
+        "tags": ["robotics", "hardware", "iot"],
+        "final_score": 0.0,
+        "content_score": 0.0,
+        "collab_score": 0.0
+    },
+    {
+        "id": "evt_5",
+        "name": "Data Science Summit",
+        "tags": ["data", "AI", "python", "analytics"],
+        "final_score": 0.0,
+        "content_score": 0.0,
+        "collab_score": 0.0
+    }
+]
+
 @router.get("/recommend/events/{user_id}", tags=["Recommendations"], summary="Get Event Recommendations", description="Get top 5 recommended events for a specific user based on hybrid content and collaborative filtering.")
 async def recommend_events(user_id: str):
     cache_key = f"recs:events:{user_id}"
@@ -36,8 +78,8 @@ async def recommend_events(user_id: str):
             cached_result = redis_client.get(cache_key)
             if cached_result:
                 return json.loads(cached_result)
-        except Exception:
-            pass # fallback to computing
+        except Exception as e:
+            logger.warning(f"Error reading from Redis: {e}")
     else:
         # Check local cache
         if cache_key in LOCAL_CACHE:
@@ -45,23 +87,12 @@ async def recommend_events(user_id: str):
             if time.time() < entry["expires"]:
                 return entry["data"]
             
-    # 2. Compute Recommendations if not in cache
+    # 2. Cache Miss: Trigger the Celery background task and return fallbacks instantly
     try:
-        recommendations = compute_hybrid_recommendations(user_id, num_recommendations=5)
+        from celery_app import precompute_recommendations
+        precompute_recommendations.delay(user_id)
+        logger.info(f"Asynchronously triggered recommendation pre-computation for user {user_id}")
     except Exception as e:
-        logger.error(f"Error computing recommendations: {e}")
-        raise HTTPException(status_code=500, detail="Error computing recommendations")
+        logger.error(f"Failed to trigger Celery task: {e}")
         
-    # 3. Store in Cache for 1 hour (3600 seconds)
-    if redis_client and recommendations:
-        try:
-            redis_client.setex(cache_key, 3600, json.dumps(recommendations))
-        except Exception:
-            pass
-    elif recommendations:
-        LOCAL_CACHE[cache_key] = {
-            "data": recommendations,
-            "expires": time.time() + 3600
-        }
-            
-    return recommendations
+    return FALLBACK_RECOMMENDATIONS

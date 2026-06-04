@@ -92,8 +92,8 @@ export const formsService = {
 
       // Trigger standard welcome verification email
       try {
-        const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(body.collegeEmail)}`;
-        await sendWelcomeVerificationEmail(body.collegeEmail, body.fullName, verifyUrl);
+        const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(payload.collegeEmail)}`;
+        await sendWelcomeVerificationEmail(payload.collegeEmail, payload.fullName, verifyUrl);
       } catch (emailErr) {
         console.error('[Forms Service] Failed to send welcome verification email:', emailErr);
       }

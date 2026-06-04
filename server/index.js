@@ -14,6 +14,7 @@ import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
+import { tracingMiddleware } from './middleware/tracingMiddleware.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { initializeSentry, addSentryErrorHandler } from './utils/sentry.js';
 import {
@@ -73,6 +74,8 @@ const allowedOrigins = process.env.CORS_ORIGIN.split(',')
 app.use(helmet());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
+app.use(tracingMiddleware);
+
 app.use(express.json({ limit: '512kb' }));
 app.use(morgan('combined'));
 app.use(performanceMonitor);
@@ -82,12 +85,13 @@ app.use('/api', apiRateLimiter);
 
 function requestLogger(req, res, next) {
   const start = process.hrtime.bigint();
-  const { method, path } = req;
+  const { method, path, reqId } = req;
 
   res.on('finish', () => {
     const duration = Number(process.hrtime.bigint() - start) / 1e6;
     const status = res.statusCode;
-    const message = `[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
+    const prefix = reqId ? `[${reqId}] ` : '';
+    const message = `${prefix}[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
 
     if (status >= 500) {
       console.error(message);

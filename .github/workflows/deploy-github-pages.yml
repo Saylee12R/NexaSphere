@@ -1,13 +1,10 @@
+# Deploy to GitHub Pages Workflow (Recreated to refresh runner queue)
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,10 +20,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          # No cache — npm install is used (not npm ci) to avoid lock file drift failures
+          # No cache — npm ci handles clean install from lockfile
 
       - name: Install dependencies
-        run: npm install --prefer-offline --no-audit --no-fund
+        run: npm ci
 
       - name: Build with GitHub Pages base path
         run: npm run build

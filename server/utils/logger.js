@@ -3,13 +3,14 @@
  * Structured logging for all backend operations
  */
 
-import winston from "winston";
-import path from "path";
-import DailyRotateFile from "winston-daily-rotate-file";
+import winston from 'winston';
+import { appContext } from '../config/appContext.js';
+import path from 'path';
+import DailyRotateFile from 'winston-daily-rotate-file';
 
 // Create logs directory if it doesn't exist
-import fs from "fs";
-const logsDir = path.join(process.cwd(), "logs");
+import fs from 'fs';
+const logsDir = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
@@ -25,26 +26,24 @@ const levels = {
 
 // Define colors for console output
 const colors = {
-  error: "red",
-  warn: "yellow",
-  info: "green",
-  http: "magenta",
-  debug: "white",
+  error: 'red',
+  warn: 'yellow',
+  info: 'green',
+  http: 'magenta',
+  debug: 'white',
 };
 
 winston.addColors(colors);
 
 // Define log format
 const format = winston.format.combine(
-  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   winston.format.errors({ stack: true }),
   winston.format.printf((info) => {
-    const { timestamp, level, message, ...args } = info;
-
-    const ts = timestamp.slice(0, 19).replace("T", " ");
-
-    return `${ts} [${level}]: ${message} ${
-      Object.keys(args).length ? JSON.stringify(args, null, 2) : ""
+    const store = appContext.getStore();
+    const reqId = store?.reqId ? `[${store.reqId}] ` : '';
+    return `${info.timestamp} ${reqId}[${info.level}]: ${info.message} ${
+      info.stack ? `\n${info.stack}` : ''
     }`;
   })
 );
@@ -53,31 +52,28 @@ const format = winston.format.combine(
 const transports = [
   // Console transport
   new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize({ all: true }),
-      format
-    ),
+    format: winston.format.combine(winston.format.colorize({ all: true }), format),
   }),
 
   // Error logs
   new winston.transports.File({
-    filename: path.join(logsDir, "error.log"),
-    level: "error",
+    filename: path.join(logsDir, 'error.log'),
+    level: 'error',
     format: winston.format.uncolorize(),
   }),
 
   // Combined logs
   new winston.transports.File({
-    filename: path.join(logsDir, "combined.log"),
+    filename: path.join(logsDir, 'combined.log'),
     format: winston.format.uncolorize(),
   }),
 
   // Daily rotate logs (requires winston-daily-rotate-file)
   new DailyRotateFile({
-    filename: path.join(logsDir, "application-%DATE%.log"),
-    datePattern: "YYYY-MM-DD",
-    maxSize: "20m",
-    maxFiles: "14d",
+    filename: path.join(logsDir, 'application-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    maxSize: '20m',
+    maxFiles: '14d',
     format: winston.format.uncolorize(),
     utc: true,
   }),
@@ -85,26 +81,26 @@ const transports = [
 
 // Create logger instance
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
+  level: process.env.LOG_LEVEL || 'info',
   levels,
   format,
   transports,
   exceptionHandlers: [
     new DailyRotateFile({
-      filename: path.join(logsDir, "exceptions-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
+      filename: path.join(logsDir, 'exceptions-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '14d',
       format: winston.format.uncolorize(),
       utc: true,
     }),
   ],
   rejectionHandlers: [
     new DailyRotateFile({
-      filename: path.join(logsDir, "rejections-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
+      filename: path.join(logsDir, 'rejections-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '14d',
       format: winston.format.uncolorize(),
       utc: true,
     }),
