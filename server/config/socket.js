@@ -305,7 +305,25 @@ export function _onConnection(socket) {
       return;
     }
 
-    // 4. Safe Deep Copy (Persist sanitized primitives)
+    // 4. Prevent Connection Leaks: Disconnect existing stale sockets for this user
+    const existingEntries = Array.from(connectedUsers.values()).filter(
+      (u) => u.id === String(userId) && u.socketId !== socket.id
+    );
+    for (const entry of existingEntries) {
+      if (io && io.sockets && io.sockets.sockets) {
+        const oldSocket = io.sockets.sockets.get(entry.socketId);
+        if (oldSocket) {
+          logger.info('Disconnecting stale socket for user', {
+            userId,
+            oldSocketId: entry.socketId,
+          });
+          oldSocket.disconnect(true);
+        }
+      }
+      connectedUsers.delete(entry.socketId);
+    }
+
+    // 5. Safe Deep Copy (Persist sanitized primitives)
     connectedUsers.set(socket.id, {
       id: String(userId),
       email: String(email),
