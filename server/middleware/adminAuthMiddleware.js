@@ -6,19 +6,11 @@ import {
 } from '../repositories/adminSessionsRepository.js';
 import crypto from 'crypto';
 
-const CONSTANT_AUTH_LENGTH = 64; // Pad all auth inputs to prevent timing leaks
-
 function safeEqual(a, b) {
-  const bufA = Buffer.from(String(a));
-  const bufB = Buffer.from(String(b));
-  
-  // Pad both buffers to constant length to prevent timing attacks based on input length
-  const paddedA = Buffer.alloc(CONSTANT_AUTH_LENGTH);
-  const paddedB = Buffer.alloc(CONSTANT_AUTH_LENGTH);
-  bufA.copy(paddedA);
-  bufB.copy(paddedB);
+  const hashA = crypto.createHash('sha256').update(String(a)).digest();
+  const hashB = crypto.createHash('sha256').update(String(b)).digest();
 
-  return crypto.timingSafeEqual(paddedA, paddedB);
+  return crypto.timingSafeEqual(hashA, hashB);
 }
 const ADMIN_USERNAME = requiredEnv('ADMIN_USERNAME');
 const ADMIN_PASSWORD = requiredStrongPassword('ADMIN_PASSWORD');
@@ -190,14 +182,14 @@ function requireRole(allowedRoles) {
     if (!req.adminSession) {
       return res.status(401).json({ error: 'Unauthorized: No session found' });
     }
-    
+
     // Assume role is attached to the session metadata, defaulting to 'user' to prevent privilege escalation
     const userRole = req.adminSession.metadata?.role || 'user';
-    
+
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
     }
-    
+
     next();
   };
 }
@@ -284,4 +276,5 @@ export const adminAuthMiddleware = {
     }
   },
   _getAttemptsTimer: () => cleanupAttemptsTimer,
+  _safeEqual: safeEqual,
 };
