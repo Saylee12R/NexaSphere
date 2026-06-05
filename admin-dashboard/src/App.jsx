@@ -37,7 +37,7 @@ function DashboardLayout() {
     <div className="app-layout">
       <OfflineBanner />
       <Sidebar />
-      <main className="main-content">
+      <main className="main-content" id="main-content">
         <Outlet />
       </main>
       <Toast />

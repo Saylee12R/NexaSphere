@@ -1,31 +1,30 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
-const TOKEN_KEY = "ns_admin_token";
-const EMAIL_KEY = "ns_admin_email";
-const EXPIRY_KEY = "ns_admin_token_expiry";
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const TOKEN_KEY = 'ns_admin_token';
+const EMAIL_KEY = 'ns_admin_email';
+const EXPIRY_KEY = 'ns_admin_token_expiry';
 
 export const auth = {
-  async login(email, password) {
-    const cleanEmail = email.trim().toLowerCase();
+  async login(username, password) {
+    const cleanUsername = username.trim().toLowerCase();
     const cleanPassword = password.trim();
 
     const res = await fetch(`${API_BASE}/api/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: cleanUsername, password: cleanPassword }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || err.message || "Invalid credentials");
+      throw new Error(err.error || err.message || 'Invalid credentials');
     }
 
     const data = await res.json();
 
-    // Persist the token so subsequent requests can use it
     if (data.token) {
       localStorage.setItem(TOKEN_KEY, data.token);
     }
-    localStorage.setItem(EMAIL_KEY, cleanEmail);
+    localStorage.setItem(EMAIL_KEY, cleanUsername);
     if (data.expiresAt) {
       localStorage.setItem(EXPIRY_KEY, data.expiresAt);
     }
@@ -38,7 +37,7 @@ export const auth = {
     if (token) {
       // Fire-and-forget — don't block logout on network
       fetch(`${API_BASE}/api/admin/logout`, {
-        method: "POST",
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
     }

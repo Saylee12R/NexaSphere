@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import helmet from 'helmet';
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import cors from 'cors';
 import morgan from 'morgan';
 import { promises as fs } from 'fs';
@@ -13,17 +14,20 @@ import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
+import { tracingMiddleware } from './middleware/tracingMiddleware.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { initializeSentry, addSentryErrorHandler } from './utils/sentry.js';
 import {
   apiRateLimiter,
-  authRateLimiter,
   formRateLimiter,
   notificationRateLimiter,
-  activityAuthRateLimiter,
-  portfolioRateLimiter,
   validateLimiters,
 } from './middleware/rateLimiter.js';
+import {
+  authRateLimiter,
+  protectedActionRateLimiter,
+  passwordResetRateLimiter,
+} from './middleware/authRateLimiter.js';
 import { portfolioRepository } from './repositories/portfolioRepository.js';
 import { getPublicAppUrl } from './utils/publicAppUrl.js';
 import * as eventsController from './controllers/eventsController.js';
@@ -42,6 +46,21 @@ const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
 const app = express();
+
+// Trust the first reverse proxy hop (e.g., Vercel, Render, Nginx, Cloudflare)
+// to correctly populate req.ip and securely discard spoofed X-Forwarded-For headers
+const proxyTrust = process.env.TRUST_PROXY || 1;
+app.set(
+  'trust proxy',
+  proxyTrust === 'true'
+    ? true
+    : proxyTrust === 'false'
+      ? false
+      : !isNaN(proxyTrust)
+        ? parseInt(proxyTrust, 10)
+        : proxyTrust
+);
+
 initializeSentry(app);
 
 if (!process.env.CORS_ORIGIN) {
@@ -52,8 +71,28 @@ const allowedOrigins = process.env.CORS_ORIGIN.split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: [
+        "'self'",
+        process.env.FRONTEND_URL || "http://localhost:5173",
+        `wss://${process.env.DOMAIN || 'localhost'}`,
+      ],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+
+app.use(tracingMiddleware);
 
 app.use(express.json({ limit: '512kb' }));
 app.use(morgan('combined'));
@@ -64,12 +103,13 @@ app.use('/api', apiRateLimiter);
 
 function requestLogger(req, res, next) {
   const start = process.hrtime.bigint();
-  const { method, path } = req;
+  const { method, path, reqId } = req;
 
   res.on('finish', () => {
     const duration = Number(process.hrtime.bigint() - start) / 1e6;
     const status = res.statusCode;
-    const message = `[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
+    const prefix = reqId ? `[${reqId}] ` : '';
+    const message = `${prefix}[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
 
     if (status >= 500) {
       console.error(message);
@@ -172,15 +212,20 @@ app.get('/healthz', async (req, res) => {
 // Event channels/content
 app.get('/api/content/events', eventsController.listEvents);
 app.get('/api/content/activity-events/:activityKey', activityEventsController.listActivityEvents);
-app.post('/api/content/activity-events/:activityKey', activityEventsController.addActivityEvent);
+app.post(
+  '/api/content/activity-events/:activityKey',
+  protectedActionRateLimiter,
+  activityEventsController.addActivityEvent
+);
 app.delete(
   '/api/content/activity-events/:activityKey/:eventId',
+  protectedActionRateLimiter,
   activityEventsController.deleteActivityEvent
 );
 
 // Admin Auth Endpoints
 app.post('/api/admin/login', authRateLimiter, adminAuthMiddleware.login);
-app.post('/api/admin/logout', adminAuthMiddleware.logout);
+app.post('/api/admin/logout', adminAuth, adminAuthMiddleware.logout);
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
 app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
 
@@ -267,7 +312,41 @@ app.get('/api/admin/me', adminAuth, (req, res) => {
 // Real-time Push Subscriber channels
 const pushSubscriptions = new Set();
 
-app.post('/api/notifications/subscribe', (req, res) => {
+const validatePushSubscription = [
+  body('subscription').isObject().withMessage('subscription must be an object'),
+  body('subscription.endpoint')
+    .isURL()
+    .withMessage('endpoint must be a valid URL')
+    .isLength({ max: 2048 }),
+  body('subscription.keys').isObject().withMessage('keys must be an object'),
+  body('subscription.keys.p256dh')
+    .isString()
+    .isLength({ max: 256 })
+    .withMessage('p256dh must be a string up to 256 chars'),
+  body('subscription.keys.auth')
+    .isString()
+    .isLength({ max: 128 })
+    .withMessage('auth must be a string up to 128 chars'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid subscription payload', details: errors.array() });
+    }
+
+    // Strict sanitization: reconstruct object to drop malicious properties and limit memory size
+    const {
+      endpoint,
+      keys: { p256dh, auth },
+    } = req.body.subscription;
+    req.body.subscription = { endpoint, keys: { p256dh, auth } };
+
+    next();
+  },
+];
+
+app.post('/api/notifications/subscribe', validatePushSubscription, (req, res) => {
   try {
     const { subscription } = req.body;
     if (subscription) {
@@ -283,7 +362,7 @@ app.post('/api/notifications/subscribe', (req, res) => {
   }
 });
 
-app.post('/api/notifications/unsubscribe', (req, res) => {
+app.post('/api/notifications/unsubscribe', validatePushSubscription, (req, res) => {
   try {
     const { subscription } = req.body;
     if (subscription) pushSubscriptions.delete(JSON.stringify(subscription));
@@ -293,33 +372,38 @@ app.post('/api/notifications/unsubscribe', (req, res) => {
   }
 });
 
-app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, (req, res) => {
+app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const { id, userId } = req.body || {};
     if (!id) return res.status(400).json({ error: 'id required' });
     const uid = userId || 'global';
-    const ok = notificationsService.markAsRead(uid, id);
+    const ok = await notificationsService.markAsRead(uid, id);
     return res.json({ success: ok });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/notifications/mark-all-read', adminAuth, notificationRateLimiter, (req, res) => {
-  try {
-    const { userId } = req.body || {};
-    notificationsService.markAllAsRead(userId || 'global');
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+app.post(
+  '/api/notifications/mark-all-read',
+  adminAuth,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      const { userId } = req.body || {};
+      await notificationsService.markAllAsRead(userId || 'global');
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
-app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, (req, res) => {
+app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const id = req.params.id;
     const userId = req.query.userId || 'global';
-    const removed = notificationsService.removeNotification(userId, id);
+    const removed = await notificationsService.removeNotification(userId, id);
     if (!removed) return res.status(404).json({ error: 'Notification not found' });
     return res.json({ success: true });
   } catch (err) {
@@ -327,23 +411,23 @@ app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, (req, r
   }
 });
 
-app.delete('/api/notifications', adminAuth, notificationRateLimiter, (req, res) => {
+app.delete('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
-    notificationsService.clearAll(userId);
+    await notificationsService.clearAll(userId);
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/notifications', adminAuth, notificationRateLimiter, (req, res) => {
+app.post('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const { userId, title, message, type, link } = req.body || {};
     if (!title || !message) {
       return res.status(400).json({ error: 'title and message are required' });
     }
-    const note = notificationsService.addNotification(userId || 'global', {
+    const note = await notificationsService.addNotification(userId || 'global', {
       title,
       message,
       type,
@@ -373,52 +457,125 @@ app.get('/api/portfolio/:username', async (req, res) => {
   }
 });
 
-const failedPasskeyAttempts = new Map();
+// Hard cap on tracked entries. When the limit is reached, the
+// oldest inserted entry is evicted before adding a new one, preventing the
+// Map from growing without bound when an attacker rotates through many
+// distinct usernames from the same or different IP addresses.
+const MAX_PASSKEY_TRACKED_KEYS = 10_000;
+const failedPasskeyAttemptsByIp = new Map();
+const failedPasskeyAttemptsByUsername = new Map();
+
+// Periodic sweep every 30 minutes: remove entries whose lockout period has
+// expired and whose attempt count has already been reset to 0, so they do
+// not accumulate for keys that are never visited again.
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, entry] of failedPasskeyAttemptsByIp) {
+      if (entry.count === 0 && now > entry.lockoutUntil) {
+        failedPasskeyAttemptsByIp.delete(key);
+      }
+    }
+    for (const [key, entry] of failedPasskeyAttemptsByUsername) {
+      if (now > entry.lockoutUntil) {
+        failedPasskeyAttemptsByUsername.delete(key);
+      }
+    }
+  },
+  30 * 60 * 1000
+).unref();
 
 function checkPasskeyLockout(username, ip) {
-  const key = `${String(username || '').toLowerCase()}:${ip}`;
-  const entry = failedPasskeyAttempts.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.lockoutUntil) {
-    failedPasskeyAttempts.delete(key);
-    return null;
+  const ipKey = String(ip || 'unknown');
+  const userKey = String(username || '').toLowerCase();
+
+  const ipEntry = failedPasskeyAttemptsByIp.get(ipKey);
+  const userEntry = failedPasskeyAttemptsByUsername.get(userKey);
+
+  const now = Date.now();
+
+  if (ipEntry && ipEntry.lockoutUntil !== 0 && now <= ipEntry.lockoutUntil) {
+    return true;
   }
-  return entry;
+
+  if (userEntry && userEntry.lockoutUntil !== 0 && now <= userEntry.lockoutUntil) {
+    return true;
+  }
+
+  // Cleanup expired entries proactively
+  if (ipEntry && ipEntry.lockoutUntil !== 0 && now > ipEntry.lockoutUntil) {
+    failedPasskeyAttemptsByIp.delete(ipKey);
+  }
+  if (userEntry && userEntry.lockoutUntil !== 0 && now > userEntry.lockoutUntil) {
+    failedPasskeyAttemptsByUsername.delete(userKey);
+  }
+
+  return false;
 }
 
 function recordFailedPasskeyAttempt(username, ip) {
-  const key = `${String(username || '').toLowerCase()}:${ip}`;
-  const entry = failedPasskeyAttempts.get(key) || { count: 0, lockoutUntil: 0 };
-  entry.count += 1;
-  if (entry.count >= 5) {
-    entry.lockoutUntil = Date.now() + 15 * 60 * 1000;
-    entry.count = 0;
+  const ipKey = String(ip || 'unknown');
+  const userKey = String(username || '').toLowerCase();
+
+  // IP tracking
+  if (
+    !failedPasskeyAttemptsByIp.has(ipKey) &&
+    failedPasskeyAttemptsByIp.size >= MAX_PASSKEY_TRACKED_KEYS
+  ) {
+    failedPasskeyAttemptsByIp.delete(failedPasskeyAttemptsByIp.keys().next().value);
   }
-  failedPasskeyAttempts.set(key, entry);
-  return entry;
+  const ipEntry = failedPasskeyAttemptsByIp.get(ipKey) || { count: 0, lockoutUntil: 0 };
+  ipEntry.count += 1;
+  if (ipEntry.count >= 5) {
+    ipEntry.lockoutUntil = Date.now() + 15 * 60 * 1000; // 15 mins
+    ipEntry.count = 0; // Reset count so they need 5 more AFTER lockout to be locked again
+  }
+  failedPasskeyAttemptsByIp.set(ipKey, ipEntry);
+
+  // Username tracking (Exponential backoff)
+  if (
+    !failedPasskeyAttemptsByUsername.has(userKey) &&
+    failedPasskeyAttemptsByUsername.size >= MAX_PASSKEY_TRACKED_KEYS
+  ) {
+    failedPasskeyAttemptsByUsername.delete(failedPasskeyAttemptsByUsername.keys().next().value);
+  }
+  const userEntry = failedPasskeyAttemptsByUsername.get(userKey) || { count: 0, lockoutUntil: 0 };
+  userEntry.count += 1;
+  if (userEntry.count >= 5) {
+    // 5 attempts = 1 min, 6 = 2 mins, 7 = 4 mins, 8 = 8 mins, 9+ = 15 mins
+    const factor = Math.pow(2, Math.max(0, userEntry.count - 5));
+    const delayMinutes = Math.min(15, factor);
+    userEntry.lockoutUntil = Date.now() + delayMinutes * 60 * 1000;
+  }
+  failedPasskeyAttemptsByUsername.set(userKey, userEntry);
+
+  return { ipEntry, userEntry };
 }
 
 function clearPasskeyAttempts(username, ip) {
-  const key = `${String(username || '').toLowerCase()}:${ip}`;
-  failedPasskeyAttempts.delete(key);
+  const ipKey = String(ip || 'unknown');
+  const userKey = String(username || '').toLowerCase();
+
+  failedPasskeyAttemptsByIp.delete(ipKey);
+  failedPasskeyAttemptsByUsername.delete(userKey);
 }
 
-app.get('/api/notifications', (req, res) => {
+app.get('/api/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
-    const list = notificationsService.getNotifications(userId);
+    const list = await notificationsService.getNotifications(userId);
     return res.json({ notifications: list });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
+app.put('/api/portfolio', protectedActionRateLimiter, async (req, res) => {
   try {
     const body = req.body || {};
     const username = String(body.username || '').trim();
     const passkey = String(body.passkey || '').trim();
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const ip = req.ip || 'unknown';
 
     if (!username || username.length < 3) {
       return res.status(400).json({ error: 'Username must be at least 3 characters long' });
@@ -452,9 +609,14 @@ app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
 
     clearPasskeyAttempts(username, ip);
 
-    const saved = await portfolioRepository.createOrUpdate(body);
+    const saved = await portfolioRepository.createOrUpdate(body, isNewRegistration);
     return res.json({ ok: true, portfolio: saved });
   } catch (err) {
+    if (err.code === '23505') {
+      return res
+        .status(409)
+        .json({ error: 'Username already exists. Another request may have just created it.' });
+    }
     console.error('Error saving portfolio:', err);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }

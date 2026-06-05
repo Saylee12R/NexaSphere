@@ -6,21 +6,34 @@ export default function GamificationDashboard() {
   const [userStats, setUserStats] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     setUserStats(gamificationService.getUserStats());
-    setLeaderboard(gamificationService.getLeaderboard());
+    const lb = await gamificationService.getLeaderboard();
+    setLeaderboard(lb);
   };
 
   const handleAction = (action) => {
     const result = gamificationService.trackAction(action);
     loadData();
+    // Replace blocking window.alert() with in-app toasts that handle
+    // all unlocked achievements and auto-dismiss after 4 seconds.
     if (result.newAchievements.length > 0) {
-      alert(`🎉 Achievement Unlocked: ${result.newAchievements[0].title}! +${result.xpEarned} XP`);
+      const newToasts = result.newAchievements.map((ach, i) => ({
+        id: `${Date.now()}-${i}`,
+        message: `🎉 Achievement Unlocked: ${ach.title}! +${result.xpEarned} XP`,
+      }));
+      setToasts((prev) => [...prev, ...newToasts]);
+      newToasts.forEach((t) => {
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((x) => x.id !== t.id));
+        }, 4000);
+      });
     }
   };
 
@@ -493,8 +506,59 @@ export default function GamificationDashboard() {
         </div>
       )}
 
-      {/* Notifications */}
-      {userStats.notifications.length > 0 && (
+      {/* Achievement Toasts — replaces blocking window.alert() */}
+      {toasts.length > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              style={{
+                background: '#1A1A1A',
+                border: '1px solid #10B981',
+                borderRadius: '12px',
+                padding: '12px 20px',
+                maxWidth: '320px',
+                animation: 'popIn 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+              }}
+            >
+              <p style={{ color: '#FFFFFF', fontSize: '13px', margin: 0 }}>{toast.message}</p>
+              <button
+                onClick={() => setToasts((prev) => prev.filter((x) => x.id !== toast.id))}
+                aria-label="Dismiss notification"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6B7280',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Persistent Notifications from gamification service */}
+      {userStats.notifications.length > 0 && toasts.length === 0 && (
         <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
           {userStats.notifications.slice(-3).map((notif, idx) => (
             <div

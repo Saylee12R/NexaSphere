@@ -1,26 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { events as fallbackEvents } from '../../data/eventsData';
 import { BannerOrbs } from '../../shared/MotionLayer';
 import Footer from '../../shared/Footer';
 import { DynamicIcon } from '../../shared/Icons';
 import PersonalizedFeed from '../../components/recommendation/PersonalizedFeed';
+import { useRecommendations } from '../../hooks/useRecommendations';
 import EventCalendarView from '../../components/calendar/EventCalendarView';
 
 export default function EventsPage({ onBack, onEventClick, events = fallbackEvents }) {
   const [view, setView] = useState('timeline');
   const [recommendationView, setRecommendationView] = useState(false);
+  const [now] = useState(() => Date.now());
 
-  const buildGradient = (ev) => {
-    if (ev.gradientColors?.length > 1) {
-      return `linear-gradient(135deg, ${ev.gradientColors.join(', ')})`;
-    }
-    if (ev.gradientColors?.length === 1) {
-      return `linear-gradient(135deg, ${ev.gradientColors[0]}, ${ev.gradientColors[0]}88)`;
-    }
-    return null;
-  };
-
-  const now = Date.now();
   const parseDate = (ev) => {
     const raw = ev.dateText ?? ev.date ?? '';
     const d = new Date(raw);
@@ -33,16 +24,30 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
     return ev.status || 'upcoming';
   };
 
-  const sortedEvents = [...events]
-    .map((ev) => ({ ...ev, status: getEffectiveStatus(ev) }))
-    .sort((a, b) => {
-      const aIsUpcoming = a.status !== 'completed';
-      const bIsUpcoming = b.status !== 'completed';
-      if (aIsUpcoming !== bIsUpcoming) return bIsUpcoming ? 1 : -1;
-      const da = parseDate(a)?.getTime() ?? 0;
-      const db = parseDate(b)?.getTime() ?? 0;
-      return aIsUpcoming ? da - db : db - da;
-    });
+  const sortedEvents = useMemo(() => {
+    return [...events]
+      .map((ev) => ({ ...ev, status: getEffectiveStatus(ev) }))
+      .sort((a, b) => {
+        const aIsUpcoming = a.status !== 'completed';
+        const bIsUpcoming = b.status !== 'completed';
+        if (aIsUpcoming !== bIsUpcoming) return bIsUpcoming ? 1 : -1;
+        const da = parseDate(a)?.getTime() ?? 0;
+        const db = parseDate(b)?.getTime() ?? 0;
+        return aIsUpcoming ? da - db : db - da;
+      });
+  }, [events, now]);
+
+  const { recommendations, loading: recsLoading } = useRecommendations(sortedEvents);
+
+  const buildGradient = (ev) => {
+    if (ev.gradientColors?.length > 1) {
+      return `linear-gradient(135deg, ${ev.gradientColors.join(', ')})`;
+    }
+    if (ev.gradientColors?.length === 1) {
+      return `linear-gradient(135deg, ${ev.gradientColors[0]}, ${ev.gradientColors[0]}88)`;
+    }
+    return null;
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -223,7 +228,11 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
 
       <div className="container">
         {recommendationView ? (
-          <PersonalizedFeed events={sortedEvents} onEventClick={onEventClick} />
+          <PersonalizedFeed
+            events={recommendations}
+            loading={recsLoading}
+            onEventClick={onEventClick}
+          />
         ) : view === 'timeline' ? (
           <div className="events-timeline ns-reveal">
             {sortedEvents.map((ev, i) => {

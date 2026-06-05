@@ -1,12 +1,8 @@
-import React from "react";
+import React from 'react';
 
 const EventCard = React.memo(function EventCard({ event, onClick, id }) {
   return (
-    <div
-      className="event-card"
-      onClick={() => onClick(id)}
-      style={{ cursor: "pointer" }}
-    >
+    <div className="event-card" onClick={() => onClick(id)} style={{ cursor: 'pointer' }}>
       <h3>{event.title}</h3>
       <p>{event.date}</p>
       <p>{event.description}</p>

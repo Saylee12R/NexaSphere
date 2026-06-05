@@ -1,8 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import apiClient from '../utils/apiClient.js';
 import socketClient from '../utils/socketClient';
 import { buildUrl, getApiBase, getSocketServerUrl } from '../utils/runtimeConfig';
 
+function getAuthHeaders() {
+  const token = localStorage.getItem('ns_admin_token');
+  return token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    : { 'Content-Type': 'application/json' };
+}
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -144,10 +149,9 @@ export function useNotifications() {
     // Persist
     (async () => {
       try {
-        const base = import.meta?.env?.VITE_API_BASE || '';
-        await apiClient(base + '/api/notifications/mark-read', {
+        await fetch(buildUrl(getApiBase(), '/api/notifications/mark-read'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ id }),
         });
       } catch (e) {}
@@ -158,8 +162,10 @@ export function useNotifications() {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     (async () => {
       try {
-        const base = import.meta?.env?.VITE_API_BASE || '';
-        await apiClient(base + '/api/notifications/mark-all-read', { method: 'POST' });
+        await fetch(buildUrl(getApiBase(), '/api/notifications/mark-all-read'), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+        });
       } catch (e) {}
     })();
   }, []);
@@ -168,8 +174,10 @@ export function useNotifications() {
     setNotifications([]);
     (async () => {
       try {
-        const base = import.meta?.env?.VITE_API_BASE || '';
-        await apiClient(base + '/api/notifications', { method: 'DELETE' });
+        await fetch(buildUrl(getApiBase(), '/api/notifications'), {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        });
       } catch (e) {}
     })();
   }, []);
