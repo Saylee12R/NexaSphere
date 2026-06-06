@@ -125,6 +125,21 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <NotificationBell />
+            <button
+              onClick={() => navigate('/notifications')}
+              aria-label="Notification history"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--t2)',
+                cursor: 'pointer',
+                fontSize: '0.7rem',
+                padding: '2px 6px',
+              }}
+              title="View all notifications"
+            >
+              📋
+            </button>
             <BookmarkToggle onToggle={onToggleBookmarks} />
             <ThemeToggle />
           </div>
@@ -187,6 +202,21 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
 
           <div className="ns-nav-actions">
             <NotificationBell />
+            <button
+              onClick={() => navigate('/notifications')}
+              aria-label="Notification history"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--t2)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                padding: '4px',
+              }}
+              title="View all notifications"
+            >
+              📋
+            </button>
             <BookmarkToggle onToggle={onToggleBookmarks} />
             <div className="ns-nav-ctas">
               <button
