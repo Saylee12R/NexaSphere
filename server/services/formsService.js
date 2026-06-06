@@ -10,7 +10,20 @@ import { normalizeFormSubmission } from '../validators/formSchemas.js';
 import { getPublicAppUrl } from '../utils/publicAppUrl.js';
 import { sendWelcomeVerificationEmail } from './emailService.js';
 import { broadcastSSEEvent } from './sseService.js';
-import { emitToRoom, getRoom } from '../config/socket.js';
+import { emitToRole } from '../config/socket.js';
+
+let _sheetsClient = null;
+
+function getSheetsClient() {
+  if (_sheetsClient) return _sheetsClient;
+  const auth = new google.auth.JWT({
+    email: requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
+    key: normalizePrivateKey(requiredEnv('GOOGLE_PRIVATE_KEY')),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  _sheetsClient = google.sheets({ version: 'v4', auth });
+  return _sheetsClient;
+}
 
 function toSafeString(value, max = 4000) {
   return String(value ?? '')
@@ -41,9 +54,8 @@ export const formsService = {
   },
 
   async appendFormToSheet(formType, payload) {
-    const clientEmail = requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL');
-    const privateKey = normalizePrivateKey(requiredEnv('GOOGLE_PRIVATE_KEY'));
     const spreadsheetId = requiredEnv('GOOGLE_SHEET_ID');
+    const sheets = getSheetsClient();
 
     const defaultTab = process.env.GOOGLE_SHEET_TAB_NAME || 'Responses';
     const tabMap = {
@@ -52,14 +64,6 @@ export const formsService = {
       core_team: process.env.GOOGLE_CORE_TEAM_TAB_NAME || 'CoreTeamResponses',
     };
     const sheetName = tabMap[formType] || defaultTab;
-
-    const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
 
     const now = new Date().toISOString();
     const row = [
@@ -87,6 +91,7 @@ export const formsService = {
       try {
         await this.appendFormToSheet(formType, payload);
       } catch (sheetErr) {
+        console.error('[Forms Service] Failed to append to Google Sheet:', sheetErr);
         if (!savedToSupabase) throw sheetErr;
       }
 
@@ -105,7 +110,7 @@ export const formsService = {
           fullName: payload.fullName,
           timestamp: new Date().toISOString(),
         });
-        emitToRoom(getRoom('admin'), 'admin:new-registration', {
+        emitToRole('membership_admin', 'admin:new-registration', {
           formType,
           userName: payload.fullName,
           timestamp: new Date(),

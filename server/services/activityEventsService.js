@@ -17,9 +17,9 @@ export const activityEventsService = {
     return activityEventsRepository.create(activityKey, parsed);
   },
 
-  async deleteActivityEvent(activityKey, eventId, input) {
-    const parsed = activityEventSchema.parse(input);
-    await this.assertCanManage(parsed);
+  async deleteActivityEvent(activityKey, eventId) {
+    // Authorization is handled upstream by the requireAdmin middleware
+    // via req.adminSession. No request body is needed for deletion.
     return activityEventsRepository.delete(activityKey, eventId);
   },
 };
