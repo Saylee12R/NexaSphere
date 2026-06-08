@@ -79,7 +79,7 @@ const fileBaselineLevel = "info";
 const globalGatekeeperLevel = consoleLevel === "debug" ? "debug" : fileBaselineLevel;
 
 // Define transports
-const transports = [
+const activeTransports = [
   // Console transport
   new winston.transports.Console({
     level: consoleLevel, // <-- Add this line
