@@ -81,7 +81,7 @@ export default function ResumeAnalyzerPage() {
           setStep('result');
           return;
         }
-      } catch (_) {
+      } catch {
         // Network error or backend unavailable — fall through to demo mode
       }
     }
