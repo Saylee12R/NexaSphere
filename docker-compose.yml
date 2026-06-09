@@ -31,5 +31,20 @@ services:
       start_period: 15s
       retries: 3
 
+  # ── API Gateway (Nginx Proxy) ───────────────────────────────────────────────
+  gateway:
+    image: nginx:1.25-alpine
+    container_name: nexasphere-gateway
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./gateway/certs:/etc/nginx/certs:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
 # NOTE: Redis is NOT included — rate limiting uses in-memory store.
 # Add Redis here if you configure Upstash-compatible Redis in .env.

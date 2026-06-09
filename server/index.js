@@ -49,7 +49,6 @@ import { studentUsersRepository } from './repositories/studentUsersRepository.js
 import * as studentAuthController from './controllers/studentAuthController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
-import compression from 'compression';
 
 validateLimiters();
 
@@ -74,7 +73,6 @@ app.set(
 );
 
 initializeSentry(app);
-app.use(compression());
 
 if (!process.env.CORS_ORIGIN) {
   throw new Error('CORS_ORIGIN environment variable must be set.');
@@ -225,6 +223,7 @@ app.use(tracingMiddleware);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(xssSanitizer);
 app.use(morgan('combined'));
 app.use(performanceMonitor);
 app.use(cookieParser());
