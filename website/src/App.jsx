@@ -546,6 +546,16 @@ function AppShell() {
 }
 
 /* ─────────────────────────────────────────────────────
+   RequireAuth Wrapper
+───────────────────────────────────────────────────── */
+function RequireAuth({ children }) {
+  const { isAuthenticated, loading } = useStudentAuth();
+  if (loading) return <PageLoadingSpinner />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+}
+
+/* ─────────────────────────────────────────────────────
    MainRouter — renders the Navbar + Routes
 ───────────────────────────────────────────────────── */
 function MainRouter({
@@ -706,13 +716,6 @@ function MainRouter({
   const openApply = useCallback(() => nav('/apply'), [nav]);
   const openJoin = useCallback(() => nav('/join'), [nav]);
   const onBackHome = useCallback(() => nav('/'), [nav]);
-
-  function RequireAuth({ children }) {
-    const { isAuthenticated, loading } = useStudentAuth();
-    if (loading) return <PageLoadingSpinner />;
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
-    return children;
-  }
 
   const nh = mobile ? MNH : DNH;
 
