@@ -530,35 +530,47 @@ const validatePushSubscription = [
   },
 ];
 
-app.post('/api/notifications/subscribe', validatePushSubscription, async (req, res) => {
-  try {
-    const { subscription } = req.body;
-    if (subscription) {
-      pushSubscriptions.add(JSON.stringify(subscription));
-      if (pushSubscriptions.size > 10000) {
-        const oldest = pushSubscriptions.values().next().value;
-        pushSubscriptions.delete(oldest);
+app.post(
+  '/api/notifications/subscribe',
+  adminAuth,
+  notificationRateLimiter,
+  validatePushSubscription,
+  async (req, res) => {
+    try {
+      const { subscription } = req.body;
+      if (subscription) {
+        pushSubscriptions.add(JSON.stringify(subscription));
+        if (pushSubscriptions.size > 10000) {
+          const oldest = pushSubscriptions.values().next().value;
+          pushSubscriptions.delete(oldest);
+        }
+        await persistPushSubscription(subscription);
       }
-      await persistPushSubscription(subscription);
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
     }
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
   }
-});
+);
 
-app.post('/api/notifications/unsubscribe', validatePushSubscription, async (req, res) => {
-  try {
-    const { subscription } = req.body;
-    if (subscription) {
-      pushSubscriptions.delete(JSON.stringify(subscription));
-      await removePersistedPushSubscription(subscription);
+app.post(
+  '/api/notifications/unsubscribe',
+  adminAuth,
+  notificationRateLimiter,
+  validatePushSubscription,
+  async (req, res) => {
+    try {
+      const { subscription } = req.body;
+      if (subscription) {
+        pushSubscriptions.delete(JSON.stringify(subscription));
+        await removePersistedPushSubscription(subscription);
+      }
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
     }
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
   }
-});
+);
 
 app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
