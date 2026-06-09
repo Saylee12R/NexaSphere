@@ -49,6 +49,7 @@ import { studentUsersRepository } from './repositories/studentUsersRepository.js
 import * as studentAuthController from './controllers/studentAuthController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
+import { tierRateLimiter } from './middleware/tierRateLimiter.js';
 
 validateLimiters();
 
@@ -210,7 +211,7 @@ app.use(performanceMonitor);
 app.use(cookieParser());
 
 // Global API rate limiter — protects all /api routes from request flooding
-app.use('/api', apiRateLimiter);
+app.use('/api', tierRateLimiter());
 
 function requestLogger(req, res, next) {
   const start = process.hrtime.bigint();
