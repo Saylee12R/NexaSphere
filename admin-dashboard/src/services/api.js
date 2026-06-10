@@ -855,6 +855,51 @@ export const api = {
       notifyContentUpdated('ns_db_announcements');
     },
   },
+  forum: {
+    getAll: async (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      if (auth.isOfflineMode()) {
+        return { threads: [], total: 0 };
+      }
+      return fetchWithAuth(`/api/admin/forum/threads${query ? `?${query}` : ''}`);
+    },
+    moderate: async (id, status) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, { type: 'warning', message: 'Offline mode' });
+        return;
+      }
+      const result = await fetchWithAuth(`/api/admin/forum/threads/${id}/moderate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: `Thread ${status}` });
+      broadcastContentUpdate('forum');
+      return result;
+    },
+    delete: async (id) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, { type: 'warning', message: 'Offline mode' });
+        return;
+      }
+      await fetchWithAuth(`/api/forum/threads/${id}`, { method: 'DELETE' });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Thread deleted' });
+      broadcastContentUpdate('forum');
+    },
+    moderateReply: async (id, status) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, { type: 'warning', message: 'Offline mode' });
+        return;
+      }
+      const result = await fetchWithAuth(`/api/admin/forum/replies/${id}/moderate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: `Reply ${status}` });
+      return result;
+    },
+  },
 };
 
 export { auth, eventEmitter, EVENTS };

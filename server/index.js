@@ -47,6 +47,7 @@ import cookieParser from 'cookie-parser';
 import passport from './config/studentOAuth.js';
 import { studentUsersRepository } from './repositories/studentUsersRepository.js';
 import * as studentAuthController from './controllers/studentAuthController.js';
+import * as forumController from './controllers/forumController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
@@ -867,6 +868,24 @@ app.put('/api/portfolio', protectedActionRateLimiter, async (req, res) => {
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
+
+// ── Forum / Q&A ──
+app.get('/api/forum/categories', forumController.listCategories);
+app.get('/api/forum/threads', forumController.listThreads);
+app.get('/api/forum/threads/:id', forumController.getThread);
+app.post('/api/forum/threads', forumController.createThread);
+app.put('/api/forum/threads/:id', forumController.updateThread);
+app.delete('/api/forum/threads/:id', forumController.deleteThread);
+app.get('/api/forum/threads/:id/replies', forumController.listReplies);
+app.post('/api/forum/threads/:id/replies', forumController.createReply);
+app.put('/api/forum/replies/:replyId', forumController.updateReply);
+app.delete('/api/forum/replies/:replyId', forumController.deleteReply);
+app.post('/api/forum/threads/:id/vote', forumController.voteThread);
+app.post('/api/forum/replies/:replyId/vote', forumController.voteReply);
+app.post('/api/forum/threads/:id/accept/:replyId', forumController.acceptReply);
+app.patch('/api/admin/forum/threads/:id/moderate', adminAuth, forumController.moderateThread);
+app.patch('/api/admin/forum/replies/:replyId/moderate', adminAuth, forumController.moderateReply);
+app.get('/api/admin/forum/threads', adminAuth, forumController.adminListThreads);
 
 // ── Search, Discovery & Recommendation Engine ──
 app.get('/api/search', searchController.search);
