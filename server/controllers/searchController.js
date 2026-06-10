@@ -85,9 +85,10 @@ export const searchController = {
         results = [...results, ...matched];
       }
 
+      const trueTotal = results.length;
       results = results.slice(0, limit);
 
-      return res.json({ results, total: results.length, query: q });
+      return res.json({ results, total: trueTotal, query: q });
     } catch (err) {
       console.error('Search error:', err);
       return res.status(500).json({ error: 'Search failed', results: [], total: 0 });
