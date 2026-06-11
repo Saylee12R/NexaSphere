@@ -9,7 +9,7 @@ const TYPE_CONFIG = {
   mention: { icon: <AtSign size={16} />, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
   system: { icon: <Settings size={16} />, color: '#34d399', bg: 'rgba(52,211,153,0.15)' },
 };
-
+const formatBadgeCount = (count) => (count > 99 ? '99+' : count);
 export default function NotificationBell() {
   const {
     notifications,
@@ -51,7 +51,7 @@ export default function NotificationBell() {
         onClick={togglePanel}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
-        aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
+        aria-label={`Notifications${unreadCount ? ` (${formatBadgeCount(unreadCount)} unread)` : ''}`}
         aria-expanded={isOpen}
         aria-controls="notification-panel"
         style={{
@@ -109,7 +109,7 @@ export default function NotificationBell() {
                 border: '2px solid var(--bg)',
               }}
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {formatBadgeCount(unreadCount)}
             </motion.span>
           )}
         </AnimatePresence>
@@ -175,7 +175,7 @@ export default function NotificationBell() {
                       borderRadius: '10px',
                     }}
                   >
-                    {unreadCount} new
+                    {formatBadgeCount(unreadCount)} new
                   </span>
                 )}
               </div>
