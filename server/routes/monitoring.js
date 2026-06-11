@@ -15,6 +15,7 @@ import {
 import logger from '../utils/logger.js';
 import { validateDataIntegrity } from '../utils/dataIntegrityValidator.js';
 import { getSessionSecurityData } from '../utils/sessionSecurity.js';
+import { getMigrationStatus } from '../utils/migrationSafety.js';
 
 function requireMonitoringAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -397,6 +398,23 @@ router.get('/session-security', requireMonitoringAuth, (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch session security data',
+    });
+  }
+});
+
+router.get('/migration-status', requireMonitoringAuth, (req, res) => {
+  try {
+    const data = getMigrationStatus();
+
+    res.status(200).json({
+      success: true,
+      data,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch migration status',
     });
   }
 });
