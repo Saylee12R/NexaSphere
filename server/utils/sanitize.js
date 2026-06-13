@@ -84,6 +84,21 @@ export function sanitizeActivityEventRecord(event = {}) {
   };
 }
 
+function validateSocialUrl(value, allowedDomains) {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim().slice(0, 500);
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:') return null;
+    const allowed = allowedDomains.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith('.' + domain)
+    );
+    return allowed ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function sanitizeCoreTeamMemberRecord(member = {}) {
   return {
     ...member,
@@ -94,8 +109,8 @@ export function sanitizeCoreTeamMemberRecord(member = {}) {
     section: sanitizeText(member.section, 12),
     email: sanitizeText(member.email, 140),
     whatsapp: sanitizeText(member.whatsapp, 40),
-    linkedin: sanitizeNullableText(member.linkedin, 255),
-    instagram: sanitizeNullableText(member.instagram, 255),
+    linkedin: validateSocialUrl(member.linkedin, ['linkedin.com']),
+    instagram: validateSocialUrl(member.instagram, ['instagram.com']),
     photoUrl: sanitizeNullableText(member.photoUrl, 500),
   };
 }
