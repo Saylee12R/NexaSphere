@@ -338,6 +338,46 @@ export function sanitizePortfolioRecord(data = {}) {
   } else {
     out.roadmaps = [];
   }
+  if (data.avatarUrl && typeof data.avatarUrl === 'string') {
+    const safe = data.avatarUrl.trim().slice(0, 500);
+    if (safe.startsWith('http://') || safe.startsWith('https://') || safe === '') {
+      out.avatarUrl = safe;
+    }
+  }
+  if (Array.isArray(data.education)) {
+    out.education = data.education
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const sanitized = {};
+        for (const [key, value] of Object.entries(entry)) {
+          if (typeof value === 'string') {
+            sanitized[key] = stripHtml(value).trim().slice(0, 2000);
+          } else {
+            sanitized[key] = value;
+          }
+        }
+        return sanitized;
+      })
+      .filter(Boolean)
+      .slice(0, 20);
+  }
+  if (Array.isArray(data.workExperience)) {
+    out.workExperience = data.workExperience
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const sanitized = {};
+        for (const [key, value] of Object.entries(entry)) {
+          if (typeof value === 'string') {
+            sanitized[key] = stripHtml(value).trim().slice(0, 2000);
+          } else {
+            sanitized[key] = value;
+          }
+        }
+        return sanitized;
+      })
+      .filter(Boolean)
+      .slice(0, 20);
+  }
   out.bio = stripHtmlTruncated(data.bio, 5000);
   out.title = stripHtmlTruncated(data.title, 200);
   return out;
