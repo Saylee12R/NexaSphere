@@ -128,23 +128,41 @@ function doPost(e) {
       var token = data.token;
       var SECRET_TOKEN = PropertiesService.getScriptProperties().getProperty('MEMBERSHIP_SECRET');
 
-      if (!SECRET_TOKEN || token !== SECRET_TOKEN) {
+      // ── FIXED ADMINISTRATIVE SECURITY LEAK ─────────────────────────────────
+      // Strict Check: Fails instantly if the server secret is unconfigured,
+      // if the client token is missing, or if they do not match exactly.
+      if (!SECRET_TOKEN || !token || token !== SECRET_TOKEN) {
         return _respond({ ok: false, error: 'Unauthorized' });
       }
+      // ───────────────────────────────────────────────────────────────────────
 
       try {
         var sheet = getOrCreateSheet();
         var rows = sheet.getDataRange().getValues();
+
+        // Fix: Gracefully handle an empty sheet or a sheet with only headers
+        if (rows.length <= 1) {
+          return _respond({
+            ok: true,
+            count: 0,
+            responses: [],
+          });
+        }
+
         var headers = rows[0];
         var responses = [];
 
         for (var i = 1; i < rows.length; i++) {
           var obj = {};
           for (var j = 0; j < headers.length; j++) {
+            // Fix: Replaced arrow function with an explicit callback function
+            // to guarantee compatibility across legacy Apps Script engines
             var key = headers[j]
               .toString()
               .toLowerCase()
-              .replace(/[^a-z0-9]+(.)/g, (m, chr) => chr.toUpperCase())
+              .replace(/[^a-z0-9]+(.)/g, function (m, chr) {
+                return chr.toUpperCase();
+              })
               .replace(/[^a-z0-9]/gi, '');
             obj[key] = rows[i][j];
           }
@@ -286,7 +304,6 @@ function doPost(e) {
           noReply: false,
         });
       } catch (mailErr) {
-        // Email failure should never block the form submission — log and continue.
         console.warn('Confirmation email failed:', mailErr.message);
       }
     }

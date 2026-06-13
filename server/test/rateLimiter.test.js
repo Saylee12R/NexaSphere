@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
 
 import {
   apiRateLimiter,
-  authRateLimiter,
   formRateLimiter,
   notificationRateLimiter,
   portfolioRateLimiter,
   validateLimiters,
 } from '../middleware/rateLimiter.js';
+import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authRateLimiter.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -292,4 +292,68 @@ test('Express trust proxy configuration properly extracts client IP from X-Forwa
   } finally {
     server.close();
   }
+});
+
+// ---------------------------------------------------------------------------
+// Route registration tests - verify rate limiters are applied to correct routes
+// ---------------------------------------------------------------------------
+
+test('apiRateLimiter is registered globally on all /api routes', async () => {
+  process.env.PORT = '0';
+  const { default: app } = await import('../index.js');
+
+  const stack = app._router.stack;
+  const found = stack.some((layer) => {
+    if (layer.route) return false;
+    const pathMatches = layer.regexp.test('/api/content/events');
+    const middlewareMatches = layer.handle === apiRateLimiter;
+    return pathMatches && middlewareMatches;
+  });
+
+  assert.ok(found, 'apiRateLimiter must be registered globally on /api');
+});
+
+test('authRateLimiter, formRateLimiter, portfolioRateLimiter, and notificationRateLimiter are registered on their respective routes', async () => {
+  process.env.PORT = '0';
+  const { default: app } = await import('../index.js');
+
+  const hasRouteLimiter = (path, method, limiter) => {
+    return app._router.stack.some((layer) => {
+      if (!layer.route) return false;
+      if (layer.route.path !== path) return false;
+      if (!layer.route.methods[method.toLowerCase()]) return false;
+      return layer.route.stack.some((subLayer) => subLayer.handle === limiter);
+    });
+  };
+
+  assert.ok(
+    hasRouteLimiter('/api/admin/login', 'POST', authRateLimiter),
+    'authRateLimiter not on /api/admin/login'
+  );
+  assert.ok(
+    hasRouteLimiter('/api/forms/membership', 'POST', formRateLimiter),
+    'formRateLimiter not on /api/forms/membership'
+  );
+  assert.ok(
+    hasRouteLimiter('/api/forms/recruitment', 'POST', formRateLimiter),
+    'formRateLimiter not on /api/forms/recruitment'
+  );
+  assert.ok(
+    hasRouteLimiter('/api/core-team/apply', 'POST', formRateLimiter),
+    'formRateLimiter not on /api/core-team/apply'
+  );
+  assert.ok(
+    hasRouteLimiter('/api/portfolio', 'PUT', protectedActionRateLimiter),
+    'protectedActionRateLimiter not on /api/portfolio'
+  );
+  assert.ok(
+    hasRouteLimiter('/api/notifications/mark-read', 'POST', notificationRateLimiter),
+    'notificationRateLimiter not on /api/notifications/mark-read'
+  );
+});
+
+after(() => {
+  setTimeout(() => {
+    process.exit(0);
+  }, 100);
 });

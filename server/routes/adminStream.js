@@ -28,7 +28,7 @@ router.get('/stream', requireAdmin, (req, res) => {
 
   logger.info('Admin connected to SSE stream', { adminId });
   addSSEClient(res, req.adminSession);
-  
+
   // Initialize headers and hand off the response to the SSE service
   setupSSEHeaders(req, res, () => {
     addSSEClient(res);

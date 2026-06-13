@@ -5,6 +5,7 @@ import { registrationsRepository } from '../repositories/registrationsRepository
 import { eventsRepository } from '../repositories/eventsRepository.js';
 import { emitToRole } from '../config/socket.js';
 import { broadcastSSEEvent } from '../services/sseService.js';
+import { recordEventRegistration } from '../observability/metrics.js';
 
 function wrapAsync(fn) {
   return (req, res) =>
@@ -106,6 +107,7 @@ export const registerForEvent = wrapAsync(async (req, res) => {
       console.error('[EventRegistration] Failed to broadcast:', realtimeErr);
     }
 
+    recordEventRegistration();
     return res.status(201).json({ ...result, ticket });
   } catch (e) {
     if (e.message?.includes('Event capacity has been reached')) {
@@ -121,7 +123,7 @@ export const registerForEvent = wrapAsync(async (req, res) => {
         waitlist: true,
       });
       try {
-        emitToRole('events_admin', 'admin:waitlist-promotion', {
+        emitToRole('events_admin', 'admin:waitlist-added', {
           eventId,
           userName: sanitizedFullName,
           timestamp: new Date(),

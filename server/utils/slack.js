@@ -4,6 +4,30 @@
  */
 
 import logger from './logger.js';
+import { CircuitBreaker, circuitBreakerRegistry } from './circuitBreaker.js';
+
+async function _slackFetch(webhookUrl, payload) {
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`Slack webhook returned ${response.status}`);
+  }
+  return response;
+}
+
+const slackBreaker = circuitBreakerRegistry.register(
+  'slack-webhook',
+  new CircuitBreaker(_slackFetch, {
+    name: 'slack-webhook',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 30000,
+    maxCoolDownPeriod: 300000,
+  })
+);
 
 /**
  * Send Slack alert
@@ -19,25 +43,14 @@ async function sendSlackAlert(alertData) {
 
   try {
     const payload = formatSlackMessage(alertData);
-
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      logger.error('Failed to send Slack alert', {
-        status: response.status,
-        statusText: response.statusText,
-      });
-    } else {
-      logger.info('Slack alert sent successfully', { alertType: alertData.title });
-    }
+    await slackBreaker.execute(webhookUrl, payload);
+    logger.info('Slack alert sent successfully', { alertType: alertData.title });
   } catch (error) {
-    logger.error('Error sending Slack alert', { error: error.message });
+    if (error.code === 'CIRCUIT_OPEN') {
+      logger.warn('Slack circuit breaker is OPEN, skipping alert');
+    } else {
+      logger.error('Error sending Slack alert', { error: error.message });
+    }
   }
 }
 
@@ -48,10 +61,60 @@ async function sendSlackAlert(alertData) {
 function formatSlackMessage(data) {
   const color = data.severity === 'critical' ? 'danger' : 'warning';
 
+  const blockFields = [];
+  if (data.message) blockFields.push({ type: 'mrkdwn', text: `*Message:*\n${data.message}` });
+  if (data.url) blockFields.push({ type: 'mrkdwn', text: `*URL:*\n${data.url}` });
+  if (data.method) blockFields.push({ type: 'mrkdwn', text: `*Method:*\n${data.method}` });
+  if (data.userId) blockFields.push({ type: 'mrkdwn', text: `*User ID:*\n${data.userId}` });
+  if (data.timestamp)
+    blockFields.push({
+      type: 'mrkdwn',
+      text: `*Timestamp:*\n${new Date(data.timestamp).toISOString()}`,
+    });
+
+  const blocks = [
+    {
+      type: 'header',
+      text: {
+        type: 'plain_text',
+        text: data.title || '🚨 Alert',
+        emoji: true,
+      },
+    },
+  ];
+
+  if (blockFields.length > 0) {
+    blocks.push({
+      type: 'section',
+      fields: blockFields,
+    });
+  }
+
+  if (data.stack) {
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*Stack Trace:*\n\`\`\`${data.stack}\`\`\``,
+      },
+    });
+  }
+
+  blocks.push({
+    type: 'context',
+    elements: [
+      {
+        type: 'plain_text',
+        text: 'NexaSphere Error Monitoring',
+      },
+    ],
+  });
+
   return {
     attachments: [
       {
         color: color,
+        blocks: blocks,
         title: data.title || '🚨 Alert',
         fields: [
           {
@@ -90,7 +153,12 @@ function formatSlackMessage(data) {
             ? [
                 {
                   title: 'Timestamp',
-                  value: new Date(data.timestamp).toISOString(),
+                  value: (() => {
+                    const parsedDate = new Date(data.timestamp);
+                    return !isNaN(parsedDate.getTime())
+                      ? parsedDate.toISOString()
+                      : new Date().toISOString(); // Safe fallback to current time
+                  })(),
                   short: true,
                 },
               ]
@@ -128,31 +196,34 @@ async function sendPerformanceAlert(metrics) {
       attachments: [
         {
           color: metrics.errorRate > 5 ? 'danger' : 'warning',
-          title: '📊 Performance Alert',
-          fields: [
+          blocks: [
             {
-              title: 'Error Rate',
-              value: `${metrics.errorRate.toFixed(2)}%`,
-              short: true,
+              type: 'header',
+              text: {
+                type: 'plain_text',
+                text: '📊 Performance Alert',
+                emoji: true,
+              },
             },
             {
-              title: 'Total Requests',
-              value: metrics.totalRequests.toString(),
-              short: true,
+              type: 'section',
+              fields: [
+                { type: 'mrkdwn', text: `*Error Rate:*\n${metrics.errorRate.toFixed(2)}%` },
+                { type: 'mrkdwn', text: `*Threshold:*\n5%` },
+                { type: 'mrkdwn', text: `*Total Requests:*\n${metrics.totalRequests}` },
+                { type: 'mrkdwn', text: `*Total Errors:*\n${metrics.totalErrors}` },
+              ],
             },
             {
-              title: 'Total Errors',
-              value: metrics.totalErrors.toString(),
-              short: true,
-            },
-            {
-              title: 'Threshold',
-              value: '5%',
-              short: true,
+              type: 'context',
+              elements: [
+                {
+                  type: 'plain_text',
+                  text: 'NexaSphere Performance Monitoring',
+                },
+              ],
             },
           ],
-          footer: 'NexaSphere Performance Monitoring',
-          ts: Math.floor(Date.now() / 1000),
         },
       ],
     };
@@ -166,10 +237,19 @@ async function sendPerformanceAlert(metrics) {
     });
 
     if (!response.ok) {
-      logger.error('Failed to send performance alert');
+      logger.error('Failed to send performance alert', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+    } else {
+      logger.info('Performance alert sent successfully');
     }
+    await slackBreaker.execute(webhookUrl, payload);
+    logger.info('Performance alert sent successfully');
   } catch (error) {
-    logger.error('Error sending performance alert', { error: error.message });
+    if (error.code !== 'CIRCUIT_OPEN') {
+      logger.error('Error sending performance alert', { error: error.message });
+    }
   }
 }
 

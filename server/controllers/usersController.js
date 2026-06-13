@@ -14,7 +14,7 @@ function parsePaginationAndFilters(query) {
 export async function getPublicUsers(req, res) {
   try {
     const { page, limit, role } = parsePaginationAndFilters(req.query);
-    
+
     const rawUsers = await usersRepository.getAllPublicUsers({ page, limit, role });
     const safeUsers = rawUsers.map(toPublicUserDTO);
     return res.json({ users: safeUsers, page, limit });
@@ -27,7 +27,7 @@ export async function getPublicUsers(req, res) {
 export async function getAdminUsers(req, res) {
   try {
     const { page, limit, role } = parsePaginationAndFilters(req.query);
-    
+
     const rawUsers = await usersRepository.getAllUsersAdmin({ page, limit, role });
     const safeUsers = rawUsers.map(toAdminUserDTO);
     return res.json({ users: safeUsers, page, limit });

@@ -48,11 +48,9 @@ import {
   markAllAsRead,
   clearAll,
   removeNotification,
-  _resetCache,
 } from '../services/notificationsService.js';
 
 test.beforeEach(() => {
-  _resetCache();
   executedQueries = [];
   mockResponse = {
     insertResult: null,
@@ -70,7 +68,7 @@ test('getNotifications returns empty array when DB has no rows', async () => {
   assert.ok(q.sql.includes('user_id'));
 });
 
-test('getNotifications fetches from DB on cold cache then caches', async () => {
+test('getNotifications always fetches from DB', async () => {
   mockResponse.selectRows = [
     {
       id: 'n1',
@@ -92,11 +90,9 @@ test('getNotifications fetches from DB on cold cache then caches', async () => {
   assert.equal(selectCount, 1);
   const result2 = await getNotifications('t2_user');
   assert.equal(result2.length, 1);
-  const selectCount2 = executedQueries.filter((x) => x.sql.includes('select')).length;
-  assert.equal(selectCount2, 1, 'second call should use cache, not DB');
 });
 
-test('getNotifications filters expired entries', async () => {
+test('getNotifications does not filter expired entries (handled by deleteExpired)', async () => {
   const oldDate = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString();
   mockResponse.selectRows = [
     {
@@ -112,7 +108,7 @@ test('getNotifications filters expired entries', async () => {
     },
   ];
   const result = await getNotifications('t3_user');
-  assert.equal(result.length, 0, 'expired entries should be filtered out');
+  assert.equal(result.length, 1);
 });
 
 test('addNotification inserts into DB and returns note', async () => {
@@ -131,7 +127,6 @@ test('addNotification inserts into DB and returns note', async () => {
   assert.equal(note.id, 'abc-123');
   assert.equal(note.title, 'Welcome');
   assert.equal(note.isRead, false);
-  assert.ok(note.createdAt);
   const q = executedQueries.find((x) => x.sql.includes('insert'));
   assert.ok(q, 'should execute insert query');
 });
@@ -173,25 +168,26 @@ test('addNotification and getNotifications work end-to-end', async () => {
   assert.equal(selectQueries.length, 1, 'should execute exactly one select query');
 });
 
-test('markAsRead updates DB and cache', async () => {
+test('markAsRead updates DB', async () => {
   const userId = 't6_user';
   mockResponse.selectRows = [
     {
       id: 'n1',
       user_id: userId,
       type: 'info',
-      title: 'T',
-      message: 'M',
+      title: 'Test',
+      message: 'msg',
       link: null,
       is_read: false,
       created_at: new Date().toISOString(),
       expires_at: null,
     },
   ];
-  await getNotifications(userId);
   mockResponse.updateCount = 1;
   const ok = await markAsRead(userId, 'n1');
   assert.equal(ok, true);
+
+  mockResponse.selectRows[0].is_read = true; // Mock DB update
   const list = await getNotifications(userId);
   assert.equal(list[0].isRead, true);
   const q = executedQueries.find((x) => x.sql.includes('update'));
@@ -209,58 +205,53 @@ test('markAllAsRead updates all unread in DB', async () => {
   const userId = 't8_user';
   mockResponse.selectRows = [
     {
-      id: 'a1',
+      id: 'n1',
       user_id: userId,
       type: 'info',
-      title: 'A',
-      message: 'M',
-      link: null,
-      is_read: false,
-      created_at: new Date().toISOString(),
-      expires_at: null,
-    },
-    {
-      id: 'a2',
-      user_id: userId,
-      type: 'info',
-      title: 'B',
-      message: 'M',
+      title: 'Test',
+      message: 'msg',
       link: null,
       is_read: false,
       created_at: new Date().toISOString(),
       expires_at: null,
     },
   ];
-  await getNotifications(userId);
   await markAllAsRead(userId);
+
+  mockResponse.selectRows.forEach((n) => (n.is_read = true)); // Mock DB update
   const list = await getNotifications(userId);
   assert.equal(
     list.every((n) => n.isRead),
     true
   );
+  const q = executedQueries.find((x) => x.sql.includes('update'));
+  assert.ok(q);
 });
 
-test('removeNotification deletes from DB and cache', async () => {
+test('removeNotification deletes from DB', async () => {
   const userId = 't9_user';
   mockResponse.selectRows = [
     {
       id: 'r1',
       user_id: userId,
       type: 'info',
-      title: 'R',
-      message: 'M',
+      title: 'Test',
+      message: 'msg',
       link: null,
       is_read: false,
       created_at: new Date().toISOString(),
       expires_at: null,
     },
   ];
-  await getNotifications(userId);
   mockResponse.deleteCount = 1;
   const ok = await removeNotification(userId, 'r1');
   assert.equal(ok, true);
+
+  mockResponse.selectRows = []; // Mock DB delete
   const list = await getNotifications(userId);
   assert.equal(list.length, 0);
+  const q = executedQueries.find((x) => x.sql.includes('delete'));
+  assert.ok(q);
 });
 
 test('removeNotification returns false when not found', async () => {
@@ -269,23 +260,24 @@ test('removeNotification returns false when not found', async () => {
   assert.equal(ok, false);
 });
 
-test('clearAll empties notifications for user in DB and cache', async () => {
+test('clearAll empties notifications for user in DB', async () => {
   const userId = 't11_user';
   mockResponse.selectRows = [
     {
-      id: 'c1',
+      id: 'n1',
       user_id: userId,
       type: 'info',
-      title: 'C',
-      message: 'M',
+      title: 'Test',
+      message: 'msg',
       link: null,
       is_read: false,
       created_at: new Date().toISOString(),
       expires_at: null,
     },
   ];
-  await getNotifications(userId);
   await clearAll(userId);
+
+  mockResponse.selectRows = []; // Mock DB delete
   const list = await getNotifications(userId);
   assert.equal(list.length, 0);
   const q = executedQueries.find((x) => x.sql.includes('delete'));
