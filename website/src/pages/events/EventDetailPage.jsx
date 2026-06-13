@@ -495,7 +495,9 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
   }, []);
 
   const isUpcoming = event.status === 'upcoming';
-  const canRegister = isUpcoming && event.capacity > 0;
+  const eventEnd = event.endDate ?? event.startDate ?? event.date;
+  const isInFuture = eventEnd ? new Date(eventEnd) > new Date() : isUpcoming;
+  const canRegister = isUpcoming && isInFuture && event.capacity > 0;
 
   const handleRegField = (field) => (e) => setRegForm((f) => ({ ...f, [field]: e.target.value }));
   const handleRegistration = async (e) => {
