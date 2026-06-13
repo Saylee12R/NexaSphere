@@ -4,6 +4,8 @@ import { studentUsersRepository } from '../repositories/studentUsersRepository.j
 const JWT_SECRET = process.env.JWT_SECRET || 'nexasphere-jwt-dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
+const tokenBlacklist = new Map();
+
 const STUDENT_ROLES = {
   student: { scopes: ['profile:read', 'profile:write', 'events:read', 'events:register'] },
   club_lead: {
@@ -59,9 +61,22 @@ export const studentAuthService = {
 
   verifyToken(token) {
     try {
+      if (tokenBlacklist.has(token)) return null;
       return jwt.verify(token, JWT_SECRET);
     } catch {
       return null;
+    }
+  },
+
+  async logout(token) {
+    if (!token) return;
+    const decoded = jwt.decode(token);
+    if (decoded && decoded.exp) {
+      const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+      if (ttl > 0) {
+        tokenBlacklist.set(token, true);
+        setTimeout(() => tokenBlacklist.delete(token), ttl * 1000);
+      }
     }
   },
 
