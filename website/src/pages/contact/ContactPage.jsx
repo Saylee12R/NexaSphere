@@ -382,7 +382,11 @@ function MessageCTA() {
 
       {/* Name field */}
       <div style={{ marginBottom: 12 }}>
+        <label htmlFor="contact-name" className="sr-only">
+          Your name (optional)
+        </label>
         <input
+          id="contact-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name (optional)"
@@ -411,7 +415,11 @@ function MessageCTA() {
 
       {/* Message body field */}
       <div style={{ marginBottom: 16 }}>
+        <label htmlFor="contact-message" className="sr-only">
+          Your message
+        </label>
         <textarea
+          id="contact-message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Your message — what would you like to tell us?"
