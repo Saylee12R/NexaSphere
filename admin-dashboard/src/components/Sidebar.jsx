@@ -102,6 +102,11 @@ const links = [
     label: 'Live Streams',
     icon: 'Camera',
   },
+  {
+    to: '/dashboard/circuit-breaker',
+    label: 'Circuit Breaker',
+    icon: 'Activity',
+  },
 ];
 
 export function Sidebar() {

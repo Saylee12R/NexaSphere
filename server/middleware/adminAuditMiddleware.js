@@ -48,11 +48,7 @@ export function adminAuditMiddleware(req, res, next) {
       const timestamp = new Date().toISOString();
 
       const riskLevel =
-        req.method === 'DELETE'
-          ? 'HIGH'
-          : req.method === 'PATCH'
-            ? 'MEDIUM'
-            : 'LOW';
+        req.method === 'DELETE' ? 'HIGH' : req.method === 'PATCH' ? 'MEDIUM' : 'LOW';
 
       // req.oldState is optionally populated by pre-handlers
       const oldState = req.oldState || null;

@@ -4,9 +4,9 @@ import { setTraceIdResolver } from './utils/logContext.js';
 import { getActiveTraceId } from './observability/tracing.js';
 import helmet from 'helmet';
 import express from 'express';
-import { body, validationResult } from 'express-validator';
 import cors from 'cors';
 import morgan from 'morgan';
+import { body, validationResult } from 'express-validator';
 import { EventEmitter } from 'events';
 import { google } from 'googleapis';
 import { promises as fs } from 'fs';
@@ -20,6 +20,13 @@ import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
 import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
+import healthRouter from './routes/health.js';
+import coreTeamRouter from './routes/coreTeam.js';
+import formsRouter from './routes/forms.js';
+import portfolioRouter from './routes/portfolio.js';
+import notificationsRouter from './routes/notifications.js';
+import adminRouter from './routes/admin.js';
+import { validateEnvironment } from './utils/envValidator.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
 import { tracingMiddleware } from './middleware/tracingMiddleware.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -42,6 +49,7 @@ import { portfolioContentSchema, portfolioPutSchema } from './validators/portfol
 import { searchController } from './controllers/searchController.js';
 import { pushSubscriptionsRepository } from './repositories/pushSubscriptionsRepository.js';
 import { Mutex } from 'async-mutex';
+import { CircuitBreaker, circuitBreakerRegistry } from './utils/circuitBreaker.js';
 import { getPublicAppUrl } from './utils/publicAppUrl.js';
 import * as eventsController from './controllers/eventsController.js';
 import * as activityEventsController from './controllers/activityEventsController.js';
@@ -81,8 +89,6 @@ function validateEnvironment() {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  console.log('Environment validation passed');
-}
 
 validateEnvironment();
 
@@ -158,19 +164,35 @@ app.use(
         defaultSrc: ["'self'"],
 
         // Prevent inline scripts + third-party execution
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
 
         // Allow styles from self only
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
 
         // Images
-        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'blob:',
+          'https:',
+          'https://api.dicebear.com',
+          'https://images.unsplash.com',
+        ],
 
         // Fonts
-        fontSrc: ["'self'", 'https:', 'data:'],
+        fontSrc: ["'self'", 'https:', 'data:', 'https://fonts.gstatic.com'],
 
         // API/WebSocket connections
-        connectSrc: ["'self'", 'https:', 'wss:'],
+        connectSrc: [
+          "'self'",
+          'https:',
+          'wss:',
+          'https://challenges.cloudflare.com',
+          'https://*.ingest.sentry.io',
+          'https://*.ingest.us.sentry.io',
+          process.env.FRONTEND_URL || 'http://localhost:5173',
+          `wss://${process.env.DOMAIN || 'localhost'}`,
+        ],
 
         // Block Flash/object/embed
         objectSrc: ["'none'"],
@@ -197,7 +219,7 @@ app.use(
         mediaSrc: ["'self'"],
 
         // Restrict frames
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'", 'https://challenges.cloudflare.com', 'https://maps.google.com'],
 
         // Restrict child browsing contexts
         childSrc: ["'none'"],
@@ -234,6 +256,7 @@ app.use(
     },
   })
 );
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -250,7 +273,7 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
-    maxAge: 86400, // Cache preflight requests for 24 hours
+    maxAge: 86400,
   })
 );
 app.options('*', cors());
@@ -267,6 +290,7 @@ app.use(performanceMonitor);
 app.use(cookieParser());
 
 // Global API rate limiter — protects all /api routes from request flooding
+app.use('/api', apiRateLimiter);
 app.use('/api', tierRateLimiter());
 
 function requestLogger(req, res, next) {
@@ -295,21 +319,19 @@ if (!useStructuredHttpLog) {
   app.use(requestLogger);
 }
 
-// ── Health check (required by Render, Railway, and load balancers) ──
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'nexasphere-api', timestamp: new Date().toISOString() });
-});
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'nexasphere-api', timestamp: new Date().toISOString() });
-});
-
-// Mount monitoring + API documentation routes
+// Mount route modules
 app.use('/api/monitoring', monitoringRouter);
 app.use('/api', documentationRouter);
 app.use('/', apiRouter);
+app.use('/', healthRouter);
+app.use('/', coreTeamRouter);
+app.use('/api', formsRouter);
+app.use('/api', portfolioRouter);
+app.use('/api', notificationsRouter);
+app.use('/api/admin', adminRouter);
 app.use('/', syncRouter);
 
-const adminAuth = adminAuthMiddleware.requireAdmin;
+const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 const defaultContent = {
   events: [
@@ -392,6 +414,10 @@ function withContentLock(fn) {
 }
 
 export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
+const _rawSupabaseRequest = async function _rawSupabaseRequest(
+  pathname,
+  { method = 'GET', body } = {}
+) {
   if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
     method,
@@ -410,7 +436,20 @@ export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
   }
   const text = await res.text();
   return text ? JSON.parse(text) : [];
-}
+};
+
+export const supabaseRequest = _rawSupabaseRequest;
+
+export const supabaseBreaker = circuitBreakerRegistry.register(
+  'index-supabase',
+  new CircuitBreaker(_rawSupabaseRequest, {
+    name: 'index-supabase',
+    failureThreshold: 5,
+    successThreshold: 2,
+    coolDownPeriod: 10000,
+    maxCoolDownPeriod: 60000,
+  })
+);
 
 // Paginated variant: appends LIMIT/OFFSET to a PostgREST GET request and reads
 // the total row count from the Content-Range response header (sent when
@@ -946,41 +985,7 @@ function clearActivityAuthAttempts(ip) {
   failedActivityAuthAttempts.delete(ip);
 }
 
-// REST Endpoints
-app.get('/healthz', async (req, res) => {
-  try {
-    const list = await eventsService.listEvents({ page: 1, limit: 1 });
-    res.json({
-      ok: true,
-      events: list?.total ?? 0,
-      storage: HAS_SUPABASE ? 'supabase' : 'file',
-    });
-  } catch (e) {
-    res.status(503).json({
-      ok: false,
-      error: e?.message || 'Health check failed',
-      storage: HAS_SUPABASE ? 'supabase' : 'file',
-    });
-  }
-});
-
-// Event channels/content
-app.get('/api/content/events', eventsController.listEvents);
-app.get('/api/content/activity-events/:activityKey', activityEventsController.listActivityEvents);
-app.post(
-  '/api/content/activity-events/:activityKey',
-  protectedActionRateLimiter,
-  activityEventsController.addActivityEvent
-);
-app.delete(
-  '/api/content/activity-events/:activityKey/:eventId',
-  protectedActionRateLimiter,
-  activityEventsController.deleteActivityEvent
-);
-
-// Admin Auth Endpoints
-app.post('/api/admin/login', authRateLimiter, adminAuthMiddleware.login);
-app.post('/api/admin/logout', adminAuth, adminAuthMiddleware.logout);
+// Admin Analytics & Metrics (mounted with admin auth)
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
 app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
 
@@ -992,7 +997,7 @@ app.get('/api/auth/github/callback', studentAuthController.githubCallback);
 app.get('/api/auth/me', requireStudentAuth, studentAuthController.getMe);
 app.post('/api/auth/logout', studentAuthController.logout);
 
-// Event Admin Management
+// ── Event Admin Management ──
 app.get('/api/admin/events', adminAuth, eventsController.adminListEvents);
 app.post('/api/admin/events', adminAuth, eventsController.adminCreateEvent);
 app.put('/api/admin/events/:id', adminAuth, eventsController.adminUpdateEvent);
@@ -1075,6 +1080,29 @@ app.post(
 );
 
 // Admin membership responses
+async function _rawMembershipFetch(scriptUrl, secret) {
+  const response = await fetch(scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getResponses', token: secret }),
+  });
+  if (!response.ok) {
+    throw new Error(`Google Apps Script returned ${response.status}`);
+  }
+  return response.json();
+}
+
+const membershipBreaker = circuitBreakerRegistry.register(
+  'membership-gas',
+  new CircuitBreaker(_rawMembershipFetch, {
+    name: 'membership-gas',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 15000,
+    maxCoolDownPeriod: 120000,
+  })
+);
+
 app.get('/api/admin/membership', adminAuth, async (req, res) => {
   try {
     const scriptUrl = process.env.MEMBERSHIP_SCRIPT_URL;
@@ -1084,21 +1112,44 @@ app.get('/api/admin/membership', adminAuth, async (req, res) => {
       return res.json({ responses: [] });
     }
 
-    const response = await fetch(scriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getResponses', token: secret }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Google Apps Script returned ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await membershipBreaker.execute(scriptUrl, secret);
     return res.json({ responses: data.responses || [] });
   } catch (err) {
+    if (err.code === 'CIRCUIT_OPEN') {
+      console.warn('[Membership] Circuit breaker is OPEN, returning empty responses');
+      return res.json({ responses: [] });
+    }
     console.error('[Membership] Failed to fetch responses:', err.message);
     return res.status(500).json({ error: 'Failed to fetch membership responses' });
+  }
+});
+
+// Circuit Breaker Admin API
+app.get('/api/admin/circuit-breaker/metrics', adminAuth, async (req, res) => {
+  const metrics = circuitBreakerRegistry.getAllMetrics();
+  return res.json({ circuitBreakers: metrics });
+});
+
+app.post('/api/admin/circuit-breaker/reset/:name', adminAuth, async (req, res) => {
+  const { name } = req.params;
+  const ok = circuitBreakerRegistry.reset(name);
+  if (!ok) {
+    return res.status(404).json({ error: `No circuit breaker found: "${name}"` });
+  }
+  return res.json({ ok: true, message: `Circuit breaker "${name}" reset to CLOSED` });
+});
+
+app.post('/api/admin/circuit-breaker/retry/:name', adminAuth, async (req, res) => {
+  const { name } = req.params;
+  try {
+    const breaker = circuitBreakerRegistry.get(name);
+    if (!breaker) {
+      return res.status(404).json({ error: `No circuit breaker found: "${name}"` });
+    }
+    const result = await breaker.manualRetry();
+    return res.json({ ok: true, state: breaker.state, result });
+  } catch (err) {
+    return res.json({ ok: false, error: err.message });
   }
 });
 
@@ -1691,7 +1742,6 @@ app.get('/api/admin/mentors', adminAuth, mentorshipController.adminListMentors);
 app.get('/api/search', searchController.search);
 app.get('/api/search/trending', searchController.trending);
 app.get('/api/recommendations', searchController.recommendations);
-
 // Must be registered after all routes.
 app.use(notFoundHandler);
 addSentryErrorHandler(app);

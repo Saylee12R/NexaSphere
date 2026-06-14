@@ -33,9 +33,7 @@ async function initializeSentry(app) {
   Sentry.init({
     dsn: dsn,
     environment: process.env.NODE_ENV || 'development',
-    integrations: [
-      ...(nodeProfilingIntegration ? [nodeProfilingIntegration()] : []),
-    ],
+    integrations: [...(nodeProfilingIntegration ? [nodeProfilingIntegration()] : [])],
     tracesSampleRate: isDevelopment ? 1.0 : 0.1,
     profilesSampleRate: isDevelopment ? 1.0 : 0.1,
     attachStacktrace: true,
@@ -46,18 +44,18 @@ async function initializeSentry(app) {
         event.fingerprint = [
           '{{ default }}',
           error.name || 'Error',
-          (error.message || '').split('\n')[0]
+          (error.message || '').split('\n')[0],
         ];
       }
       return event;
-    }
+    },
   });
 
   try {
     const os = await import('os');
     Sentry.setContext('environment_metadata', {
       'Node version': process.version,
-      'OS': os.platform(),
+      OS: os.platform(),
       'OS Release': os.release(),
     });
   } catch (err) {
@@ -65,7 +63,7 @@ async function initializeSentry(app) {
   }
 
   return Sentry;
-};
+}
 
 /**
  * Add Sentry error handler middleware
@@ -73,7 +71,11 @@ async function initializeSentry(app) {
  */
 function addSentryErrorHandler(app) {
   // The error handler must be the last middleware on the app
-  Sentry.setupExpressErrorHandler(app);
+  if (typeof Sentry.setupExpressErrorHandler === 'function') {
+    Sentry.setupExpressErrorHandler(app);
+  } else if (Sentry.Handlers && typeof Sentry.Handlers.errorHandler === 'function') {
+    app.use(Sentry.Handlers.errorHandler());
+  }
 }
 
 /**
@@ -133,7 +135,7 @@ function registerSentryShutdown(timeout = 2000) {
   signals.forEach((signal) => {
     process.on(signal, async () => {
       console.log(`[Sentry] Received ${signal}. Flushing pending events...`);
-      
+
       try {
         // close() flushes queued events and disables the SDK from accepting new events
         const cleanClose = await Sentry.close(timeout);

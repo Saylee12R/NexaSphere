@@ -1,5 +1,6 @@
 import {
   supabaseRequest,
+  supabaseBreaker,
   HAS_SUPABASE,
   requiredEnv,
   normalizePrivateKey,
@@ -11,6 +12,7 @@ import { getPublicAppUrl } from '../utils/publicAppUrl.js';
 import { sendWelcomeVerificationEmail } from './emailService.js';
 import { broadcastSSEEvent } from './sseService.js';
 import { emitToRole } from '../config/socket.js';
+import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -44,7 +46,20 @@ function writeFallbackSubmission(formType, payload, error) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${formType}-${timestamp}-${Date.now()}.json`;
     const filePath = path.join(FALLBACK_DIR, filename);
-    fs.writeFileSync(filePath, JSON.stringify({ formType, payload, submittedAt: new Date().toISOString(), error: error?.message || 'Supabase unreachable' }, null, 2), 'utf8');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          formType,
+          payload,
+          submittedAt: new Date().toISOString(),
+          error: error?.message || 'Supabase unreachable',
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
     console.error(`[Forms Service] Supabase insertion failed — saved fallback to ${filePath}`);
   } catch (writeErr) {
     console.error('[Forms Service] Failed to write fallback submission file:', writeErr);
@@ -57,11 +72,32 @@ function toSafeString(value, max = 4000) {
     .slice(0, max);
 }
 
+async function _sheetAppend(spreadsheetId, sheetName, row, sheets) {
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [row] },
+  });
+}
+
+const _sheetBreaker = circuitBreakerRegistry.register(
+  'google-sheets',
+  new CircuitBreaker(_sheetAppend, {
+    name: 'google-sheets',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 10000,
+    maxCoolDownPeriod: 60000,
+  })
+);
+
 export const formsService = {
   async appendToSupabaseForms(formType, payload) {
     if (!HAS_SUPABASE) return false;
     try {
-      await supabaseRequest('form_submissions', {
+      await supabaseBreaker.execute('form_submissions', {
         method: 'POST',
         body: [
           {
@@ -75,7 +111,11 @@ export const formsService = {
       });
       return true;
     } catch (err) {
-      console.error('[Forms Service] Supabase insertion failed:', err?.message || err);
+      if (err.code === 'CIRCUIT_OPEN') {
+        console.warn('[Forms Service] Supabase circuit breaker is OPEN, using fallback');
+      } else {
+        console.error('[Forms Service] Supabase insertion failed:', err?.message || err);
+      }
       writeFallbackSubmission(formType, payload, err);
       return false;
     }
@@ -103,13 +143,7 @@ export const formsService = {
       JSON.stringify(payload),
     ];
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `${sheetName}!A1`,
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [row] },
-    });
+    await _sheetBreaker.execute(spreadsheetId, sheetName, row, sheets);
   },
 
   async handleForm(formType, body) {
@@ -123,7 +157,6 @@ export const formsService = {
         if (!savedToSupabase) throw sheetErr;
       }
 
-      // Trigger standard welcome verification email
       try {
         const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(payload.collegeEmail)}`;
         await sendWelcomeVerificationEmail(payload.collegeEmail, payload.fullName, verifyUrl);
@@ -131,7 +164,6 @@ export const formsService = {
         console.error('[Forms Service] Failed to send welcome verification email:', emailErr);
       }
 
-      // Broadcast real-time metric updates via SSE and Socket
       try {
         broadcastSSEEvent('registration', {
           formType,

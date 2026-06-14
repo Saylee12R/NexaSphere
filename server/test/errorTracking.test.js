@@ -108,8 +108,8 @@ test('dynamic stats percentage calculations are correct', async () => {
   const stats = getErrorStats();
   assert.strictEqual(stats.total, 10);
 
-  const status500 = stats.errorsByStatus.find(s => s.status === 500);
-  const status400 = stats.errorsByStatus.find(s => s.status === 400);
+  const status500 = stats.errorsByStatus.find((s) => s.status === 500);
+  const status400 = stats.errorsByStatus.find((s) => s.status === 400);
 
   assert.strictEqual(status500.count, 5);
   assert.strictEqual(status500.percentage, '50.00');

@@ -10,15 +10,21 @@ on:
       - develop
       - staging
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy-frontend:
     name: Deploy Frontend to Vercel (Preview)
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Deploy to Vercel Preview
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25
         uses: amondnet/vercel-action@v42
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -30,11 +36,13 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Render Staging
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Deploy to Render
+        uses: johnbeynon/render-deploy-action@a0588f9aca995a15d69a72cb2bfbf37c12e5b540 # v0.0.8
         uses: johnbeynon/render-deploy-action@v0.0.9
         with:
           service-id: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
@@ -64,3 +72,14 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
         run: npm run db:validate
+
+  health-check:
+    name: Post-Deployment Smoke Test
+    runs-on: ubuntu-latest
+    needs: validate-staging-db
+    steps:
+      - name: Wait for services to stabilize
+        run: sleep 10
+      - name: Verify Health Endpoint
+        run: |
+          curl -f -s https://nexasphere-staging-api.onrender.com/health || exit 1

@@ -71,7 +71,18 @@ const jsonFormat = winston.format.combine(
 
 const logLayout = winston.format.printf((info) => {
   const { timestamp, level, message, ...args } = info;
-  const ts = timestamp ? timestamp.slice(0, 19).replace('T', ' ') : '';
+  let ts = '';
+  if (timestamp) {
+    if (typeof timestamp === 'string') {
+      ts = timestamp.slice(0, 19).replace('T', ' ');
+    } else if (timestamp instanceof Date) {
+      ts = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+    } else if (typeof timestamp.toISOString === 'function') {
+      ts = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+    } else {
+      ts = String(timestamp);
+    }
+  }
   return `${ts} [${level}]: ${message} ${
     Object.keys(args).length ? JSON.stringify(args, null, 2) : ''
   }`;
@@ -81,13 +92,27 @@ const textFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
-  correlationFormat(),
-  logLayout
+  winston.format.printf((info) => {
+    const { timestamp, level, message, ...args } = info;
+    const ts = typeof timestamp === 'string' ? timestamp : new Date().toISOString();
+
+    // Strip out internal Winston symbol keys so they don't print as empty objects
+    const cleanArgs = Object.keys(args).reduce((acc, key) => {
+      if (typeof key === 'string' || typeof key === 'number') {
+        acc[key] = args[key];
+      }
+      return acc;
+    }, {});
+
+    return `${ts} [${level}]: ${message} ${
+      Object.keys(cleanArgs).length ? JSON.stringify(cleanArgs) : ''
+    }`;
+  })
 );
 
 const baseFileFormat = LOG_FORMAT === 'json' ? jsonFormat : textFormat;
 
-const consoleLevel = process.env.LOG_LEVEL_CONSOLE || 'info';
+const consoleLevel = process.env.LOG_LEVEL_CONSOLE || process.env.LOG_LEVEL || 'info';
 const fileBaselineLevel = process.env.LOG_LEVEL_FILE || 'info';
 const globalGatekeeperLevel = process.env.LOG_LEVEL_GLOBAL || 'debug';
 
@@ -109,16 +134,20 @@ const activeTransports = [
 
 if (isStorageWritable) {
   activeTransports.push(
+    // Error logs
     new winston.transports.File({
       filename: path.join(logsDir, 'error.log'),
       level: 'error',
       format: winston.format.uncolorize(),
     }),
+
     new winston.transports.File({
       filename: path.join(logsDir, 'combined.log'),
       level: fileBaselineLevel,
       format: winston.format.uncolorize(),
     }),
+
+    // Daily rotate logs (requires winston-daily-rotate-file)
     new DailyRotateFile({
       filename: path.join(logsDir, 'application-%DATE%.log'),
       datePattern: 'YYYY-MM-DD',

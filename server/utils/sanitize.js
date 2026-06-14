@@ -15,18 +15,18 @@ function escapeHtml(value) {
     .trim();
 }
 
+function toSafeString(value, max = 4000) {
+  return String(value ?? '')
+    .trim()
+    .slice(0, max);
+}
+
 function sanitizeText(value, max = 4000) {
-  return escapeHtml(
-    String(value ?? '')
-      .trim()
-      .slice(0, max)
-  );
+  return escapeHtml(toSafeString(value, max));
 }
 
 function sanitizeNullableText(value, max = 4000) {
-  const text = String(value ?? '')
-    .trim()
-    .slice(0, max);
+  const text = toSafeString(value, max);
   return text ? escapeHtml(text) : null;
 }
 
@@ -43,6 +43,22 @@ function sanitizeTextArray(values, max = 40) {
     .map((entry) => sanitizeText(entry, max))
     .filter(Boolean)
     .slice(0, 12);
+}
+
+function normalizePhone(value) {
+  return String(value || '').replace(/[^\d]/g, '');
+}
+
+function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value ?? '').trim());
+}
+
+function validateSection(str) {
+  const v = String(str || '')
+    .trim()
+    .toUpperCase();
+  if (!/^[A-Z]$/.test(v)) throw new Error('Section must be a single letter (A-Z)');
+  return v;
 }
 
 export function sanitizeEventRecord(event = {}) {
@@ -97,15 +113,6 @@ export function sanitizeCoreTeamMemberRecord(member = {}) {
 //   * apply the same rules recursively to JSONB array/object
 //     fields (skills, projects, roadmaps, badges, seoMetadata)
 // ============================================================
-function toSafeString(value, max = 4000) {
-  return String(value ?? '')
-    .trim()
-    .slice(0, max);
-}
-
-function normalizePhone(value) {
-  return String(value || '').replace(/[^\d]/g, '');
-}
 
 function validateWhatsApp(value) {
   return String(value ?? '')
@@ -122,13 +129,6 @@ const SCRIPT_PATTERN = /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi;
 const STYLE_PATTERN = /<style\b[^>]*>[\s\S]*?<\/style\s*>/gi;
 const CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const NULL_BYTE_PATTERN = /\u0000/g;
-function validateSection(str) {
-  const v = String(str || '')
-    .trim()
-    .toUpperCase();
-  if (!/^[A-Z]$/.test(v)) throw new Error('Section must be a single letter (A-Z)');
-  return v;
-}
 
 function stripHtml(value) {
   if (value == null) return '';
@@ -144,11 +144,13 @@ function stripHtmlTruncated(value, max) {
   return stripHtml(value).trim().slice(0, max);
 }
 
+// Check if a URL uses a safe protocol (http, https, or relative)
 function isSafeUrl(value) {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim();
   if (trimmed.length === 0) return false;
   if (trimmed.length > URL_MAX_LENGTH) return false;
+  // Reject known dangerous protocols explicitly.
   if (/^\s*(javascript|data|vbscript|file|about|chrome|jar|mocha):/i.test(trimmed)) {
     return false;
   }
@@ -237,6 +239,7 @@ function sanitizeRoadmap(roadmap) {
   return out;
 }
 
+// Sanitize single badge object
 function sanitizeBadge(badge) {
   if (!badge || typeof badge !== 'object') return null;
   const name = stripHtmlTruncated(badge.name, 120);
@@ -312,17 +315,26 @@ export function sanitizePortfolioRecord(data = {}) {
     out.skills = [];
   }
   if (Array.isArray(data.badges)) {
-    out.badges = data.badges.map(sanitizeBadge).filter(Boolean).slice(0, 100);
+    out.badges = data.badges
+      .map((badge) => sanitizeBadge(badge))
+      .filter(Boolean)
+      .slice(0, 100);
   } else {
     out.badges = [];
   }
   if (Array.isArray(data.projects)) {
-    out.projects = data.projects.map(sanitizeProject).filter(Boolean).slice(0, 50);
+    out.projects = data.projects
+      .map((project) => sanitizeProject(project))
+      .filter(Boolean)
+      .slice(0, 50);
   } else {
     out.projects = [];
   }
   if (Array.isArray(data.roadmaps)) {
-    out.roadmaps = data.roadmaps.map(sanitizeRoadmap).filter(Boolean).slice(0, 50);
+    out.roadmaps = data.roadmaps
+      .map((roadmap) => sanitizeRoadmap(roadmap))
+      .filter(Boolean)
+      .slice(0, 50);
   } else {
     out.roadmaps = [];
   }
@@ -342,12 +354,14 @@ export function isSafePortfolioUrl(value) {
 
 export {
   escapeHtml,
+  isEmail,
+  normalizePhone,
   sanitizeNullableText,
   sanitizeText,
   sanitizeTextArray,
   stripHtml,
   stripHtmlTruncated,
   toSafeString,
-  normalizePhone,
+  validateSection,
   validateWhatsApp,
 };
