@@ -1,3 +1,4 @@
+# Deploy to GitHub Pages Workflow
 name: Deploy to GitHub Pages
 
 on:
@@ -6,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -22,20 +23,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          # No cache — npm install is used (not npm ci) to avoid lock file drift failures
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Upgrade npm to v11 (matches lockfile generator)
+        run: npm install -g npm@11
 
       - name: Install dependencies
-        run: npm install --prefer-offline --no-audit --no-fund
+        run: npm install --legacy-peer-deps
 
       - name: Build with GitHub Pages base path
-        run: npm run build
+        run: npm run build --workspace=website
         env:
           VITE_BASE_PATH: /NexaSphere/
           NODE_ENV: production
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

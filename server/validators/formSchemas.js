@@ -5,17 +5,9 @@ const WhatsAppSchema = z
   .trim()
   .regex(/^\d{10}$/, 'WhatsApp must be exactly 10 digits');
 
-const EmailSchema = z
-  .string()
-  .trim()
-  .email('Invalid email address')
-  .max(140);
+const EmailSchema = z.string().trim().email('Invalid email address').max(140);
 
-const SectionSchema = z
-  .string()
-  .trim()
-  .min(1, 'Section is required')
-  .max(20);
+const SectionSchema = z.string().trim().min(1, 'Section is required').max(20);
 
 const OptionalText = (max) => z.string().trim().max(max).optional().transform((value) => value || undefined);
 
@@ -25,7 +17,10 @@ const TextList = z
   .transform((value) => {
     if (!value) return [];
     if (Array.isArray(value)) {
-      return value.map((item) => String(item).trim()).filter(Boolean).slice(0, 12);
+      return value
+        .map((item) => String(item).trim())
+        .filter(Boolean)
+        .slice(0, 12);
     }
     return String(value)
       .split(',')
@@ -105,7 +100,11 @@ const recruitmentSubmissionSchema = CommonIdentitySchema.passthrough()
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['collegeEmail'], message: 'Email address is required' });
     }
     if (!data.reason && !data.whyJoin) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['reason'], message: 'Reason is required' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reason'],
+        message: 'Reason is required',
+      });
     }
   })
   .transform((data) => {
@@ -144,7 +143,11 @@ const membershipSubmissionSchema = CommonIdentitySchema.passthrough()
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['collegeEmail'], message: 'Email address is required' });
     }
     if (!data.reason && !data.whyJoin) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['whyJoin'], message: 'Reason is required' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['whyJoin'],
+        message: 'Reason is required',
+      });
     }
   })
   .transform((data) => {
@@ -162,8 +165,4 @@ const membershipSubmissionSchema = CommonIdentitySchema.passthrough()
   // Strip any leftover fallback/unknown keys at the final output boundary
   .pipe(z.object({}).passthrough().strip());
 
-export {
-  coreTeamApplicationSchema,
-  membershipSubmissionSchema,
-  recruitmentSubmissionSchema,
-};
+export { coreTeamApplicationSchema, membershipSubmissionSchema, recruitmentSubmissionSchema };

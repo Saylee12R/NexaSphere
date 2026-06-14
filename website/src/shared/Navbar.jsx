@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { BRAND_LOGO_FULL, BRAND_LOGO_ICON } from './brandAssets';
 import NotificationBell from '../components/NotificationBell';
 import { ThemeToggle } from '../components/common/ThemeToggle';
+import { useStudentAuth } from '../context/StudentAuthContext';
 
 const TABS = [
   'Home',
@@ -11,22 +12,13 @@ const TABS = [
   'Projects',
   'Roadmaps',
   'Portfolio',
+  'Gamification',
+  'Forum',
+  'Mentorship',
   'About',
   'Core Team',
   'Contact',
 ];
-
-/* Map tab name → URL route (tabs that are full pages) */
-const TAB_ROUTES = {
-  Activities: '/activities',
-  Events: '/events',
-  Projects: '/projects',
-  Roadmaps: '/roadmaps',
-  Portfolio: '/portfolio',
-  About: '/about',
-  'Core Team': '/team',
-  Contact: '/contact',
-};
 
 function BookmarkToggle({ onToggle }) {
   return (
@@ -68,7 +60,6 @@ function BookmarkToggle({ onToggle }) {
 
 export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onToggleBookmarks }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [compact, setCompact] = useState(window.innerWidth <= 790);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -87,6 +78,8 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
       window.removeEventListener('resize', r);
     };
   }, []);
+
+  const { user, isAuthenticated, login } = useStudentAuth();
 
   const handleTab = (tab) => {
     setMenuOpen(false);
@@ -108,7 +101,14 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
           style={{ cursor: 'pointer' }}
           aria-label="Go to homepage"
         >
-          <img src={BRAND_LOGO_ICON} alt="NexaSphere" className="ns-mobile-logo-ns" />
+          <img
+            src={BRAND_LOGO_ICON}
+            alt="NexaSphere"
+            className="ns-mobile-logo-ns"
+            loading="lazy"
+            width="28"
+            height="28"
+          />
 
           <span className="ns-mobile-brand">
             <span>NexaSphere</span>
@@ -116,8 +116,50 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <NotificationBell />
+            <button
+              onClick={() => navigate('/notifications')}
+              aria-label="Notification history"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--t2)',
+                cursor: 'pointer',
+                fontSize: '0.7rem',
+                padding: '2px 6px',
+              }}
+              title="View all notifications"
+            >
+              📋
+            </button>
             <BookmarkToggle onToggle={onToggleBookmarks} />
             <ThemeToggle />
+            {isAuthenticated ? (
+              <span
+                className="ns-nav-user-badge"
+                onClick={() => navigate('/dashboard')}
+                style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--t1)' }}
+                title={user?.name || user?.email}
+              >
+                👤
+              </span>
+            ) : (
+              <button
+                className="ns-nav-login-btn"
+                onClick={() => login('google')}
+                aria-label="Sign in"
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  color: 'var(--t1)',
+                  borderRadius: '6px',
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Login
+              </button>
+            )}
           </div>
         </div>
 
@@ -178,6 +220,21 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
 
           <div className="ns-nav-actions">
             <NotificationBell />
+            <button
+              onClick={() => navigate('/notifications')}
+              aria-label="Notification history"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--t2)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                padding: '4px',
+              }}
+              title="View all notifications"
+            >
+              📋
+            </button>
             <BookmarkToggle onToggle={onToggleBookmarks} />
             <div className="ns-nav-ctas">
               <button
@@ -198,6 +255,26 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
             </div>
 
             <ThemeToggle />
+
+            {isAuthenticated ? (
+              <span
+                className="ns-nav-user-badge"
+                onClick={() => navigate('/dashboard')}
+                style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--t1)' }}
+                title={user?.name || user?.email}
+              >
+                👤
+              </span>
+            ) : (
+              <button
+                className="btn btn-sm btn-outline"
+                onClick={() => login('google')}
+                aria-label="Sign in"
+                style={{ marginLeft: '4px' }}
+              >
+                Login
+              </button>
+            )}
 
             <button
               className={`ns-nav-menu-toggle${menuOpen ? ' open' : ''}`}
