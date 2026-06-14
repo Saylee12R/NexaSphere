@@ -80,8 +80,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
-
-
 validateEnvironment();
 
 const app = express();
@@ -282,6 +280,7 @@ app.use(performanceMonitor);
 app.use(cookieParser());
 
 // Global API rate limiter — protects all /api routes from request flooding
+app.use('/api', apiRateLimiter);
 app.use('/api', tierRateLimiter());
 
 function requestLogger(req, res, next) {
@@ -322,7 +321,7 @@ app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/', syncRouter);
 
-const adminAuth = adminAuthMiddleware.requireAdmin;
+const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 const defaultContent = {
   events: [

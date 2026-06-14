@@ -17,6 +17,7 @@ import { validateDataIntegrity } from '../utils/dataIntegrityValidator.js';
 import { getSessionSecurityData } from '../utils/sessionSecurity.js';
 import { getMigrationStatus } from '../utils/migrationSafety.js';
 import { recordPageLoad } from '../observability/metrics.js';
+import { getServiceHealth, getFailoverStatus } from '../utils/failoverManager.js';
 
 function requireMonitoringAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -62,13 +63,13 @@ router.get('/status-history', async (req, res) => {
     if (fs.existsSync(incidentFile)) {
       incidents = JSON.parse(fs.readFileSync(incidentFile, 'utf8'));
     }
-    
-    const activeIncident = incidents.find(i => !i.resolvedAt);
+
+    const activeIncident = incidents.find((i) => !i.resolvedAt);
     const systemStatus = activeIncident ? 'downtime' : 'operational';
-    
+
     // Calculate simulated overall uptime
-    const downtimeEventsCount = incidents.filter(i => i.status !== 'resolved').length;
-    const uptimePercentage = downtimeEventsCount > 0 ? 99.85 : 100.00;
+    const downtimeEventsCount = incidents.filter((i) => i.status !== 'resolved').length;
+    const uptimePercentage = downtimeEventsCount > 0 ? 99.85 : 100.0;
 
     res.status(200).json({
       success: true,
@@ -335,6 +336,32 @@ router.get('/failover-status', requireMonitoringAuth, (req, res) => {
 });
 
 /**
+ * GET /api/monitoring/traces
+ * Get recent request traces for dependency visualization and bottleneck identification
+ */
+router.get('/traces', requireMonitoringAuth, async (req, res) => {
+  try {
+    const { activeTraces } = await import('../middleware/tracingMiddleware.js');
+    const tracesArray = Array.from(activeTraces.values()).reverse();
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const paginatedTraces = tracesArray.slice(0, limit);
+
+    res.status(200).json({
+      success: true,
+      data: paginatedTraces,
+      count: paginatedTraces.length,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    logger.error('Error fetching traces', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch traces',
+    });
+  }
+});
+
+/**
  * GET /api/monitoring/threat-status
  * Get suspicious activity monitoring statistics
  */
@@ -464,6 +491,14 @@ router.get('/migration-status', requireMonitoringAuth, (req, res) => {
       error: 'Failed to fetch migration status',
     });
   }
+});
+
+router.get('/health', (req, res) => {
+  res.json(getServiceHealth());
+});
+
+router.get('/failover-status', (req, res) => {
+  res.json(getFailoverStatus());
 });
 
 export default router;

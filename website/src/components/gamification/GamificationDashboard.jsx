@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { gamificationService } from '../../services/gamification/gamificationService';
 import { DynamicIcon } from '../../shared/Icons';
 
@@ -7,9 +7,14 @@ export default function GamificationDashboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [toasts, setToasts] = useState([]);
+  const toastTimerIds = useRef([]);
 
   useEffect(() => {
     loadData();
+    return () => {
+      toastTimerIds.current.forEach(clearTimeout);
+      toastTimerIds.current = [];
+    };
   }, []);
 
   const showToast = (type, message) => {
