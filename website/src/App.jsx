@@ -110,6 +110,7 @@ const MentorsPage = lazy(() => import('./pages/mentorship/MentorsPage'));
 const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDashboard'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
+const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -615,6 +616,7 @@ function MainRouter({
       '/mentorship': 'Mentorship',
       '/mentorship/mentors': 'Mentorship',
       '/mentorship/dashboard': 'Mentorship',
+      '/resources': 'Resources',
     };
     const tab = pathMap[location.pathname] || 'Home';
     setActiveTab(tab);
@@ -680,6 +682,7 @@ function MainRouter({
         Portfolio: '/portfolio',
         Collab: '/collab',
         Explore: '/explore',
+        Resources: '/resources',
         About: '/about',
         'Core Team': '/team',
         Contact: '/contact',
@@ -1035,6 +1038,16 @@ function MainRouter({
               element={
                 <PageIn k="admin">
                   <AdminPage onBack={onBackHome} />
+                </PageIn>
+              }
+            />
+
+            {/* ── Resources / Library ── */}
+            <Route
+              path="/resources"
+              element={
+                <PageIn k="resources">
+                  <ResourcesPage onBack={onBackHome} />
                 </PageIn>
               }
             />
