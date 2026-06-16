@@ -91,7 +91,13 @@ function HlsPlayer({ streamUrl, hlsUrl, status }) {
 
 function ChatPanel({ streamId, messages, onSendMessage }) {
   const [input, setInput] = useState('');
-  const [userName, setUserName] = useState(() => localStorage.getItem('stream_chat_name') || '');
+  const [userName, setUserName] = useState(() => {
+    try {
+      return (localStorage.getItem('stream_chat_name') || '').slice(0, 50);
+    } catch {
+      return '';
+    }
+  });
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -115,9 +121,15 @@ function ChatPanel({ streamId, messages, onSendMessage }) {
         <input
           placeholder="Your name"
           value={userName}
+          maxLength={50}
           onChange={(e) => {
-            setUserName(e.target.value);
-            localStorage.setItem('stream_chat_name', e.target.value);
+            const trimmed = e.target.value.slice(0, 50);
+            setUserName(trimmed);
+            try {
+              localStorage.setItem('stream_chat_name', trimmed);
+            } catch {
+              // Ignore QuotaExceededError — name is still stored in state
+            }
           }}
           className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
