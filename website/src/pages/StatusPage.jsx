@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getApiBase } from '../utils/runtimeConfig';
 import { motion } from 'framer-motion';
 import { Activity, ShieldAlert, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
 
@@ -11,7 +12,12 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/monitoring/status-history')
+    const base = getApiBase();
+    if (!base) {
+      setLoading(false);
+      return;
+    }
+    fetch(`${base}/api/monitoring/status-history`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
