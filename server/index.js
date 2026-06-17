@@ -75,14 +75,14 @@ import compression from 'compression';
 import syncRouter from './routes/sync.js';
 import multer from 'multer';
 import * as resourcesController from './controllers/resourcesController.js';
+import scheduledTasksRouter from './routes/scheduledTasks.js';
+import { schedulerService } from './services/schedulerService.js';
 
 validateLimiters();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
-
-
 
 validateEnvironment();
 
@@ -1028,6 +1028,7 @@ function clearActivityAuthAttempts(ip) {
 // Admin Analytics & Metrics (mounted with admin auth)
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
 app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
+app.use('/api/admin/scheduled-tasks', adminAuth, scheduledTasksRouter);
 
 // OAuth / SSO Student Auth Endpoints
 app.get('/api/auth/google', studentAuthController.googleAuth);
@@ -1047,17 +1048,17 @@ app.delete('/api/admin/events/:id', adminAuth, eventsController.adminDeleteEvent
 app.get('/api/streams', streamController.listStreams);
 app.get('/api/streams/event/:eventId', streamController.getStreamByEvent);
 app.get('/api/streams/:id', streamController.getStream);
-app.post('/api/streams', streamController.createStream);
-app.put('/api/streams/:id', streamController.updateStream);
-app.patch('/api/streams/:id/status', streamController.setStreamStatus);
-app.delete('/api/streams/:id', streamController.deleteStream);
+app.post('/api/streams', adminAuth, streamController.createStream);
+app.put('/api/streams/:id', adminAuth, streamController.updateStream);
+app.patch('/api/streams/:id/status', adminAuth, streamController.setStreamStatus);
+app.delete('/api/streams/:id', adminAuth, streamController.deleteStream);
 app.post('/api/streams/:id/chat', streamController.addChatMessage);
 app.get('/api/streams/:id/chat', streamController.listChatMessages);
 app.post('/api/streams/:id/polls', streamController.createPoll);
 app.get('/api/streams/:id/polls', streamController.listPolls);
 app.post('/api/streams/polls/:pollId/vote', streamController.votePoll);
-app.patch('/api/streams/polls/:pollId/close', streamController.closePoll);
-app.patch('/api/streams/chat/:messageId/moderate', streamController.moderateChatMessage);
+app.patch('/api/streams/polls/:pollId/close', adminAuth, streamController.closePoll);
+app.patch('/api/streams/chat/:messageId/moderate', adminAuth, streamController.moderateChatMessage);
 app.get('/api/admin/streams', adminAuth, streamController.adminListAll);
 
 // Public listings
@@ -1682,11 +1683,15 @@ app.get('/api/admin/forum/threads', adminAuth, forumController.adminListThreads)
 app.get('/api/mentorship/mentors', mentorshipController.listMentors);
 app.get('/api/mentorship/mentors/:id', mentorshipController.getMentor);
 app.post('/api/mentorship/mentors', mentorshipController.registerMentor);
-app.put('/api/mentorship/mentors/:id', mentorshipController.updateMentor);
+app.put('/api/mentorship/mentors/:id', adminAuth, mentorshipController.updateMentor);
 app.post('/api/mentorship/requests', mentorshipController.requestMentorship);
 app.get('/api/mentorship/requests', mentorshipController.listMentorships);
 app.get('/api/mentorship/requests/:id', mentorshipController.getMentorship);
-app.put('/api/mentorship/requests/:id/status', mentorshipController.updateMentorshipStatus);
+app.put(
+  '/api/mentorship/requests/:id/status',
+  adminAuth,
+  mentorshipController.updateMentorshipStatus
+);
 app.post('/api/mentorship/requests/:id/sessions', mentorshipController.logSession);
 app.get('/api/mentorship/requests/:id/sessions', mentorshipController.listSessions);
 app.post('/api/mentorship/buddy-pairs', mentorshipController.createBuddyPair);
@@ -1748,12 +1753,14 @@ if (process.env.NODE_ENV !== 'test') {
     boot.then(() => {
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
+        schedulerService.init();
       });
     });
   } else {
     loadPersistedPushSubscriptions();
     server = app.listen(port, () => {
       console.log(`NexaSphere server listening on http://localhost:${port}`);
+      schedulerService.init();
     });
     initializeSocketIO(server);
   }

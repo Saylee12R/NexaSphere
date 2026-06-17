@@ -7,6 +7,7 @@ import {
   difficultyLevels,
 } from '../../data/resourcesData';
 import apiClient from '../../utils/apiClient';
+import { getApiBase } from '../../utils/runtimeConfig';
 
 export default function ResourcesPage({ onBack }) {
   const [resources, setResources] = useState(fallbackResources);
@@ -14,11 +15,24 @@ export default function ResourcesPage({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [votedIds, setVotedIds] = useState(new Set());
+  const [votedIds, setVotedIds] = useState(() => {
+    // Restore voted resource IDs from localStorage so votes survive
+    // page interactions and refreshes without requiring a backend read.
+    try {
+      const stored = localStorage.getItem('ns_resource_voted_ids');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch {
+      // Ignore malformed or unavailable localStorage
+    }
+    return new Set();
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE || '';
+    const base = getApiBase();
     if (!base) return;
 
     setLoading(true);
@@ -58,11 +72,13 @@ export default function ResourcesPage({ onBack }) {
   }, [resources, searchQuery, selectedCategory, selectedDifficulty]);
 
   const handleVote = (id) => {
+    const hasVoted = votedIds.has(id);
+
+    // Optimistic UI update — reflect vote immediately before API response
     setResources((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r;
         const votes = r.votes || [];
-        const hasVoted = votedIds.has(id);
         return {
           ...r,
           votes: hasVoted ? votes.slice(0, -1) : [...votes, 'current_user'],
@@ -73,12 +89,43 @@ export default function ResourcesPage({ onBack }) {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      // Persist to localStorage so voted state survives page refresh
+      try {
+        localStorage.setItem('ns_resource_voted_ids', JSON.stringify([...next]));
+      } catch {
+        // Ignore QuotaExceededError
+      }
       return next;
     });
+
+    // Persist vote to backend — consistent with handleDownload which
+    // also fires a POST to record the action server-side
+    const base = getApiBase();
+    if (base) {
+      apiClient(`${base}/api/resources/${id}/vote`, { method: 'POST' }).catch(() => {
+        // Revert optimistic update on failure
+        setResources((prev) =>
+          prev.map((r) => {
+            if (r.id !== id) return r;
+            const votes = r.votes || [];
+            return {
+              ...r,
+              votes: hasVoted ? [...votes, 'current_user'] : votes.slice(0, -1),
+            };
+          })
+        );
+        setVotedIds((prev) => {
+          const next = new Set(prev);
+          if (hasVoted) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      });
+    }
   };
 
   const handleDownload = (id) => {
-    const base = import.meta.env.VITE_API_BASE || '';
+    const base = getApiBase();
     if (base) {
       apiClient(`${base}/api/resources/${id}/download`, { method: 'POST' }).catch(() => {});
     }
