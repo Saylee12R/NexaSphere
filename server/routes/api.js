@@ -14,7 +14,7 @@ import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authR
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { achievementsRepository } from '../repositories/achievementsRepository.js';
 import { portfolioService } from '../services/portfolioService.js';
-import { studentAuthService } from '../services/studentAuthService.js';
+import * as sponsorshipsController from '../controllers/sponsorshipsController.js';
 
 const router = Router();
 
@@ -234,6 +234,32 @@ router.delete(
       return res.status(500).json({ error: err.message });
     }
   }
+);
+
+// Sponsorship management APIs
+router.get('/api/content/sponsors', sponsorshipsController.listSponsors);
+router.get(
+  '/api/admin/sponsors',
+  adminAuthMiddleware.requireScope('events:read'),
+  sponsorshipsController.adminListSponsors
+);
+router.post(
+  '/api/admin/sponsors',
+  adminAuthMiddleware.requireScope('events:write'),
+  adminAuditMiddleware,
+  sponsorshipsController.adminCreateSponsor
+);
+router.put(
+  '/api/admin/sponsors/:id',
+  adminAuthMiddleware.requireScope('events:write'),
+  adminAuditMiddleware,
+  sponsorshipsController.adminUpdateSponsor
+);
+router.delete(
+  '/api/admin/sponsors/:id',
+  adminAuthMiddleware.requireScope('events:write'),
+  adminAuditMiddleware,
+  sponsorshipsController.adminDeleteSponsor
 );
 
 export default router;

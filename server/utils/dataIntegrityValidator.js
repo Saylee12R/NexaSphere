@@ -26,7 +26,6 @@ export const createRecoveryAuditLog = () => {
     timestamp: new Date().toISOString(),
   };
 };
-
 export function validateDataIntegrity(data = []) {
   const duplicates = [];
   const seen = new Set();

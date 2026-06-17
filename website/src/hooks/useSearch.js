@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getApiBase } from '../utils/runtimeConfig';
 
 function useDebounce(value, delay = 300) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -29,7 +30,8 @@ export function eventMatchesQuery(event, query) {
   );
 }
 
-export function useSearch(activities, events, apiBase = '') {
+export function useSearch(activities, events) {
+  const apiBase = getApiBase();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [results, setResults] = useState([]);
@@ -120,7 +122,7 @@ export function useSearch(activities, events, apiBase = '') {
       }
 
       if (filter === 'all' || filter === 'members') {
-        const base = apiBase || '';
+        const base = getApiBase();
         try {
           const res = await fetch(`${base}/api/content/team`);
           if (res.ok) {
