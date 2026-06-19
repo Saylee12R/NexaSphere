@@ -98,8 +98,18 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: createRateLimitStore('rate-limit:auth:'),
-  message: {
-    error: 'Too many login attempts, please try again after a minute.',
+  handler: (req, res, _next, options) => {
+    logger.warn('Authentication rate limit exceeded', {
+      ip: req.ip,
+      path: req.originalUrl || req.path,
+      method: req.method,
+      limit: options.max,
+      windowMs: options.windowMs,
+    });
+
+    res.status(options.statusCode).json({
+      error: 'Too many login attempts, please try again after a minute.',
+    });
   },
 });
 
@@ -110,8 +120,18 @@ export const notificationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: createRateLimitStore('rate-limit:notification:'),
-  message: {
-    error: 'Too many notification requests, please try again later.',
+  handler: (req, res, _next, options) => {
+    logger.warn('Notification rate limit exceeded', {
+      ip: req.ip,
+      path: req.originalUrl || req.path,
+      method: req.method,
+      limit: options.max,
+      windowMs: options.windowMs,
+    });
+
+    res.status(options.statusCode).json({
+      error: 'Too many notification requests, please try again later.',
+    });
   },
 });
 
