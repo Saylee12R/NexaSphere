@@ -36,30 +36,60 @@ export const Navbar: React.FC = () => {
         <a
           href="#home"
           style={{ color: '#f3f4f6', textDecoration: 'none', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#f3f4f6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#f3f4f6';
+          }}
         >
           {t('home')}
         </a>
         <a
           href="#about"
           style={{ color: '#9ca3af', textDecoration: 'none', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#e5e7eb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#9ca3af';
+          }}
         >
           {t('about')}
         </a>
         <a
           href="#events"
           style={{ color: '#9ca3af', textDecoration: 'none', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#e5e7eb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#9ca3af';
+          }}
         >
           {t('events')}
         </a>
         <a
           href="#projects"
           style={{ color: '#9ca3af', textDecoration: 'none', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#e5e7eb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#9ca3af';
+          }}
         >
           {t('projects')}
         </a>
         <a
           href="#contact"
           style={{ color: '#9ca3af', textDecoration: 'none', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#e5e7eb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#9ca3af';
+          }}
         >
           {t('contact')}
         </a>
@@ -68,6 +98,7 @@ export const Navbar: React.FC = () => {
       {/* Action Button */}
       <div>
         <button
+          type="button"
           style={{
             backgroundColor: 'transparent',
             border: '1px solid rgba(255, 255, 255, 0.2)',
