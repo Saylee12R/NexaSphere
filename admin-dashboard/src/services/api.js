@@ -341,19 +341,33 @@ function notifyContentUpdated(key) {
 
 let isLoggingOut = false;
 
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)ns_csrf_token=([^;]*)/);
+  return match ? match[1] : '';
+}
+
+function shouldIncludeCsrf(method) {
+  return method && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+}
+
 async function fetchWithAuth(url, options = {}) {
   const isOffline = auth.isOfflineMode();
 
   if (!isOffline) {
     // --- ONLINE: real API call ---
     try {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+      if (shouldIncludeCsrf(method)) {
+        headers['X-CSRF-Token'] = getCsrfToken();
+      }
       const res = await fetch(`${API_BASE}${url}`, {
         ...options,
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       if (res.status === 401) {

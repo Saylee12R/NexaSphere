@@ -81,6 +81,7 @@ import { loadPersistedPushSubscriptions } from './routes/notifications.js';
 import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
+import { csrfProtection } from './middleware/csrfMiddleware.js';
 import compression from 'compression';
 import syncRouter from './routes/sync.js';
 import multer from 'multer';
@@ -324,6 +325,7 @@ if (!useStructuredHttpLog) {
 app.use(performanceMonitor);
 app.use(cookieParser());
 
+<<<<<<< HEAD
 // Track app activity for smart notification frequency adjustment
 app.use((req, res, next) => {
   if (req.studentUser || req.adminSession) {
@@ -332,6 +334,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+=======
+// CSRF protection — double-submit cookie pattern for all state-changing endpoints
+app.use(csrfProtection);
+>>>>>>> pr-resolve-1966
 
 // Global API rate limiter — protects all /api routes from request flooding
 app.use('/api', apiRateLimiter);
