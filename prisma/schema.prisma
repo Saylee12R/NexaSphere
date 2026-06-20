@@ -1,6 +1,5 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -17,6 +16,7 @@ model User {
   workspaceMembers WorkspaceMember[]
   posts            Post[]
   logs             Log[]
+  analyticsEvents  AnalyticsEvent[]
 }
 
 model Workspace {
@@ -114,30 +114,26 @@ model AuditLog {
   timestamp DateTime    @default(now())
 }
 
-// ── Dynamic Event Capacity Pricing ──
+// ── Admin Analytics & Custom Reports ──
 
-model EventPricing {
-  id              String   @id @default(uuid())
-  eventId         String   @unique
-  basePrice       Float    // Original / standard price in INR
-  currentPrice    Float    // Live computed price
-  minPrice        Float    // Floor — never go below this
-  maxPrice        Float    // Cap — never exceed this
-  capacity        Int      // Total seats
-  registrations   Int      @default(0)
-  eventDate       DateTime // Used for time-based tier calculation
-  adminOverride   Float?   // Admin can pin a manual price (null = use algorithm)
-  updatedAt       DateTime @updatedAt
-  createdAt       DateTime @default(now())
-  priceHistory    PriceHistory[]
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  type      String   // e.g. "PAGE_VIEW", "SIGNUP", "EVENT_REGISTER"
+  userId    String?  // null if anonymous
+  sessionId String?  // To track sessions
+  path      String?  // For page views
+  metadata  Json?    // Any extra payload
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
-model PriceHistory {
-  id        String       @id @default(uuid())
-  pricingId String
-  price     Float
-  reason    String       // e.g. "early_bird", "demand_80pct", "admin_override"
-  createdAt DateTime     @default(now())
-
-  pricing   EventPricing @relation(fields: [pricingId], references: [id], onDelete: Cascade)
+model CustomReport {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  config       Json     // Stores selected metrics, dimensions, chart type
+  scheduleType String?  // e.g. "weekly", "monthly", null if manual
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

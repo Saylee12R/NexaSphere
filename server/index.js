@@ -18,6 +18,9 @@ import { adminAuthMiddleware } from './middleware/adminAuthMiddleware.js';
 import analyticsRouter from './routes/analytics.js';
 import apiRouter from './routes/api.js';
 import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
+import activityEventsRouter from './routes/activityEvents.js';
+import formSubmissionsRouter from './routes/formSubmissions.js';
+import { logEvent } from './controllers/analyticsController.js';
 import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
@@ -333,6 +336,8 @@ if (!useStructuredHttpLog) {
 }
 
 // Mount route modules
+app.use('/api/form-submissions', formSubmissionsRouter);
+app.post('/api/analytics/track', logEvent);
 app.use('/api/monitoring', monitoringRouter);
 app.use('/api/health-dashboard', healthDashboardRouter);
 app.use('/api', documentationRouter);

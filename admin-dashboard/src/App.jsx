@@ -22,7 +22,7 @@ import { CircuitBreakerManager } from './pages/CircuitBreakerManager';
 import { ResourcesManager } from './pages/ResourcesManager';
 import { ComplianceManager } from './pages/ComplianceManager';
 import { SponsorshipsManager } from './pages/SponsorshipsManager';
-import { RBACManager } from './pages/RBACManager';
+import { ComprehensiveAnalytics } from './pages/ComprehensiveAnalytics';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -66,6 +66,7 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardHome />} />
+            <Route path="/dashboard/analytics" element={<ComprehensiveAnalytics />} />
             <Route path="/dashboard/events" element={<EventsManager />} />
             <Route path="/dashboard/activity-events" element={<ActivityEventsManager />} />
             <Route path="/dashboard/core-team" element={<CoreTeamManager />} />
