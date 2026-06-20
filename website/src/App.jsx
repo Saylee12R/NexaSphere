@@ -112,6 +112,8 @@ const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDash
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
+const RecommendationsPage = lazy(() => import('./pages/resume/RecommendationsPage'));
+
 
 const MNH = 88,
   DNH = 64;
@@ -618,6 +620,7 @@ function MainRouter({
       '/mentorship/mentors': 'Mentorship',
       '/mentorship/dashboard': 'Mentorship',
       '/sponsors': 'Sponsors',
+      '/recommendations': 'Recommendations',
     };
     const tab = pathMap[location.pathname] || 'Home';
     setActiveTab(tab);
@@ -690,6 +693,7 @@ function MainRouter({
         Forum: '/forum',
         Mentorship: '/mentorship',
         Sponsors: '/sponsors',
+        Recommendations: '/recommendations',
       };
       const targetPath = routeMap[tab];
       if (targetPath) {
@@ -1135,6 +1139,16 @@ function MainRouter({
               element={
                 <PageIn k="resources">
                   <ResourcesPage onBack={onBackHome} />
+                </PageIn>
+              }
+            />
+
+            {/* ── Recommendations ── */}
+            <Route
+              path="/recommendations"
+              element={
+                <PageIn k="recommendations">
+                  <RecommendationsPage onBack={onBackHome} />
                 </PageIn>
               }
             />

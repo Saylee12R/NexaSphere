@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { gamificationService } from '../../services/gamification/gamificationService';
+import { gamificationService, ACHIEVEMENTS } from '../../services/gamification/gamificationService';
 import { DynamicIcon } from '../../shared/Icons';
 
 export default function GamificationDashboard() {
@@ -327,30 +327,40 @@ export default function GamificationDashboard() {
             gap: '16px',
           }}
         >
-          {userStats.badges.map((badge) => (
-            <div
-              key={badge.id}
-              style={{
-                background: '#1A1A1A',
-                borderRadius: '16px',
-                padding: '20px',
-                textAlign: 'center',
-                border: `1px solid ${gamificationService.getTierColor(badge.tier)}`,
-              }}
-            >
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>{badge.icon}</div>
-              <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{badge.title}</div>
+          {userStats.badges.map((badge) => {
+            const achDef = Object.values(ACHIEVEMENTS || {}).find(a => a.id === badge.id || a.title === badge.title);
+            const tooltipText = achDef 
+              ? `${achDef.description} (Earn +${achDef.xpReward} XP)`
+              : 'Unlocked via system achievement milestone';
+
+            return (
               <div
+                key={badge.id}
+                title={tooltipText}
                 style={{
-                  fontSize: '11px',
-                  color: gamificationService.getTierColor(badge.tier),
-                  marginTop: '4px',
+                  background: '#1A1A1A',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  border: `1px solid ${gamificationService.getTierColor(badge.tier)}`,
+                  cursor: 'help',
+                  position: 'relative',
                 }}
               >
-                {badge.tier.toUpperCase()}
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>{badge.icon}</div>
+                <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{badge.title}</div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: gamificationService.getTierColor(badge.tier),
+                    marginTop: '4px',
+                  }}
+                >
+                  {badge.tier.toUpperCase()}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {userStats.badges.length === 0 && (
             <div
               style={{
