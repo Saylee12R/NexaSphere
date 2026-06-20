@@ -81,6 +81,7 @@ import multer from 'multer';
 import * as resourcesController from './controllers/resourcesController.js';
 import * as backupController from './controllers/backupController.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
+import healthDashboardRouter from './routes/healthDashboard.js';
 import { schedulerService } from './services/schedulerService.js';
 import dynamicPricingRouter from './routes/dynamicPricing.js';
 
@@ -330,6 +331,7 @@ if (!useStructuredHttpLog) {
 
 // Mount route modules
 app.use('/api/monitoring', monitoringRouter);
+app.use('/api/health-dashboard', healthDashboardRouter);
 app.use('/api', documentationRouter);
 app.use('/', apiRouter);
 app.use('/', healthRouter);

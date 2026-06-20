@@ -114,7 +114,7 @@ const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
 const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 const NotificationHistoryPage = lazy(() => import('./pages/notifications/NotificationHistoryPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
-const EventBudgetPage = lazy(() => import('./pages/finance/EventBudgetPage'));
+const SystemHealthPage = lazy(() => import('./pages/monitoring/SystemHealthPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -1189,13 +1189,13 @@ function MainRouter({
               }
             />
 
-            {/* ── Event Budget Page ── */}
+            {/* ── System Health Monitor ── */}
             <Route
-              path="/budgets"
+              path="/health"
               element={
                 <ErrorBoundary>
-                  <PageIn k="budgets">
-                    <EventBudgetPage />
+                  <PageIn k="health">
+                    <SystemHealthPage />
                   </PageIn>
                 </ErrorBoundary>
               }
