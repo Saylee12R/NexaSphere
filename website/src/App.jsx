@@ -111,6 +111,8 @@ const MentorsPage = lazy(() => import('./pages/mentorship/MentorsPage'));
 const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDashboard'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
+const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
+const NotificationHistoryPage = lazy(() => import('./pages/notifications/NotificationHistoryPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
 const RecommendationsPage = lazy(() => import('./pages/resume/RecommendationsPage'));
 
@@ -1152,6 +1154,15 @@ function MainRouter({
               element={
                 <PageIn k="recommendations">
                   <RecommendationsPage onBack={onBackHome} />
+                </PageIn>
+              }
+            />
+            {/* ── Notification History ── */}
+            <Route
+              path="/notifications"
+              element={
+                <PageIn k="notifications">
+                  <NotificationHistoryPage />
                 </PageIn>
               }
             />
