@@ -93,11 +93,11 @@ NexaSphere/
 
 ## Node Version Management & Environment Setup
 
-Consistent development environments are crucial for the stability, performance, and scaling of NexaSphere. To prevent compatibility issues among contributors, this project strictly enforces Node.js version **v20** (specifically the LTS "Iron" release stream).
+Consistent development environments are crucial for the stability, performance, and scaling of NexaSphere. To prevent compatibility issues among contributors, this project supports Node.js versions **v20.x (LTS)** or **v22.x (LTS)**.
 
-### Why Node.js v20 (LTS)?
+### Why Node.js v20/v22 (LTS)?
 
-- **LTS (Long Term Support) Stability**: Node.js 20 provides long-term security updates and bug fixes, ensuring that the NexaSphere platform is built on a rock-solid foundation.
+- **LTS (Long Term Support) Stability**: Using LTS versions ensures the NexaSphere platform is built on a rock-solid foundation with long-term security updates.
 - **Modern Runtime Features**: Node.js 20 includes native features such as the stable `fetch` API, a built-in test runner, and refined ESM (ECMAScript Modules) support, which are heavily utilized across our backend services.
 - **Dependency Compatibility**: Our modern toolchain (including React 18, Vite 5, Express 4, and ESLint) is optimized and tested against Node.js 20. Running older or newer versions might result in unexpected compilation or runtime errors.
 - **Production Alignment**: Since our backend is deployed on Render and Docker containers configured for Node 20, using the exact same version locally prevents environment-specific bugs.

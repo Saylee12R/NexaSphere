@@ -1218,11 +1218,6 @@ app.patch('/api/streams/questions/:qId/answer', adminAuth, streamController.answ
 app.post('/api/streams/:id/reactions', streamController.addReaction);
 app.get('/api/streams/:id/reactions', streamController.getReactions);
 
-// search routes
-app.get('/api/search', searchRateLimiter, searchController.search);
-app.get('/api/search/trending', searchRateLimiter, searchController.trending);
-app.get('/api/recommendations', searchRateLimiter, searchController.recommendations);
-
 // Public listings
 app.get('/api/content/team', async (req, res) => {
   try {

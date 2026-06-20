@@ -315,7 +315,7 @@ export default function CinematicOpening({ onDone, theme = 'dark' }) {
       clearInterval(ivRef.current);
       clearTimeout(fallback);
     };
-  }, []);
+  }, [onDone]);
 
   const bg = isL ? '#FFFFFF' : '#0A0A0A';
   const accent = '#E63946';

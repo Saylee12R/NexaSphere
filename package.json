@@ -36,11 +36,9 @@
     "prepare": "node -e \"try { require('husky'); require('child_process').execSync('husky', {stdio:'inherit'}) } catch(e) { console.log('husky not available, skipping') }\""
   },
   "devDependencies": {
-    "@playwright/test": "^1.44.1",
-    "axe-playwright": "^2.0.1",
-    "concurrently": "^10.0.0",
+    "concurrently": "^9.1.2",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.6",
+    "lint-staged": "^15.4.3",
     "prettier": "^3.8.3",
     "prisma": "^5.12.1"
   },
@@ -64,12 +62,7 @@
   "dependencies": {
     "jose": "^5.9.6",
     "jwt-decode": "^4.0.0",
-    "@rollup/rollup-linux-arm64-gnu": "4.61.1",
-    "@rollup/rollup-linux-arm64-musl": "4.60.0",
-    "@rollup/rollup-linux-x64-gnu": "4.61.1",
-    "@rollup/rollup-linux-x64-musl": "4.60.0",
     "lru-cache": "^11.5.1",
-    "next-intl": "^4.13.0",
     "@prisma/client": "^5.12.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

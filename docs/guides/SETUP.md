@@ -26,7 +26,7 @@ Install and verify these tools before starting:
 ### Node.js & npm
 
 ```bash
-node -v   # Must be >= 20.0.0
+node -v   # Recommended: v20.x or v22.x
 npm -v    # Must be >= 10.0.0
 ```
 

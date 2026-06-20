@@ -3,7 +3,6 @@ import { getApiBase } from '../../utils/runtimeConfig';
 import { useParams } from 'react-router-dom';
 import {
   Play,
-  Pause,
   Send,
   MessageSquare,
   BarChart3,
@@ -89,7 +88,7 @@ function HlsPlayer({ streamUrl, hlsUrl, status }) {
   );
 }
 
-function ChatPanel({ streamId, messages, onSendMessage }) {
+function ChatPanel({ messages, onSendMessage }) {
   const [input, setInput] = useState('');
   const [userName, setUserName] = useState(() => {
     try {
@@ -280,14 +279,14 @@ function LiveStreamPage() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
     (async () => {
+      setLoading((prev) => (prev === true ? prev : true));
+      setError(null);
       const s = await fetchStream();
       if (s) {
         await Promise.all([fetchMessages(s.id), fetchPolls(s.id)]);
       } else if (!streamId) {
-        setError('No stream found for this event');
+        setError('No stream found for this event.');
       }
       setLoading(false);
     })();
