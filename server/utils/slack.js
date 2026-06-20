@@ -2,12 +2,12 @@
  * Slack Alert Integration
  * Sends alerts to Slack for critical errors and metrics
  */
-
+import { tracedFetch } from '../config/appContext.js';
 import logger from './logger.js';
 import { CircuitBreaker, circuitBreakerRegistry } from './circuitBreaker.js';
 
 async function _slackFetch(webhookUrl, payload) {
-  const response = await fetch(webhookUrl, {
+  const response = await tracedFetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -38,8 +38,8 @@ async function dispatchToSlack(payload, alertContext) {
   }
 
   try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
+    const response = await tracedFetch(webhookUrl, {
+      method: "POST",
       headers: {
         'Content-Type': 'application/json',
       },
@@ -197,6 +197,7 @@ function formatSlackMessage(data) {
  * @param {Object} metrics - Performance metrics
  */
 async function sendPerformanceAlert(metrics) {
+
   const payload = {
     attachments: [
       {
@@ -226,6 +227,7 @@ async function sendPerformanceAlert(metrics) {
         ],
         footer: 'NexaSphere Performance Monitoring',
         ts: Math.floor(Date.now() / 1000),
+
       },
     ],
   };
