@@ -14,7 +14,7 @@ import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authR
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { achievementsRepository } from '../repositories/achievementsRepository.js';
 import { portfolioService } from '../services/portfolioService.js';
-import { skillExchangeService } from '../services/skillExchangeService.js';
+import { eventPlanningService } from '../services/eventPlanningService.js';
 
 const router = Router();
 
@@ -290,54 +290,72 @@ router.delete(
   }
 );
 
-// Skill Exchange
-router.get('/api/content/skills/listings', (req, res) =>
-  res.json({ listings: skillExchangeService.getListings(req.query) })
-);
-router.post('/api/content/skills/listings', (req, res) =>
-  res.status(201).json(skillExchangeService.createListing(req.body))
-);
-router.get('/api/content/skills/matches/:listingId', (req, res) =>
-  res.json({ matches: skillExchangeService.findMatches(req.params.listingId) })
-);
-router.post('/api/content/skills/sessions', (req, res) =>
-  res
-    .status(201)
-    .json(
-      skillExchangeService.bookSession(
-        req.body.fromUser,
-        req.body.toUser,
-        req.body.listingId,
-        req.body.scheduledAt
-      )
-    )
-);
-router.put('/api/content/skills/sessions/:id', (req, res) => {
-  const session = skillExchangeService.completeSession(req.params.id, req.body.notes);
-  if (!session) return res.status(404).json({ error: 'Session not found' });
-  res.json(session);
+// Event planning — content routes (for website)
+router.get('/api/content/events/:eventId/planning', (req, res) => {
+  eventPlanningService.seedDefaultTemplates(req.params.eventId);
+  res.json(eventPlanningService.getPlan(req.params.eventId));
 });
-router.post('/api/content/skills/sessions/:id/feedback', (req, res) =>
-  res
-    .status(201)
-    .json(
-      skillExchangeService.leaveFeedback(
-        req.params.id,
-        req.body.from,
-        req.body.to,
-        req.body.rating,
-        req.body.comment
-      )
-    )
+router.post('/api/content/events/:eventId/planning/tasks', (req, res) => {
+  const task = eventPlanningService.createTask(req.params.eventId, req.body, req.ip);
+  res.status(201).json(task);
+});
+router.put('/api/content/events/:eventId/planning/tasks/:taskId', (req, res) => {
+  const task = eventPlanningService.updateTask(
+    req.params.eventId,
+    req.params.taskId,
+    req.body,
+    req.ip
+  );
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  res.json(task);
+});
+router.delete('/api/content/events/:eventId/planning/tasks/:taskId', (req, res) => {
+  if (!eventPlanningService.deleteTask(req.params.eventId, req.params.taskId, req.ip))
+    return res.status(404).json({ error: 'Task not found' });
+  res.json({ ok: true });
+});
+router.post('/api/content/events/:eventId/planning/tasks/:taskId/comments', (req, res) => {
+  const comment = eventPlanningService.addComment(
+    req.params.eventId,
+    req.params.taskId,
+    { content: req.body.content },
+    req.ip
+  );
+  if (!comment) return res.status(404).json({ error: 'Task not found' });
+  res.status(201).json(comment);
+});
+
+// Event planning — admin routes
+router.get(
+  '/api/admin/event-planning',
+  adminAuthMiddleware.requireScope('events:read'),
+  (req, res) => {
+    const all = {};
+    const { plans } = eventPlanningService;
+    for (const [eventId, plan] of plans) {
+      all[eventId] = {
+        tasks: Array.from(plan.tasks.values()),
+        budget: plan.budget,
+        activityLog: plan.activityLog.slice(-50),
+      };
+    }
+    res.json({ plans: all });
+  }
 );
-router.get('/api/content/skills/sessions/:id/feedback', (req, res) =>
-  res.json({ feedback: skillExchangeService.getFeedback(req.params.id) })
+router.put(
+  '/api/admin/event-planning/:eventId/budget',
+  adminAuthMiddleware.requireScope('events:write'),
+  (req, res) => {
+    res.json(eventPlanningService.updateBudget(req.params.eventId, req.body));
+  }
 );
-router.get('/api/content/skills/leaderboard', (req, res) =>
-  res.json({ leaderboard: skillExchangeService.getLeaderboard() })
-);
-router.get('/api/content/skills/users/:user/stats', (req, res) =>
-  res.json(skillExchangeService.getUserStats(req.params.user))
+router.post(
+  '/api/admin/event-planning/:eventId/templates/seed',
+  adminAuthMiddleware.requireScope('events:write'),
+  (req, res) => {
+    eventPlanningService.seedDefaultTemplates(req.params.eventId);
+    res.json({ ok: true });
+  }
 );
 
 export default router;

@@ -278,6 +278,21 @@ export function _onConnection(socket) {
     }
   });
 
+  // Event planning real-time collaboration
+  socket.on('planning:join', (eventId) => {
+    if (typeof eventId === 'string' && /^[a-zA-Z0-9\-_]{1,100}$/.test(eventId)) {
+      socket.join(`planning:${eventId}`);
+    }
+  });
+  socket.on('planning:leave', (eventId) => {
+    if (typeof eventId === 'string') socket.leave(`planning:${eventId}`);
+  });
+  socket.on('planning:updated', (data) => {
+    if (data && data.eventId) {
+      socket.to(`planning:${data.eventId}`).emit('planning:updated', data);
+    }
+  });
+
   socket.on('document_change', (data) => {
     const { roomId, ...payload } = data;
     if (roomId && _isWorkspaceMember(roomId, socket.id)) {

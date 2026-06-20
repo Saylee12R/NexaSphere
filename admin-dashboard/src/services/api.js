@@ -815,45 +815,69 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/reports/engagement
-      else if (url.startsWith('/api/admin/reports/engagement')) {
+      // /api/admin/events/:eventId/registrations
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'GET') resolve({ registrations: regs });
+        if (method === 'POST') {
+          const newReg = {
+            ...body,
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+          };
+          regs = [newReg, ...regs];
+          regDb[eventId] = regs;
+          setDb('event_registrations', regDb);
+          resolve(newReg);
+        }
+      }
+
+      // /api/admin/events/:eventId/attendance
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'POST' && body) {
+          const idx = regs.findIndex(
+            (r) => r.email === body.email || r.ticket_token === body.token
+          );
+          if (idx >= 0) {
+            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
+            regDb[eventId] = regs;
+            setDb('event_registrations', regDb);
+            resolve({ ...regs[idx], already_attended: false });
+          } else {
+            resolve({ error: 'Registration not found' });
+          }
+        }
+      }
+
+      // /api/admin/events/:eventId/analytics
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        const total = regs.length;
+        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
+        const attended = regs.filter((r) => r.attended).length;
+        resolve({
+          eventId,
+          stats: { total, confirmed, waitlisted: total - confirmed, attended },
+          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
+          departmentBreakdown: [],
+          yearBreakdown: [],
+          waitlist: [],
+        });
+      }
+
+      // /api/admin/event-planning
+      else if (url.startsWith('/api/admin/event-planning')) {
         if (method === 'GET') {
-          // Generate mock engagement data
-          const seedUsers = Array.from({ length: 45 }, (_, i) => {
-            const eventsAttended = Math.floor(Math.random() * 15);
-            const portfolioCompletion = Math.floor(Math.random() * 101);
-            const activeDays30 = Math.floor(Math.random() * 31);
-            const activeDays90 = Math.floor(Math.random() * 91);
-
-            // Engagement scoring logic:
-            // 40% based on active days in last 30 days (max 30 points -> scaled to 40)
-            // 30% based on events attended (max 10 events -> scaled to 30)
-            // 30% based on portfolio completion (max 100 -> scaled to 30)
-            const score30 = Math.min((activeDays30 / 30) * 40, 40);
-            const scoreEvents = Math.min((eventsAttended / 10) * 30, 30);
-            const scorePortfolio = (portfolioCompletion / 100) * 30;
-            const engagementScore = Math.round(score30 + scoreEvents + scorePortfolio);
-
-            // Inactive user detection:
-            // Less than 2 active days in the last 30 days AND attended 0 events
-            const isInactive = activeDays30 < 2 && eventsAttended === 0;
-
-            return {
-              id: `user-${i + 1}`,
-              name: `Community Member ${i + 1}`,
-              eventsAttended,
-              portfolioCompletion,
-              activeDays30,
-              activeDays90,
-              engagementScore,
-              status: isInactive ? 'Inactive' : 'Active',
-            };
-          });
-
-          // Sort by engagement score descending
-          seedUsers.sort((a, b) => b.engagementScore - a.engagementScore);
-
-          resolve({ users: seedUsers });
+          resolve({ plans: {} });
+        } else {
+          resolve({ ok: true });
         }
       }
     }, 300); // simulate slight network delay
@@ -1300,63 +1324,16 @@ export const api = {
       }),
   },
 
-  sponsorships: {
-    getAll: () => fetchWithAuth('/api/admin/sponsors'),
-    create: async (sponsor) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      const result = await fetchWithAuth('/api/admin/sponsors', {
-        method: 'POST',
-        body: JSON.stringify(sponsor),
-      });
-      eventEmitter.emit(EVENTS.SPONSOR_CREATED, result);
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor added',
-      });
-      broadcastContentUpdate('sponsors');
-      return result;
-    },
-    update: async (id, sponsor) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      const result = await fetchWithAuth(`/api/admin/sponsors/${id}`, {
+  eventPlanning: {
+    list: () => fetchWithAuth('/api/admin/event-planning'),
+    updateBudget: (eventId, budget) =>
+      fetchWithAuth(`/api/admin/event-planning/${eventId}/budget`, {
         method: 'PUT',
-        body: JSON.stringify(sponsor),
-      });
-      eventEmitter.emit(EVENTS.SPONSOR_UPDATED, result);
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor updated',
-      });
-      broadcastContentUpdate('sponsors');
-      return result;
-    },
-    delete: async (id) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      await fetchWithAuth(`/api/admin/sponsors/${id}`, { method: 'DELETE' });
-      eventEmitter.emit(EVENTS.SPONSOR_DELETED, { id });
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor deleted',
-      });
-      broadcastContentUpdate('sponsors');
-    },
+        body: JSON.stringify(budget),
+      }),
+    seedTemplates: (eventId) =>
+      fetchWithAuth(`/api/admin/event-planning/${eventId}/templates/seed`, { method: 'POST' }),
   },
-
   forum: {
     getAll: async (params = {}) => {
       const query = new URLSearchParams(params).toString();
