@@ -289,7 +289,9 @@ class SchedulerService extends EventEmitter {
       const { rows: users } = await client.query(
         `SELECT id, email, full_name FROM student_users WHERE last_login_at > NOW() - INTERVAL '7 days'`
       );
-      logger.info(`[Scheduler] Email digest: ${events.length} recent events, ${users.length} active users`);
+      logger.info(
+        `[Scheduler] Email digest: ${events.length} recent events, ${users.length} active users`
+      );
     });
   }
 
@@ -339,7 +341,13 @@ class SchedulerService extends EventEmitter {
       logger.info('[Scheduler] No database configured, skipping backup');
       return;
     }
-    const tables = ['events', 'student_users', 'core_team_members', 'resources', 'push_subscriptions'];
+    const tables = [
+      'events',
+      'student_users',
+      'core_team_members',
+      'resources',
+      'push_subscriptions',
+    ];
     let totalRows = 0;
     await withDb(async (client) => {
       for (const table of tables) {
@@ -415,9 +423,7 @@ class SchedulerService extends EventEmitter {
       const { rows: totalUsers } = await client.query(
         'SELECT COUNT(*) as count FROM student_users'
       );
-      const { rows: totalEvents } = await client.query(
-        'SELECT COUNT(*) as count FROM events'
-      );
+      const { rows: totalEvents } = await client.query('SELECT COUNT(*) as count FROM events');
       logger.info(
         `[Scheduler] Analytics snapshot: ${totalUsers[0]?.count || 0} users, ${totalEvents[0]?.count || 0} events`
       );
