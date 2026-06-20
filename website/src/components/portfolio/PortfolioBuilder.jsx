@@ -256,7 +256,8 @@ export default function PortfolioBuilder() {
   };
 
   const getPortfolioUrl = () => {
-    return `${window.location.origin}/p/${username}`;
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${base}/p/${username}`;
   };
 
   const handleCopyLink = () => {
