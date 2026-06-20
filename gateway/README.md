@@ -27,13 +27,7 @@ Client (HTTPS :443)
 
 ## Acceptance Criteria Coverage
 
-| # | Criterion | Implementation |
-|---|-----------|---------------|
-| 1 | Nginx gateway | `nginx:1.25-alpine` container in `docker-compose.yml` |
-| 2 | Route to backend | `upstream nexasphere_backend { server api:8787; }` with keepalive pool |
-| 3 | Centralized rate limiting | Three `limit_req_zone` directives covering general API, auth, and forms |
-| 4 | Request/response logging | JSON-structured access log at `/var/log/nginx/access.log`, persisted to `logs/nginx/` on the host |
-| 5 | SSL termination | Port 443 with TLS 1.2/1.3, HTTP → HTTPS redirect on port 80 |
+#### Using OpenSSL (macOS/Linux/Git Bash)
 
 ## Rate Limit Zones
 
@@ -78,7 +72,7 @@ Logs are persisted to `logs/nginx/` on the host so they survive container restar
 bash gateway/generate-certs.sh
 ```
 
-For production, replace `gateway/certs/localhost.crt` and `gateway/certs/localhost.key` with your CA-signed certificates and update `server_name` in `nginx.conf`.
+#### Using PowerShell (Windows)
 
 ### 2. Start the gateway
 

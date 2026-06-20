@@ -8,8 +8,9 @@ function CopyPopup({ value, onClose }) {
   const copiedTimeoutRef = useRef(null);
 
   const handleCopy = () => {
+    const sanitized = String(value || '').replace(/[\x00-\x08\x0B\x0C\x0D\x0E-\x1F\x7F-\x9F]/g, '');
     navigator.clipboard
-      .writeText(value)
+      .writeText(sanitized)
       .then(() => {
         setCopied(true);
         if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
@@ -50,12 +51,27 @@ function CopyPopup({ value, onClose }) {
   );
 }
 
+// ── URL safety helper: only allow https:// from allowed domains ──
+function isSafeSocialUrl(url, allowedDomains) {
+  if (!url || typeof url !== 'string') return '#';
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return '#';
+    return allowedDomains.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith('.' + domain)
+    )
+      ? url
+      : '#';
+  } catch {
+    return '#';
+  }
+}
+
 // ── Normalize WhatsApp: handle plain numbers OR full URLs ──
 function getWhatsappDisplay(raw) {
   if (!raw) return null;
-  // Already a full URL
-  if (raw.startsWith('http')) return raw;
-  // Plain number — just show it as-is for copy
+  if (raw.startsWith('https://wa.me/')) return raw;
+  if (raw.startsWith('http')) return '#';
   return raw;
 }
 
@@ -134,7 +150,7 @@ function ModalContent({ member, onClose }) {
           <div className="modal-social">
             {member.linkedin && (
               <a
-                href={member.linkedin}
+                href={isSafeSocialUrl(member.linkedin, ['linkedin.com'])}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="modal-social-btn btn-linkedin"
@@ -145,7 +161,7 @@ function ModalContent({ member, onClose }) {
 
             {member.whatsapp && (
               <div style={{ position: 'relative' }}>
-                {whatsappValue.startsWith('http') ? (
+                {whatsappValue && whatsappValue.startsWith('https://wa.me/') ? (
                   <a
                     href={whatsappValue}
                     target="_blank"
@@ -160,7 +176,7 @@ function ModalContent({ member, onClose }) {
                   >
                     💬 WhatsApp
                   </a>
-                ) : (
+                ) : whatsappValue ? (
                   <>
                     <button
                       className="modal-social-btn btn-whatsapp"
@@ -175,13 +191,13 @@ function ModalContent({ member, onClose }) {
                       <CopyPopup value={whatsappValue} onClose={() => setActivePopup(null)} />
                     )}
                   </>
-                )}
+                ) : null}
               </div>
             )}
 
             {member.instagram && (
               <a
-                href={member.instagram}
+                href={isSafeSocialUrl(member.instagram, ['instagram.com'])}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="modal-social-btn btn-instagram"

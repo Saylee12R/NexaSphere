@@ -23,12 +23,14 @@ test.describe('Authentication and Core Flows', () => {
     await expect(page.locator('text=Invalid')).toBeVisible();
   });
 
-  test('should prevent unauthorized access to protected routes', async ({ page }) => {
-    // Attempting to access admin dashboard directly without session
-    const response = await page.goto('/admin/dashboard');
-    expect(response?.status()).not.toBe(200);
+  test('should prevent unauthorized access to protected routes', async ({ page, request }) => {
+    // Attempting to access admin API directly without session
+    const apiBase = process.env.E2E_API_BASE || 'http://localhost:8080';
+    const response = await request.get(`${apiBase}/api/admin/analytics/stats`);
+    expect(response.status()).toBe(401);
 
-    // Most apps redirect to login if unauthorized
-    await expect(page).toHaveURL(/.*\/admin.*/);
+    // Verify client-side behavior: visiting /admin should display login if not authenticated
+    await page.goto('/admin');
+    await expect(page.getByRole('heading', { name: /admin login/i })).toBeVisible();
   });
 });

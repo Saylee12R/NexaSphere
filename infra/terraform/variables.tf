@@ -104,3 +104,21 @@ variable "acm_certificate_arn" {
   type        = string
   default     = ""
 }
+
+variable "db_name" {
+  description = "Database name"
+  type        = string
+  default     = "nexasphere"
+}
+
+variable "db_username" {
+  description = "Database username"
+  type        = string
+  default     = "postgres"
+}
+
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+}

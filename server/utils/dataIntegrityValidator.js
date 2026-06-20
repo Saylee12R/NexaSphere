@@ -27,10 +27,26 @@ export const createRecoveryAuditLog = () => {
   };
 };
 
-export const validateDataIntegrity = (data) => {
+export function validateDataIntegrity(data = []) {
+  const duplicates = [];
+  const seen = new Set();
+
+  data.forEach((item) => {
+    const key = item.id || item.email;
+
+    if (!key) return;
+
+    if (seen.has(key)) {
+      duplicates.push(key);
+    } else {
+      seen.add(key);
+    }
+  });
+
   return {
-    valid: true,
-    checkedRecords: Array.isArray(data) ? data.length : 0,
-    errors: [],
+    totalRecords: data.length,
+    duplicateCount: duplicates.length,
+    duplicates,
+    valid: duplicates.length === 0,
   };
-};
+}

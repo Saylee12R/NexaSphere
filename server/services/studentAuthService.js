@@ -2,10 +2,18 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { studentUsersRepository } from '../repositories/studentUsersRepository.js';
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable must be set');
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is not set');
+    }
+    console.warn('WARNING: Using insecure default JWT_SECRET for development. Set JWT_SECRET in production.');
+    return 'nexasphere-jwt-dev-secret-change-in-production';
+  }
+  return secret;
 }
-const JWT_SECRET = process.env.JWT_SECRET;
+const tokenBlacklist = new Map();
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
 const STUDENT_ROLES = {
@@ -82,14 +90,27 @@ export const studentAuthService = {
       role: user.role,
       scopes: user.scopes?.length ? user.scopes : getScopesForRole(user.role),
     };
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+    return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRY });
   },
 
   verifyToken(token) {
     try {
-      return jwt.verify(token, JWT_SECRET);
+      if (tokenBlacklist.has(token)) return null;
+      return jwt.verify(token, getJwtSecret());
     } catch {
       return null;
+    }
+  },
+
+  async logout(token) {
+    if (!token) return;
+    const decoded = jwt.decode(token);
+    if (decoded && decoded.exp) {
+      const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+      if (ttl > 0) {
+        tokenBlacklist.set(token, true);
+        setTimeout(() => tokenBlacklist.delete(token), ttl * 1000);
+      }
     }
   },
 

@@ -9,6 +9,7 @@ import { getAdminSession } from '../repositories/adminSessionsRepository.js';
 import { resolveAdminPermissions, getRoomsForPermissions } from './eventPermissions.js';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { getRedisClient } from '../utils/redis.js';
+import { waitingRoomService } from '../services/waitingRoomService.js';
 
 let io = null;
 const connectedUsers = new Map();
@@ -87,6 +88,8 @@ export function initializeSocketIO(httpServer) {
   io.on('connection', (socket) => {
     _onConnection(socket);
   });
+
+  liveQaService.setIO(io);
 
   return io;
 }
@@ -278,6 +281,21 @@ export function _onConnection(socket) {
     }
   });
 
+  // Event planning real-time collaboration
+  socket.on('planning:join', (eventId) => {
+    if (typeof eventId === 'string' && /^[a-zA-Z0-9\-_]{1,100}$/.test(eventId)) {
+      socket.join(`planning:${eventId}`);
+    }
+  });
+  socket.on('planning:leave', (eventId) => {
+    if (typeof eventId === 'string') socket.leave(`planning:${eventId}`);
+  });
+  socket.on('planning:updated', (data) => {
+    if (data && data.eventId) {
+      socket.to(`planning:${data.eventId}`).emit('planning:updated', data);
+    }
+  });
+
   socket.on('document_change', (data) => {
     const { roomId, ...payload } = data;
     if (roomId && _isWorkspaceMember(roomId, socket.id)) {
@@ -336,6 +354,58 @@ export function _onConnection(socket) {
       logger.error('Admin authentication error', { error: e.message, socketId: socket.id });
       socket.emit('admin:authenticated', { success: false, error: 'Authentication failed' });
     }
+  });
+
+  // Waiting room — join queue
+  socket.on('waiting:join', ({ eventId, fullName, email, isPriority } = {}) => {
+    if (!eventId || !email || !fullName) return;
+    const userId = socket.id;
+    const result = waitingRoomService.joinQueue(eventId, { userId, fullName, email, isPriority });
+    socket.join(`waiting:${eventId}`);
+    socket.emit('waiting:joined', { eventId, ...result });
+  });
+
+  // Waiting room — get current queue status
+  socket.on('waiting:status', ({ eventId } = {}) => {
+    if (!eventId) return;
+    const queue = waitingRoomService.getQueue(eventId);
+    socket.emit('waiting:status:update', { eventId, queue, total: queue.length });
+  });
+
+  // Waiting room — admin admit one
+  socket.on('waiting:admit-one', ({ eventId } = {}) => {
+    if (!socket.adminAuthenticated || !eventId) return;
+    const entry = waitingRoomService.admitOne(eventId);
+    if (entry) {
+      socket.emit('waiting:admitted-entry', { eventId, entry });
+    }
+  });
+
+  // Waiting room — admin admit all
+  socket.on('waiting:admit-all', ({ eventId } = {}) => {
+    if (!socket.adminAuthenticated || !eventId) return;
+    const admitted = waitingRoomService.admitAll(eventId);
+    socket.emit('waiting:admitted-entries', { eventId, count: admitted.length });
+  });
+
+  // Waiting room — admin remove attendee
+  socket.on('waiting:remove', ({ eventId, entryId } = {}) => {
+    if (!socket.adminAuthenticated || !eventId || !entryId) return;
+    waitingRoomService.removeFromQueue(eventId, entryId);
+    socket.emit('waiting:removed-entry', { eventId, entryId });
+  });
+
+  // Waiting room — admin move to front
+  socket.on('waiting:move-front', ({ eventId, entryId } = {}) => {
+    if (!socket.adminAuthenticated || !eventId || !entryId) return;
+    waitingRoomService.moveToFront(eventId, entryId);
+    socket.emit('waiting:moved-front', { eventId, entryId });
+  });
+
+  // Waiting room — admin send message to waiting room
+  socket.on('waiting:send-message', ({ eventId, message } = {}) => {
+    if (!socket.adminAuthenticated || !eventId || !message) return;
+    waitingRoomService.sendMessage(eventId, message);
   });
 
   // Handle disconnection

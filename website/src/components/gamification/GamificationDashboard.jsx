@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { gamificationService } from '../../services/gamification/gamificationService';
+import { gamificationService, ACHIEVEMENTS } from '../../services/gamification/gamificationService';
 import { DynamicIcon } from '../../shared/Icons';
 
 export default function GamificationDashboard() {
@@ -9,12 +9,6 @@ export default function GamificationDashboard() {
   const [toasts, setToasts] = useState([]);
   const toastTimerIds = useRef([]);
 
-  const loadData = async () => {
-    setUserStats(gamificationService.getUserStats());
-    const lb = await gamificationService.getLeaderboard();
-    setLeaderboard(lb);
-  };
-
   useEffect(() => {
     loadData();
     return () => {
@@ -23,24 +17,54 @@ export default function GamificationDashboard() {
     };
   }, []);
 
-  const handleAction = (action) => {
+  const showToast = (type, message) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
+  const loadData = async () => {
+    const stats = gamificationService.getUserStats();
+    setUserStats(stats);
+
+    // Show initial notifications (e.g., loaded from constructor) as toasts and clear them
+    if (stats.notifications && stats.notifications.length > 0) {
+      stats.notifications.forEach((notif) => {
+        showToast(notif.type, notif.message);
+      });
+      gamificationService.clearNotifications();
+    }
+
+    const lb = await gamificationService.getLeaderboard();
+    setLeaderboard(lb);
+  };
+
+  const handleAction = async (action) => {
     const result = gamificationService.trackAction(action);
-    loadData();
-    // Replace blocking window.alert() with in-app toasts that handle
-    // all unlocked achievements and auto-dismiss after 4 seconds.
-    if (result.newAchievements.length > 0) {
-      const newToasts = result.newAchievements.map((ach, i) => ({
-        id: `${Date.now()}-${i}`,
-        message: `🎉 Achievement Unlocked: ${ach.title}! +${result.xpEarned} XP`,
-      }));
-      setToasts((prev) => [...prev, ...newToasts]);
-      newToasts.forEach((t) => {
-        const timerId = setTimeout(() => {
-          setToasts((prev) => prev.filter((x) => x.id !== t.id));
-        }, 4000);
-        toastTimerIds.current.push(timerId);
+    const stats = gamificationService.getUserStats();
+    setUserStats(stats);
+
+    // Show toasts for new achievements with their actual rewards
+    if (result.newAchievements && result.newAchievements.length > 0) {
+      result.newAchievements.forEach((ach) => {
+        showToast('achievement', `🏆 Achievement Unlocked: ${ach.title}! +${ach.xpReward} XP`);
       });
     }
+
+    // Show toasts for level up or streak notifications
+    if (stats.notifications && stats.notifications.length > 0) {
+      stats.notifications.forEach((notif) => {
+        if (notif.type !== 'achievement') {
+          showToast(notif.type, notif.message);
+        }
+      });
+      gamificationService.clearNotifications();
+    }
+
+    const lb = await gamificationService.getLeaderboard();
+    setLeaderboard(lb);
   };
 
   if (!userStats) {
@@ -62,7 +86,13 @@ export default function GamificationDashboard() {
     );
   }
 
-  const xpProgress = (userStats.xp / userStats.nextLevelXP) * 100;
+  const currentThreshold = userStats.currentLevelXP || 0;
+  const nextThreshold = userStats.nextLevelXP || 100;
+  const xpRange = nextThreshold - currentThreshold;
+  const xpProgress =
+    xpRange > 0
+      ? Math.min(100, Math.max(0, ((userStats.xp - currentThreshold) / xpRange) * 100))
+      : 100;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
@@ -327,30 +357,40 @@ export default function GamificationDashboard() {
             gap: '16px',
           }}
         >
-          {userStats.badges.map((badge) => (
-            <div
-              key={badge.id}
-              style={{
-                background: '#1A1A1A',
-                borderRadius: '16px',
-                padding: '20px',
-                textAlign: 'center',
-                border: `1px solid ${gamificationService.getTierColor(badge.tier)}`,
-              }}
-            >
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>{badge.icon}</div>
-              <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{badge.title}</div>
+          {userStats.badges.map((badge) => {
+            const achDef = Object.values(ACHIEVEMENTS || {}).find(a => a.id === badge.id || a.title === badge.title);
+            const tooltipText = achDef 
+              ? `${achDef.description} (Earn +${achDef.xpReward} XP)`
+              : 'Unlocked via system achievement milestone';
+
+            return (
               <div
+                key={badge.id}
+                title={tooltipText}
                 style={{
-                  fontSize: '11px',
-                  color: gamificationService.getTierColor(badge.tier),
-                  marginTop: '4px',
+                  background: '#1A1A1A',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  border: `1px solid ${gamificationService.getTierColor(badge.tier)}`,
+                  cursor: 'help',
+                  position: 'relative',
                 }}
               >
-                {badge.tier.toUpperCase()}
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>{badge.icon}</div>
+                <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{badge.title}</div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: gamificationService.getTierColor(badge.tier),
+                    marginTop: '4px',
+                  }}
+                >
+                  {badge.tier.toUpperCase()}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {userStats.badges.length === 0 && (
             <div
               style={{
@@ -374,8 +414,8 @@ export default function GamificationDashboard() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ background: '#0F0F0F' }}>
               <tr>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#9CA3AF' }}>Rank</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#9CA3AF' }}>User</th>
+                <th style={{ padding: '12px 16px', color: '#9CA3AF', textAlign: 'left' }}>Rank</th>
+                <th style={{ padding: '12px 16px', color: '#9CA3AF', textAlign: 'left' }}>User</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right', color: '#9CA3AF' }}>
                   Level
                 </th>
@@ -512,77 +552,93 @@ export default function GamificationDashboard() {
         </div>
       )}
 
-      {/* Achievement Toasts — replaces blocking window.alert() */}
+      {/* Custom Floating Toasts System */}
       {toasts.length > 0 && (
         <div
-          role="status"
-          aria-live="polite"
           style={{
             position: 'fixed',
-            bottom: '20px',
-            right: '20px',
-            zIndex: 1000,
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '12px',
+            pointerEvents: 'none',
           }}
         >
           {toasts.map((toast) => (
             <div
               key={toast.id}
               style={{
-                background: '#1A1A1A',
-                border: '1px solid #10B981',
-                borderRadius: '12px',
-                padding: '12px 20px',
-                maxWidth: '320px',
-                animation: 'popIn 0.3s ease',
+                background: 'rgba(26, 26, 26, 0.95)',
+                border: `1px solid ${
+                  toast.type === 'achievement'
+                    ? '#10B981'
+                    : toast.type === 'level_up'
+                      ? '#F59E0B'
+                      : '#CC1111'
+                }`,
+                borderRadius: '16px',
+                padding: '16px 24px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                maxWidth: '350px',
+                backdropFilter: 'blur(8px)',
+                pointerEvents: 'auto',
+                animation: 'slideIn 0.3s ease-out forwards',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '12px',
+                gap: '16px',
               }}
             >
-              <p style={{ color: '#FFFFFF', fontSize: '13px', margin: 0 }}>{toast.message}</p>
+              <div style={{ flex: 1 }}>
+                <p
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: '13.5px',
+                    margin: 0,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {toast.message}
+                </p>
+              </div>
               <button
-                onClick={() => setToasts((prev) => prev.filter((x) => x.id !== toast.id))}
-                aria-label="Dismiss notification"
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
                 style={{
-                  background: 'none',
+                  background: 'transparent',
                   border: 'none',
-                  color: '#6B7280',
+                  color: '#9CA3AF',
                   cursor: 'pointer',
-                  fontSize: '16px',
+                  fontSize: '18px',
+                  padding: '0 4px',
                   lineHeight: 1,
+                  transition: 'color 0.2s',
                 }}
+                onMouseEnter={(e) => (e.target.style.color = '#FFFFFF')}
+                onMouseLeave={(e) => (e.target.style.color = '#9CA3AF')}
               >
-                ×
+                &times;
               </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Persistent Notifications from gamification service */}
-      {userStats.notifications.length > 0 && toasts.length === 0 && (
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-          {userStats.notifications.slice(-3).map((notif, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: '#1A1A1A',
-                border: `1px solid ${notif.type === 'achievement' ? '#10B981' : '#CC1111'}`,
-                borderRadius: '12px',
-                padding: '12px 20px',
-                marginTop: '8px',
-                maxWidth: '300px',
-              }}
-            >
-              <p style={{ color: '#FFFFFF', fontSize: '13px' }}>{notif.message}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Styled Animations */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateY(20px) scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

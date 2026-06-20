@@ -98,7 +98,7 @@ test('slackIntegrationService handleNewEventPublished sends a Slack notification
     description: 'A grand meetup of developers',
   });
 
-  const chatCall = mockFetchCalls.find(c => c.url.includes('chat.postMessage'));
+  const chatCall = mockFetchCalls.find((c) => c.url.includes('chat.postMessage'));
   assert.ok(chatCall, 'should call postMessage Slack endpoint');
   const body = JSON.parse(chatCall.options.body);
   assert.equal(body.channel, 'C999');
@@ -118,7 +118,7 @@ test('slackIntegrationService registration confirmed sends Slack message to chan
     eventDate: '2026-08-01',
   });
 
-  const chatCall = mockFetchCalls.find(c => c.url.includes('chat.postMessage'));
+  const chatCall = mockFetchCalls.find((c) => c.url.includes('chat.postMessage'));
   assert.ok(chatCall, 'should post registration message');
   const body = JSON.parse(chatCall.options.body);
   assert.ok(body.text.includes('John Doe'));
@@ -145,10 +145,13 @@ test('slackIntegrationService DM reminder looks up User ID and sends DM', async 
     eventLocation: 'Room 303',
   });
 
-  const lookupCall = mockFetchCalls.find(c => c.url.includes('lookupByEmail'));
+  const lookupCall = mockFetchCalls.find((c) => c.url.includes('lookupByEmail'));
   assert.ok(lookupCall, 'should look up user on Slack by email');
 
-  const dmCall = mockFetchCalls.find(c => c.url.includes('chat.postMessage') && JSON.parse(c.options.body).channel === 'U-MOCK-USER-ID');
+  const dmCall = mockFetchCalls.find(
+    (c) =>
+      c.url.includes('chat.postMessage') && JSON.parse(c.options.body).channel === 'U-MOCK-USER-ID'
+  );
   assert.ok(dmCall, 'should post DM reminder to Slack user ID');
   const body = JSON.parse(dmCall.options.body);
   assert.ok(body.text.includes('Algorithms 101'));

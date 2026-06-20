@@ -3,6 +3,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 let _email = null;
 let _role = null;
 let _scopes = [];
+let _impersonatingUser = null;
 
 let refreshPromise = null;
 
@@ -14,7 +15,7 @@ export const auth = {
     const res = await fetch(`${API_BASE}/api/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+      body: JSON.stringify({ username: cleanEmail, password: cleanPassword }),
       credentials: 'include',
     });
 
@@ -53,6 +54,17 @@ export const auth = {
     _email = null;
     _role = null;
     _scopes = [];
+    _impersonatingUser = null;
+  },
+
+  setImpersonating(user) {
+    _impersonatingUser = user;
+  },
+  getImpersonating() {
+    return _impersonatingUser;
+  },
+  clearImpersonating() {
+    _impersonatingUser = null;
   },
 
   async refreshSession() {

@@ -11,14 +11,17 @@ import { adminAuditMiddleware, attachOldState } from '../middleware/adminAuditMi
 import { eventsRepository } from '../repositories/eventsRepository.js';
 import { coreTeamService } from '../services/coreTeamService.js';
 import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authRateLimiter.js';
+import { eventRegistrationLimiter } from '../middleware/rateLimiter.js';
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { achievementsRepository } from '../repositories/achievementsRepository.js';
 import { portfolioService } from '../services/portfolioService.js';
+import { waitingRoomService } from '../services/waitingRoomService.js';
 import * as sponsorshipsController from '../controllers/sponsorshipsController.js';
 import { achievementSchema } from '../validators/portfolioSchemas.js';
 import { auditLogRepository } from '../repositories/auditLogRepository.js';
 
 import * as recommendationsController from '../controllers/recommendationsController.js';
+import * as gamificationController from '../controllers/gamificationController.js';
 import multer from 'multer';
 
 const upload = multer({
@@ -28,10 +31,12 @@ const upload = multer({
 const router = Router();
 
 // Public
+router.get('/api/dashboard/leaderboard', gamificationController.getLeaderboard);
+router.post('/api/dashboard/xp', gamificationController.awardXP);
 router.post('/api/assistant/recommend', upload.single('file'), recommendationsController.getProjectRecommendations);
 router.get('/api/users', usersController.getPublicUsers);
 router.get('/api/content/events', eventsController.listEvents);
-router.post('/api/content/events/:eventId/register', eventRegistrationController.registerForEvent);
+router.post('/api/content/events/:eventId/register', eventRegistrationLimiter, eventRegistrationController.registerForEvent);
 router.get('/api/content/events/:eventId/calendar', eventRegistrationController.getEventCalendar);
 router.get(
   '/api/content/activity-events/:activityKey',
@@ -198,6 +203,35 @@ router.delete(
   coreTeamController.adminDeleteCoreTeamMember
 );
 
+// Subscription management APIs
+router.get(
+  '/api/admin/subscriptions',
+  adminAuthMiddleware.requireScope('events:read'),
+  subscriptionsController.listSubscriptions
+);
+router.get(
+  '/api/admin/subscriptions/stats',
+  adminAuthMiddleware.requireScope('events:read'),
+  subscriptionsController.getStats
+);
+router.post(
+  '/api/admin/subscriptions',
+  adminAuthMiddleware.requireScope('events:write'),
+  adminAuditMiddleware,
+  subscriptionsController.createSubscription
+);
+router.post(
+  '/api/admin/subscriptions/:userId/cancel',
+  adminAuthMiddleware.requireScope('events:write'),
+  adminAuditMiddleware,
+  subscriptionsController.cancelSubscription
+);
+router.get(
+  '/api/admin/subscriptions/:userId/billing',
+  adminAuthMiddleware.requireScope('events:read'),
+  subscriptionsController.getBillingHistory
+);
+
 // Portfolio management APIs
 router.get(
   '/api/admin/portfolios',
@@ -299,105 +333,28 @@ router.delete(
   }
 );
 
-// Admin Alerts
-const alerts = [];
-const alertRules = [
-  {
-    id: 'sec-1',
-    category: 'Security',
-    label: 'Failed login attempts',
-    condition: '>',
-    threshold: 10,
-    severity: 'Warning',
-    channels: ['Email'],
-    enabled: true,
-  },
-  {
-    id: 'sec-2',
-    category: 'Security',
-    label: 'Suspicious activity detected',
-    condition: '>',
-    threshold: 0,
-    severity: 'Critical',
-    channels: ['Email', 'Slack'],
-    enabled: true,
-  },
-  {
-    id: 'perf-1',
-    category: 'Performance',
-    label: 'High response time',
-    condition: '>',
-    threshold: 2000,
-    severity: 'Warning',
-    channels: ['Email'],
-    enabled: true,
-  },
-  {
-    id: 'perf-2',
-    category: 'Performance',
-    label: 'Error rate spike',
-    condition: '>',
-    threshold: 5,
-    severity: 'Critical',
-    channels: ['Email', 'Slack'],
-    enabled: true,
-  },
-  {
-    id: 'sys-1',
-    category: 'System',
-    label: 'Service down',
-    condition: '==',
-    threshold: 0,
-    severity: 'Critical',
-    channels: ['Email', 'Slack', 'SMS'],
-    enabled: true,
-  },
-  {
-    id: 'usr-1',
-    category: 'User Activity',
-    label: 'Registration spike',
-    condition: '>',
-    threshold: 100,
-    severity: 'Info',
-    channels: ['Email'],
-    enabled: true,
-  },
-  {
-    id: 'fin-1',
-    category: 'Financial',
-    label: 'Payment failure',
-    condition: '>',
-    threshold: 5,
-    severity: 'Critical',
-    channels: ['Email', 'Slack'],
-    enabled: true,
-  },
-  {
-    id: 'cnt-1',
-    category: 'Content',
-    label: 'Content flagged for moderation',
-    condition: '>',
-    threshold: 3,
-    severity: 'Warning',
-    channels: ['Email'],
-    enabled: true,
-  },
-];
-
-router.get('/api/admin/alerts/rules', (req, res) => res.json({ rules: alertRules }));
-router.put('/api/admin/alerts/rules/:id', (req, res) => {
-  const rule = alertRules.find((r) => r.id === req.params.id);
-  if (!rule) return res.status(404).json({ error: 'Rule not found' });
-  Object.assign(rule, req.body);
-  res.json(rule);
+// Waiting room management API
+// Waiting room management API
+router.get(
+  '/api/admin/events/:eventId/waiting-room',
+  adminAuthMiddleware.requireScope('events:read'),
+  async (req, res) => {
+    try {
+      const eventId = String(req.params.eventId || '').trim();
+      const queue = waitingRoomService.getQueue(eventId);
+      return res.json({ queue, total: queue.length });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
+router.post('/api/admin/impersonate/stop', adminAuthMiddleware.requireAdmin, (req, res) => {
+  impersonationService.stop(req.adminSession.token);
+  return res.json({ impersonating: false });
 });
-router.get('/api/admin/alerts/events', (req, res) => res.json({ events: alerts }));
-router.put('/api/admin/alerts/events/:id/status', (req, res) => {
-  const event = alerts.find((e) => e.id === req.params.id);
-  if (!event) return res.status(404).json({ error: 'Event not found' });
-  event.status = req.body.status;
-  event.resolvedAt = req.body.status === 'resolved' ? new Date().toISOString() : null;
-  res.json(event);
+router.get('/api/admin/impersonate/status', adminAuthMiddleware.requireAdmin, (req, res) => {
+  const active = impersonationService.getActive(req.adminSession.token);
+  return res.json({ impersonating: !!active, user: active?.targetUser || null });
 });
 
 export default router;

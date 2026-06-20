@@ -14,8 +14,6 @@ export default function UserManager() {
     email: '',
     admin_roles: 'member',
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(null);
 
   async function fetchUsers() {
     setLoading(true);
@@ -35,67 +33,49 @@ export default function UserManager() {
   }, []);
 
   async function handleCreate() {
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(form),
-      });
-      if (res.ok) {
-        setShowAddModal(false);
-        setForm({ username: '', display_name: '', email: '', admin_roles: 'member' });
-        fetchUsers();
-      } else {
-        const d = await res.json();
-        alert(d.error);
-      }
-    } finally {
-      setSubmitting(false);
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      setShowAddModal(false);
+      setForm({ username: '', display_name: '', email: '', admin_roles: 'member' });
+      fetchUsers();
+    } else {
+      const d = await res.json();
+      alert(d.error);
     }
   }
 
   async function handleUpdate() {
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/admin/users/${editUser.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          display_name: form.display_name,
-          email: form.email,
-          admin_roles: form.admin_roles,
-        }),
-      });
-      if (res.ok) {
-        setEditUser(null);
-        fetchUsers();
-      } else {
-        const d = await res.json();
-        alert(d.error);
-      }
-    } finally {
-      setSubmitting(false);
+    const res = await fetch(`/api/admin/users/${editUser.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        display_name: form.display_name,
+        email: form.email,
+        admin_roles: form.admin_roles,
+      }),
+    });
+    if (res.ok) {
+      setEditUser(null);
+      fetchUsers();
+    } else {
+      const d = await res.json();
+      alert(d.error);
     }
   }
 
   async function handleDeactivate(id) {
     if (!confirm('Deactivate this user?')) return;
-    setDeleting(id);
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (res.ok) fetchUsers();
-      else {
-        const d = await res.json();
-        alert(d.error);
-      }
-    } finally {
-      setDeleting(null);
+    const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (res.ok) fetchUsers();
+    else {
+      const d = await res.json();
+      alert(d.error);
     }
   }
 
@@ -221,15 +201,14 @@ export default function UserManager() {
               ))}
             </select>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={editUser ? handleUpdate : handleCreate} disabled={submitting}>
-                {submitting ? (editUser ? 'Saving…' : 'Creating…') : editUser ? 'Save' : 'Create'}
+              <button onClick={editUser ? handleUpdate : handleCreate}>
+                {editUser ? 'Save' : 'Create'}
               </button>
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setEditUser(null);
                 }}
-                disabled={submitting}
               >
                 Cancel
               </button>

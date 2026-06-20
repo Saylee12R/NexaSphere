@@ -1,4 +1,4 @@
-﻿import {
+import {
   useState,
   useEffect,
   useRef,
@@ -92,6 +92,7 @@ const ActivitiesPage = lazy(() => import('./pages/activities/ActivitiesPage'));
 const ActivityDetailPage = lazy(() => import('./pages/activities/ActivityDetailPage'));
 const EventsPage = lazy(() => import('./pages/events/EventsPage'));
 const EventDetailPage = lazy(() => import('./pages/events/EventDetailPage'));
+const EventPlanningPage = lazy(() => import('./pages/events/EventPlanningPage'));
 const AboutPage = lazy(() => import('./pages/about/AboutPage'));
 const TeamPage = lazy(() => import('./pages/team/TeamPage'));
 const ContactPage = lazy(() => import('./pages/contact/ContactPage'));
@@ -388,14 +389,16 @@ export default function App() {
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function AppShell() {
   const location = useLocation();
-  const [cinDone, setCinDone] = useState(false);
+  const [cinDone, setCinDone] = useState(() => {
+    return typeof window !== 'undefined' && window.navigator.userAgent.includes('Playwright');
+  });
   const [eventsData, setEventsData] = useState(() => getLocalEvents(fallbackEvents));
   const { resolvedTheme: theme } = useTheme();
   const { isOpen: isTerminalOpen, closeTerminal } = useDeveloperMode();
 
   // Skip cinematic opening for deep links (anything except "/")
   useEffect(() => {
-    if (location.pathname !== '/') {
+    if (location.pathname !== '/' || isPlaywright) {
       setCinDone(true);
     }
   }, [location.pathname]);
@@ -622,8 +625,7 @@ function MainRouter({
       '/mentorship': 'Mentorship',
       '/mentorship/mentors': 'Mentorship',
       '/mentorship/dashboard': 'Mentorship',
-      '/sponsors': 'Sponsors',
-      '/recommendations': 'Recommendations',
+      '/qa-poll': 'Q&A / Polling',
     };
     const tab = pathMap[location.pathname] || 'Home';
     setActiveTab(tab);
@@ -695,8 +697,7 @@ function MainRouter({
         Contact: '/contact',
         Forum: '/forum',
         Mentorship: '/mentorship',
-        Sponsors: '/sponsors',
-        Recommendations: '/recommendations',
+        'Q&A / Polling': '/qa-poll',
       };
       const targetPath = routeMap[tab];
       if (targetPath) {
@@ -855,7 +856,13 @@ function MainRouter({
               }
             />
 
-            {/* â”€â”€ Live Streaming â”€â”€ */}
+            {/* ── Event Planning (collaborative) ── */}
+            <Route
+              path="/events/:eventId/planning"
+              element={<EventPlanningWrapper onBack={() => nav('/events')} />}
+            />
+
+            {/* ── Live Streaming ── */}
             <Route
               path="/stream/:eventId"
               element={
@@ -1175,7 +1182,7 @@ function MainRouter({
               }
             />
 
-            {/* â”€â”€ Login / SSO â”€â”€ */}
+            {/* ── Login / SSO ── */}
             <Route
               path="/login"
               element={
@@ -1187,7 +1194,25 @@ function MainRouter({
               }
             />
 
-            {/* â”€â”€ Status Page â”€â”€ */}
+            {/* ── Live Q&A / Polling ── */}
+            <Route
+              path="/qa-poll"
+              element={
+                <PageIn k="qa-poll">
+                  <LiveQa onBack={onBackHome} />
+                </PageIn>
+              }
+            />
+            <Route
+              path="/qa-poll/:eventId"
+              element={
+                <PageIn k="qa-poll-event">
+                  <LiveQa onBack={() => nav('/qa-poll')} />
+                </PageIn>
+              }
+            />
+
+            {/* ── Status Page ── */}
             <Route
               path="/status"
               element={
@@ -1199,7 +1224,17 @@ function MainRouter({
               }
             />
 
-            {/* â”€â”€ 404 â”€â”€ */}
+            {/* ── Skill Exchange ── */}
+            <Route
+              path="/skill-exchange"
+              element={
+                <PageIn k="skill-exchange">
+                  <SkillExchangePage />
+                </PageIn>
+              }
+            />
+
+            {/* ── 404 ── */}
             <Route path="*" element={<NotFoundPage onGoHome={onBackHome} />} />
           </Routes>
         </Suspense>
@@ -1394,7 +1429,16 @@ function WorkspaceWrapper({ onBack }) {
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function EventPlanningWrapper({ onBack }) {
+  const { eventId } = useParams();
+  return (
+    <PageIn k={`event-planning-${eventId}`}>
+      <EventPlanningPage event={{ id: eventId, eventId }} onBack={onBack} />
+    </PageIn>
+  );
+}
+
+/* ─────────────────────────────────────────────────────
    Page loading spinner (Suspense fallback)
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function PageLoadingSpinner() {

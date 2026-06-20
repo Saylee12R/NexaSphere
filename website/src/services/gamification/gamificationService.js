@@ -10,15 +10,6 @@ export const XP_VALUES = {
   GIVE_FEEDBACK: 25,
   HELP_SOMEONE: 30, // Answered a question
   DAILY_STREAK: 20,
-  EVENT_REGISTRATION: 10,
-  FIRST_BLOG_POST: 50,
-  LEARN_NEW_TECH: 40,
-  SKILL_ASSESSMENT: 100,
-  VOLUNTEER: 150,
-  HACKATHON_WIN: 1000,
-  SPEAKER: 500,
-  BETA_TESTER: 100,
-  COMMENT_POSTED: 5,
   SHARE_EVENT: 15,
   LEARNING_PATH_COMPLETE: 1000,
 };
@@ -261,12 +252,19 @@ const ANTI_GAMING_COOLDOWN = 1000 * 60; // 1 minute per action type
 class GamificationService {
   constructor() {
     this.userData = this.loadUserData();
+    this.updateStreak();
   }
 
   loadUserData() {
-    const stored = localStorage.getItem('gamification_user_data');
-    if (stored) {
-      return JSON.parse(stored);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem('gamification_user_data');
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage not available:', e);
     }
     return {
       userId: null,
@@ -307,7 +305,9 @@ class GamificationService {
       this.userData.notifications = this.userData.notifications.slice(-50);
     }
     try {
-      localStorage.setItem('gamification_user_data', JSON.stringify(this.userData));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('gamification_user_data', JSON.stringify(this.userData));
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'QuotaExceededError') {
         console.warn(
@@ -317,13 +317,15 @@ class GamificationService {
         // Aggressively trim notifications and retry once
         this.userData.notifications = [];
         try {
-          localStorage.setItem('gamification_user_data', JSON.stringify(this.userData));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('gamification_user_data', JSON.stringify(this.userData));
+          }
         } catch (_) {
           // If it still fails, data loss is preferable to a thrown error
           console.warn('[GamificationService] Retry after trim also failed — skipping save.');
         }
       } else {
-        throw err;
+        console.warn('LocalStorage write failed:', err);
       }
     }
   }
@@ -351,6 +353,9 @@ class GamificationService {
       xpEarned *= 2;
     }
 
+    // Update streak first, so streak-based achievements are accurate for today!
+    this.updateStreak();
+
     // Update stats based on action
     this.updateStats(action, metadata, now);
 
@@ -359,9 +364,6 @@ class GamificationService {
 
     // Check and unlock achievements
     const newAchievements = this.checkAchievements();
-
-    // Update streak
-    this.updateStreak();
 
     // Save data
     this.saveUserData();
@@ -565,11 +567,18 @@ class GamificationService {
     return unlockedAchievements;
   }
 
+  getCurrentLevelXP() {
+    const currentLevel = this.userData.level;
+    const levelObj = LEVEL_THRESHOLDS.find((l) => l.level === currentLevel);
+    return levelObj ? levelObj.xpRequired : 0;
+  }
+
   getUserStats() {
     return {
       xp: this.userData.xp,
       level: this.userData.level,
       title: this.userData.title,
+      currentLevelXP: this.getCurrentLevelXP(),
       nextLevelXP: this.getNextLevelXP(),
       achievements: this.userData.achievements,
       badges: this.userData.badges,

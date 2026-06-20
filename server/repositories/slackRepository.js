@@ -76,7 +76,10 @@ export const slackRepository = {
         return rows[0] || null;
       });
     } catch (err) {
-      console.error('[slackRepository] Failed to get config from DB. Falling back to local file.', err);
+      console.error(
+        '[slackRepository] Failed to get config from DB. Falling back to local file.',
+        err
+      );
       return await readLocalConfig();
     }
   },

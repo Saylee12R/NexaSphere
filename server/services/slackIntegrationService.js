@@ -38,7 +38,9 @@ async function postToSlack({ channel, text, blocks }) {
 
       const data = await response.json();
       if (data.ok) {
-        logger.info('[SlackService] Posted message successfully via Bot Token', { channel: targetChannel });
+        logger.info('[SlackService] Posted message successfully via Bot Token', {
+          channel: targetChannel,
+        });
         return data;
       } else {
         logger.error('[SlackService] Failed to post message via Bot Token:', data.error);
@@ -248,7 +250,10 @@ export const slackIntegrationService = {
       }
 
       if (!slackUserId) {
-        logger.warn('[SlackService] Could not lookup user Slack ID for DM reminder:', data.userEmail);
+        logger.warn(
+          '[SlackService] Could not lookup user Slack ID for DM reminder:',
+          data.userEmail
+        );
         return;
       }
 

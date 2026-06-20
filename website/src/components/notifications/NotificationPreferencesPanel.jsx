@@ -1,21 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import apiClient from '../../utils/apiClient';
-import { useStudentAuth } from '../../context/StudentAuthContext';
+import prefsService from '../../services/notifications/preferences';
 
 const CATEGORIES = [
-  { key: 'events', label: 'Event Updates', desc: 'New events, registration openings' },
-  { key: 'team', label: 'Team Invitations', desc: 'Core team & club invitations' },
-  { key: 'activities', label: 'Activity Updates', desc: 'Club activity announcements' },
-  { key: 'announcements', label: 'Admin Announcements', desc: 'Platform-wide announcements' },
-  { key: 'deadlines', label: 'Deadline Reminders', desc: 'Registration closing reminders' },
-  { key: 'attendance', label: 'Attendance & Points', desc: 'Attendance confirmations & points' },
-  { key: 'promotions', label: 'Waitlist & Promotions', desc: 'Waitlist promotion updates' },
+  { key: 'event_reminders', label: 'Event Reminders', desc: 'Reminders for your events' },
+  {
+    key: 'registration_confirmations',
+    label: 'Registration Confirmations',
+    desc: 'Confirmations for registrations',
+  },
+  { key: 'messages', label: 'Messages', desc: 'Direct messages and chats' },
+  { key: 'announcements', label: 'Announcements', desc: 'Platform announcements' },
+  { key: 'recommendations', label: 'Event Recommendations', desc: 'Suggested events for you' },
+  { key: 'portfolio_views', label: 'Portfolio Views', desc: 'When your portfolio is viewed' },
+  { key: 'skill_requests', label: 'Skill Exchange Requests', desc: 'Requests from other users' },
 ];
 
 const CHANNELS = [
-  { key: 'in_app', label: 'In-App', desc: 'Bell icon notifications' },
-  { key: 'push', label: 'Push', desc: 'Browser push notifications' },
-  { key: 'email', label: 'Email', desc: 'Email notifications' },
+  { key: 'push', label: 'Push' },
+  { key: 'email', label: 'Email' },
+  { key: 'sms', label: 'SMS' },
+];
+
+const FREQUENCIES = [
+  { key: 'immediate', label: 'Immediate' },
+  { key: 'hourly', label: 'Hourly Digest' },
+  { key: 'daily', label: 'Daily Digest' },
+  { key: 'disabled', label: 'Disabled' },
 ];
 
 export default function NotificationPreferencesPanel({ userId, onClose }) {
@@ -24,15 +34,29 @@ export default function NotificationPreferencesPanel({ userId, onClose }) {
   const [prefs, setPrefs] = useState({});
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [global, setGlobal] = useState({ dnd: false, quiet_start: '22:00', quiet_end: '08:00' });
 
   useEffect(() => {
     if (!effectiveUserId) return;
     (async () => {
       try {
-        const data = await apiClient(`/api/notifications/preferences?userId=${effectiveUserId}`);
+        const list = await prefsService.fetchPreferences(userId);
         const map = {};
-        for (const p of data.preferences || []) {
-          map[p.category] = { email: p.email, push: p.push, in_app: p.in_app };
+        for (const p of list || []) {
+          map[p.category] = {
+            email: p.email ?? true,
+            push: p.push ?? true,
+            sms: p.sms ?? true,
+            frequency: p.frequency || 'immediate',
+          };
+          if (p.category === 'global') {
+            setGlobal((g) => ({
+              ...g,
+              dnd: !!p.dnd,
+              quiet_start: p.quiet_start || g.quiet_start,
+              quiet_end: p.quiet_end || g.quiet_end,
+            }));
+          }
         }
         setPrefs(map);
       } catch {
@@ -44,10 +68,26 @@ export default function NotificationPreferencesPanel({ userId, onClose }) {
 
   const toggle = useCallback((category, channel) => {
     setPrefs((prev) => {
-      const current = prev[category] || { email: true, push: true, in_app: true };
+      const current = prev[category] || {
+        email: true,
+        push: true,
+        sms: true,
+        frequency: 'immediate',
+      };
       return { ...prev, [category]: { ...current, [channel]: !current[channel] } };
     });
   }, []);
+
+  const setFrequency = useCallback((category, freq) => {
+    setPrefs((prev) => ({ ...prev, [category]: { ...(prev[category] || {}), frequency: freq } }));
+  }, []);
+
+  const toggleDnd = useCallback((val) => setGlobal((g) => ({ ...g, dnd: val })), []);
+
+  const setQuiet = useCallback(
+    (start, end) => setGlobal((g) => ({ ...g, quiet_start: start, quiet_end: end })),
+    []
+  );
 
   const save = useCallback(async () => {
     setSaving(true);
@@ -56,16 +96,19 @@ export default function NotificationPreferencesPanel({ userId, onClose }) {
         category,
         ...channels,
       }));
-      await apiClient('/api/notifications/preferences/bulk', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: effectiveUserId, preferences: bulk }),
+      await prefsService.setPreferencesBulk(userId, bulk);
+
+      // Save global settings as a reserved 'global' category
+      await prefsService.setPreference(userId, 'global', {
+        dnd: !!global.dnd,
+        quiet_start: global.quiet_start,
+        quiet_end: global.quiet_end,
       });
-    } catch {
+    } catch (e) {
       // ignore
     }
     setSaving(false);
-  }, [prefs, effectiveUserId]);
+  }, [prefs, userId, global]);
 
   if (!loaded)
     return (
@@ -127,11 +170,26 @@ export default function NotificationPreferencesPanel({ userId, onClose }) {
                 {ch.label}
               </th>
             ))}
+            <th
+              style={{
+                textAlign: 'center',
+                padding: '0.75rem 0.5rem',
+                color: 'var(--t1)',
+                fontSize: '0.8rem',
+              }}
+            >
+              Frequency
+            </th>
           </tr>
         </thead>
         <tbody>
           {CATEGORIES.map((cat) => {
-            const channels = prefs[cat.key] || { email: true, push: true, in_app: true };
+            const channels = prefs[cat.key] || {
+              email: true,
+              push: true,
+              sms: true,
+              frequency: 'immediate',
+            };
             return (
               <tr key={cat.key} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '0.85rem 0.5rem' }}>
@@ -170,11 +228,83 @@ export default function NotificationPreferencesPanel({ userId, onClose }) {
                     </button>
                   </td>
                 ))}
+
+                <td style={{ textAlign: 'center', padding: '0.85rem 0.5rem' }}>
+                  <select
+                    value={channels.frequency}
+                    onChange={(e) => setFrequency(cat.key, e.target.value)}
+                    style={{ padding: '6px', borderRadius: 6 }}
+                  >
+                    {FREQUENCIES.map((f) => (
+                      <option key={f.key} value={f.key}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {/* Global settings */}
+      <div
+        style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--t1)' }}>Do Not Disturb</div>
+            <div style={{ color: 'var(--t2)', fontSize: '0.85rem' }}>
+              Temporarily disable non-critical notifications
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={!!global.dnd}
+                onChange={(e) => toggleDnd(e.target.checked)}
+              />
+              <span style={{ color: 'var(--t2)' }}>{global.dnd ? 'On' : 'Off'}</span>
+            </label>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '0.75rem', display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ minWidth: 120 }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--t1)', fontWeight: 700 }}>
+              Quiet Hours
+            </div>
+            <div style={{ color: 'var(--t2)', fontSize: '0.8rem' }}>Start — End (local time)</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="time"
+              value={global.quiet_start}
+              onChange={(e) => setQuiet(e.target.value, global.quiet_end)}
+            />
+            <span style={{ color: 'var(--t2)' }}>—</span>
+            <input
+              type="time"
+              value={global.quiet_end}
+              onChange={(e) => setQuiet(global.quiet_start, e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
       <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
         <button

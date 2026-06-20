@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to Vercel Preview
-        uses: amondnet/vercel-action@v42
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to Render
-        uses: johnbeynon/render-deploy-action@v0.0.9
+        uses: johnbeynon/render-deploy-action@a0588f9aca995a15d69a72cb2bfbf37c12e5b540 # v0.0.8
         with:
           service-id: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
           api-key: ${{ secrets.RENDER_API_KEY }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: server
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Run Database Validation
         working-directory: server

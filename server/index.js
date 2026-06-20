@@ -18,10 +18,7 @@ import crypto from 'crypto';
 import { adminAuthMiddleware } from './middleware/adminAuthMiddleware.js';
 import analyticsRouter from './routes/analytics.js';
 import apiRouter from './routes/api.js';
-import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
-import activityEventsRouter from './routes/activityEvents.js';
-import formSubmissionsRouter from './routes/formSubmissions.js';
-import { logEvent } from './controllers/analyticsController.js';
+import { initializeSocketIO } from './config/socket.js';
 import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
@@ -47,8 +44,8 @@ import {
   notificationRateLimiter,
   activityAuthRateLimiter,
   portfolioRateLimiter,
-  validateLimiters,
   searchRateLimiter,
+  validateLimiters,
 } from './middleware/rateLimiter.js';
 import {
   authRateLimiter,
@@ -58,7 +55,6 @@ import {
 import { portfolioRepository } from './repositories/portfolioRepository.js';
 import { portfolioContentSchema, portfolioPutSchema } from './validators/portfolioSchemas.js';
 import { searchController } from './controllers/searchController.js';
-import { pushSubscriptionsRepository } from './repositories/pushSubscriptionsRepository.js';
 import { Mutex } from 'async-mutex';
 import { CircuitBreaker, circuitBreakerRegistry } from './utils/circuitBreaker.js';
 import { getPublicAppUrl } from './utils/publicAppUrl.js';
@@ -66,11 +62,7 @@ import * as eventsController from './controllers/eventsController.js';
 import * as activityEventsController from './controllers/activityEventsController.js';
 import * as streamController from './controllers/streamController.js';
 import * as coreTeamController from './controllers/coreTeamController.js';
-import * as formsController from './controllers/formsController.js';
-import { eventsService } from './services/eventsService.js';
 import { coreTeamService } from './services/coreTeamService.js';
-import notificationsService from './services/notificationsService.js';
-import { notificationPreferencesRepository } from './repositories/notificationPreferencesRepository.js';
 import { HAS_SUPABASE } from './storage/supabaseClient.js';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
@@ -81,14 +73,16 @@ import { studentUsersRepository } from './repositories/studentUsersRepository.js
 import * as studentAuthController from './controllers/studentAuthController.js';
 import * as forumController from './controllers/forumController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
-import { studentAuthService } from './services/studentAuthService.js';
+import { loadPersistedPushSubscriptions } from './routes/notifications.js';
 import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
+import { csrfProtection } from './middleware/csrfMiddleware.js';
 import compression from 'compression';
 import syncRouter from './routes/sync.js';
 import multer from 'multer';
 import learningPathRouter from './routes/learningPaths.js';
+import { learningPathService } from './services/learningPathService.js';
 import * as resourcesController from './controllers/resourcesController.js';
 import * as backupController from './controllers/backupController.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
@@ -128,49 +122,15 @@ app.set(
 initializeSentry(app);
 app.use(compression());
 
-// Redis Session Setup for Disaster Recovery / Horizontal Scaling
-export const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: 3,
-  retryStrategy: (times) => Math.min(times * 50, 2000),
-});
-
-const redisStore = new RedisStore({
-  client: redisClient,
-  prefix: 'nexasphere:sess:',
-});
-
-app.use(
-  session({
-    store: redisStore,
-    secret: process.env.SESSION_SECRET || 'dr-fallback-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    },
-  })
-);
-
-// CSRF Protection middleware - protects against Cross-Site Request Forgery
-app.use(csrf());
-
-// Expose CSRF token to the client via a non-httpOnly cookie
-app.use((req, res, next) => {
-  res.cookie('XSRF-TOKEN', req.csrfToken(), {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-  next();
-});
-
-if (!process.env.CORS_ORIGIN) {
+const corsOrigin =
+  process.env.CORS_ORIGIN ||
+  (process.env.NODE_ENV === 'test' ? 'http://localhost,http://127.0.0.1' : '');
+if (!corsOrigin) {
   throw new Error('CORS_ORIGIN environment variable must be set.');
 }
 
-const allowedOrigins = process.env.CORS_ORIGIN.split(',')
+const allowedOrigins = corsOrigin
+  .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
@@ -316,6 +276,19 @@ app.use(
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+      if (process.env.NODE_ENV === 'test') {
+        try {
+          const url = new URL(origin);
+          if (
+            url.hostname === 'localhost' ||
+            url.hostname === '127.0.0.1' ||
+            url.hostname === '[::1]' ||
+            url.hostname === '::1'
+          ) {
+            return callback(null, true);
+          }
+        } catch {}
+      }
       return callback(new Error('CORS Policy: Origin not allowed.'));
     },
     credentials: true,
@@ -347,6 +320,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// CSRF protection — double-submit cookie pattern for all state-changing endpoints
+app.use(csrfProtection);
 
 // Global API rate limiter — protects all /api routes from request flooding
 app.use('/api', apiRateLimiter);
@@ -576,6 +552,7 @@ function withContentLock(fn) {
   return current.then(() => fn()).finally(() => release());
 }
 
+export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
 const _rawSupabaseRequest = async function _rawSupabaseRequest(
   pathname,
   { method = 'GET', body } = {}
@@ -1298,67 +1275,6 @@ app.delete(
   coreTeamController.adminDeleteCoreTeamMember
 );
 
-// Dynamic forms
-app.post('/api/forms/membership', formRateLimiter, formsController.makeHandleForm('membership'));
-app.post('/api/forms/recruitment', formRateLimiter, formsController.makeHandleForm('recruitment'));
-app.post('/api/core-team/apply', formRateLimiter, formsController.makeHandleForm('core_team'));
-
-app.post(
-  '/api/submissions/membership',
-  formRateLimiter,
-  formsController.makeHandleForm('membership')
-);
-app.post(
-  '/api/submissions/recruitment',
-  formRateLimiter,
-  formsController.makeHandleForm('recruitment')
-);
-
-// Admin membership responses
-async function _rawMembershipFetch(scriptUrl, secret) {
-  const response = await tracedFetch(scriptUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'getResponses', token: secret }),
-  });
-  if (!response.ok) {
-    throw new Error(`Google Apps Script returned ${response.status}`);
-  }
-  return response.json();
-}
-
-const membershipBreaker = circuitBreakerRegistry.register(
-  'membership-gas',
-  new CircuitBreaker(_rawMembershipFetch, {
-    name: 'membership-gas',
-    failureThreshold: 3,
-    successThreshold: 2,
-    coolDownPeriod: 15000,
-    maxCoolDownPeriod: 120000,
-  })
-);
-
-app.get('/api/admin/membership', adminAuth, async (req, res) => {
-  try {
-    const scriptUrl = process.env.MEMBERSHIP_SCRIPT_URL;
-    const secret = process.env.MEMBERSHIP_SECRET;
-
-    if (!scriptUrl || !secret) {
-      return res.json({ responses: [] });
-    }
-
-    const data = await membershipBreaker.execute(scriptUrl, secret);
-    return res.json({ responses: data.responses || [] });
-  } catch (err) {
-    if (err.code === 'CIRCUIT_OPEN') {
-      console.warn('[Membership] Circuit breaker is OPEN, returning empty responses');
-      return res.json({ responses: [] });
-    }
-    console.error('[Membership] Failed to fetch responses:', err.message);
-    return res.status(500).json({ error: 'Failed to fetch membership responses' });
-  }
-});
-
 // Circuit Breaker Admin API
 app.get('/api/admin/circuit-breaker/metrics', adminAuth, async (req, res) => {
   const metrics = circuitBreakerRegistry.getAllMetrics();
@@ -1385,291 +1301,6 @@ app.post('/api/admin/circuit-breaker/retry/:name', adminAuth, async (req, res) =
     return res.json({ ok: true, state: breaker.state, result });
   } catch (err) {
     return res.json({ ok: false, error: err.message });
-  }
-});
-
-app.get('/api/admin/me', adminAuth, (req, res) => {
-  return res.json({ username: req.adminSession.username });
-});
-
-// Real-time Push Subscriber channels.
-// The in-memory Set is a fast local mirror. When a PostgreSQL database is
-// configured (DATABASE_URL present), subscriptions are also persisted to the
-// push_subscriptions table so they survive server restarts, deploys, and
-// crashes. When no database is configured the store degrades to memory-only,
-// preserving the previous behavior for local development.
-const pushSubscriptions = new Set();
-
-const PUSH_PERSISTENCE_ENABLED = Boolean(process.env.DATABASE_URL);
-
-// Load any previously persisted subscriptions into the in-memory mirror at
-// startup so a restart does not silently drop registered subscribers.
-async function loadPersistedPushSubscriptions() {
-  if (!PUSH_PERSISTENCE_ENABLED) return;
-  try {
-    const rows = await pushSubscriptionsRepository.list({ limit: 10000 });
-    for (const sub of rows) {
-      pushSubscriptions.add(JSON.stringify(sub));
-    }
-    console.log(`Loaded ${rows.length} persisted push subscription(s).`);
-  } catch (err) {
-    console.error('Failed to load persisted push subscriptions:', err.message);
-  }
-}
-
-async function persistPushSubscription(subscription) {
-  if (!PUSH_PERSISTENCE_ENABLED) return;
-  try {
-    await pushSubscriptionsRepository.add(subscription);
-  } catch (err) {
-    console.error('Failed to persist push subscription:', err.message);
-  }
-}
-
-async function removePersistedPushSubscription(subscription) {
-  if (!PUSH_PERSISTENCE_ENABLED) return;
-  try {
-    await pushSubscriptionsRepository.remove(subscription.endpoint);
-  } catch (err) {
-    console.error('Failed to remove persisted push subscription:', err.message);
-  }
-}
-
-const validatePushSubscription = [
-  body('subscription').isObject().withMessage('subscription must be an object'),
-  body('subscription.endpoint')
-    .isURL()
-    .withMessage('endpoint must be a valid URL')
-    .isLength({ max: 2048 }),
-  body('subscription.keys').isObject().withMessage('keys must be an object'),
-  body('subscription.keys.p256dh')
-    .isString()
-    .isLength({ max: 256 })
-    .withMessage('p256dh must be a string up to 256 chars'),
-  body('subscription.keys.auth')
-    .isString()
-    .isLength({ max: 128 })
-    .withMessage('auth must be a string up to 128 chars'),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid subscription payload', details: errors.array() });
-    }
-
-    // Strict sanitization: reconstruct object to drop malicious properties and limit memory size
-    const {
-      endpoint,
-      keys: { p256dh, auth },
-    } = req.body.subscription;
-    req.body.subscription = { endpoint, keys: { p256dh, auth } };
-
-    next();
-  },
-];
-
-app.post(
-  '/api/notifications/subscribe',
-  notificationRateLimiter,
-  validatePushSubscription,
-  async (req, res) => {
-    try {
-      const { subscription } = req.body;
-      if (subscription) {
-        pushSubscriptions.add(JSON.stringify(subscription));
-        if (pushSubscriptions.size > 10000) {
-          const oldest = pushSubscriptions.values().next().value;
-          pushSubscriptions.delete(oldest);
-        }
-        await persistPushSubscription(subscription);
-      }
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.post(
-  '/api/notifications/unsubscribe',
-  notificationRateLimiter,
-  validatePushSubscription,
-  async (req, res) => {
-    try {
-      const { subscription } = req.body;
-      if (subscription) {
-        pushSubscriptions.delete(JSON.stringify(subscription));
-        await removePersistedPushSubscription(subscription);
-      }
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-/**
- * Notification Analytics & Feedback Loop
- */
-app.post('/api/notifications/track', notificationRateLimiter, async (req, res) => {
-  const { userId, notificationId, eventType, action } = req.body;
-  await notificationAnalyticsRepository.logEvent(
-    userId || 'anonymous',
-    notificationId,
-    eventType,
-    action
-  );
-  return res.json({ success: true });
-});
-
-app.get('/api/notifications/stats/:userId', adminAuth, async (req, res) => {
-  const stats = await notificationAnalyticsRepository.getUserStats(req.params.userId);
-  return res.json(stats);
-});
-
-function requireNotificationAuth(req, res, next) {
-  adminAuthMiddleware.requireAdmin(req, res, (err) => {
-    if (!err && req.adminSession) {
-      return next();
-    }
-    requireStudentAuth(req, res, (err2) => {
-      if (!err2 && req.studentUser) {
-        return next();
-      }
-      return res.status(401).json({ error: 'Unauthorized: Authentication required' });
-    });
-  });
-}
-
-app.post(
-  '/api/notifications/mark-read',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      const { id, userId } = req.body || {};
-      if (!id) return res.status(400).json({ error: 'id required' });
-      let uid = userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (userId && userId !== studentId) {
-          return res
-            .status(403)
-            .json({ error: 'Forbidden: Cannot modify other users notifications' });
-        }
-        uid = studentId;
-      }
-      const ok = await notificationsService.markAsRead(uid, id);
-      return res.json({ success: ok });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.post(
-  '/api/notifications/mark-all-read',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      const { userId } = req.body || {};
-      let uid = userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (userId && userId !== studentId) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-        uid = studentId;
-      }
-      await notificationsService.markAllAsRead(uid);
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.delete(
-  '/api/notifications/:id',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      const id = req.params.id;
-      let uid = req.query.userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (req.query.userId && req.query.userId !== studentId) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-        uid = studentId;
-      }
-      const removed = await notificationsService.removeNotification(uid, id);
-      if (!removed) return res.status(404).json({ error: 'Notification not found' });
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.delete(
-  '/api/notifications',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      let uid = req.query.userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (req.query.userId && req.query.userId !== studentId) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-        uid = studentId;
-      }
-      await notificationsService.clearAll(uid);
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.post('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
-  try {
-    const { userId, title, message, type, link } = req.body || {};
-    if (!title || !message) {
-      return res.status(400).json({ error: 'title and message are required' });
-    }
-    const note = await notificationsService.addNotification(userId || 'global', {
-      title,
-      message,
-      type,
-      link,
-    });
-    return res.json({ success: true, notification: note });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// Portfolio routing support
-app.get('/api/portfolio/:username', async (req, res) => {
-  try {
-    const username = String(req.params.username || '').trim();
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
-    }
-    const portfolio = await portfolioRepository.getByUsername(username);
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found' });
-    }
-    return res.json(portfolio);
-  } catch (err) {
-    console.error('Error fetching portfolio:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -1780,7 +1411,7 @@ app.get('/api/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
 
-    {
+    if (userId !== 'global') {
       let authenticated = false;
 
       // 1. Try Student Auth
@@ -1845,12 +1476,17 @@ app.get('/api/notifications/preferences', async (req, res) => {
 app.put('/api/notifications/preferences', async (req, res) => {
   try {
     const userId = req.body.userId || 'global';
-    const { category, email, push, in_app } = req.body;
+    const { category, email, push, in_app, sms, frequency, quiet_start, quiet_end, dnd } = req.body;
     if (!category) return res.status(400).json({ error: 'category is required' });
     const pref = await notificationPreferencesRepository.set(userId, category, {
       email,
       push,
       in_app,
+      sms,
+      frequency,
+      quiet_start,
+      quiet_end,
+      dnd,
     });
     return res.json({ preference: pref });
   } catch (err) {
@@ -1869,6 +1505,85 @@ app.put('/api/notifications/preferences/bulk', async (req, res) => {
     return res.json({ preferences: results });
   } catch (err) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// Notification analytics (lightweight collector)
+app.post('/api/notifications/analytics', async (req, res) => {
+  try {
+    const event = req.body || {};
+    // Minimal validation — in future route can forward to analytics pipeline
+    console.log('[notification-analytics]', event.type || 'unknown', event);
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+
+    // 1. Validate credentials up front.  Anything below this point
+    //    trusts the username + passkey pair.
+    const credentials = portfolioPutSchema.safeParse({
+      username: body.username,
+      passkey: body.passkey,
+    });
+    if (!credentials.success) {
+      const firstIssue = credentials.error.issues[0];
+      return res.status(400).json({ error: firstIssue?.message || 'Invalid request body' });
+    }
+    const { username, passkey } = credentials.data;
+
+    // 2. Validate the content body.  This rejects XSS payloads such
+    //    as javascript: URLs and unknown protocol schemes before
+    //    the data ever reaches the repository.  The repository
+    //    re-sanitizes as defense-in-depth.
+    const content = portfolioContentSchema.safeParse(body);
+    if (!content.success) {
+      const firstIssue = content.error.issues[0];
+      return res.status(400).json({
+        error:
+          `Invalid portfolio content: ${firstIssue?.path?.join('.') || ''} ${firstIssue?.message || ''}`.trim(),
+      });
+    }
+
+    const existingPortfolio = await portfolioRepository.getByUsername(username);
+    const isNewRegistration = !existingPortfolio;
+
+    const lockout = checkPasskeyLockout(username, ip);
+    if (lockout) {
+      return res.status(429).json({
+        error: 'Too many failed passkey attempts. Please try again later.',
+      });
+    }
+
+    const isAuthorized = await portfolioRepository.verifyPasskey(username, passkey, {
+      allowNew: isNewRegistration,
+    });
+    if (!isAuthorized) {
+      recordFailedPasskeyAttempt(username, ip);
+      return res.status(401).json({ error: 'Incorrect passkey for this username' });
+    }
+
+    clearPasskeyAttempts(username, ip);
+
+    const saved = await portfolioRepository.createOrUpdate({
+      ...content.data,
+      username,
+      passkey,
+    });
+    return res.json({ ok: true, portfolio: saved });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res
+        .status(409)
+        .json({ error: 'Username already exists. Another request may have just created it.' });
+    }
+    console.error('Error saving portfolio:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -1911,9 +1626,9 @@ app.get('/api/admin/mentorships', adminAuth, mentorshipController.adminListAll);
 app.get('/api/admin/mentors', adminAuth, mentorshipController.adminListMentors);
 
 // ── Search, Discovery & Recommendation Engine ──
-app.get('/api/search', searchController.search);
-app.get('/api/search/trending', searchController.trending);
-app.get('/api/recommendations', searchController.recommendations);
+app.get('/api/search', searchRateLimiter, searchController.search);
+app.get('/api/search/trending', searchRateLimiter, searchController.trending);
+app.get('/api/recommendations', searchRateLimiter, searchController.recommendations);
 // ── Resource Library Routes ──
 // Public resource endpoints
 app.get('/api/resources', resourcesController.listResources);

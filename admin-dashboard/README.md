@@ -79,11 +79,11 @@ Dedicated admin application providing:
 
 <br/>
 
-| Requirement              | Version               |
-| ------------------------ | --------------------- |
-| **Node.js**              | 20+                   |
-| **npm**                  | Latest                |
-| **Running Java Backend** | http://localhost:8080 |
+| Requirement              | Version                 |
+| ------------------------ | ----------------------- |
+| **Node.js**              | 20+                     |
+| **npm**                  | Latest                  |
+| **Running Java Backend** | <http://localhost:8080> |
 
 <br/>
 
@@ -134,7 +134,7 @@ npm run dev
 
 <br/>
 
-**✅ Access Dashboard:** http://localhost:5174
+**✅ Access Dashboard:** <http://localhost:5174>
 
 <br/>
 
@@ -570,7 +570,7 @@ Click **"Deploy"** and wait for completion.
 
 <br/>
 
-**📍 Live URL:** https://admin-nexasphere.vercel.app
+**📍 Live URL:** <https://admin-nexasphere.vercel.app>
 
 <br/>
 
@@ -602,7 +602,7 @@ npm run preview
 
 <br/>
 
-**Access:** http://localhost:4173
+**Access:** <http://localhost:4173>
 
 <br/>
 
@@ -761,7 +761,7 @@ export default function EventForm({ onSubmit, event }) {
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? 📧 Contact <nexasphere@glbajajgroup.org>
 
 **Dashboard Version:** 1.0 | **Last Updated:** May 2026
 

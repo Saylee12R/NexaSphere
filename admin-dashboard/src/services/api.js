@@ -341,19 +341,33 @@ function notifyContentUpdated(key) {
 
 let isLoggingOut = false;
 
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)ns_csrf_token=([^;]*)/);
+  return match ? match[1] : '';
+}
+
+function shouldIncludeCsrf(method) {
+  return method && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+}
+
 async function fetchWithAuth(url, options = {}) {
   const isOffline = auth.isOfflineMode();
 
   if (!isOffline) {
     // --- ONLINE: real API call ---
     try {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+      if (shouldIncludeCsrf(method)) {
+        headers['X-CSRF-Token'] = getCsrfToken();
+      }
       const res = await fetch(`${API_BASE}${url}`, {
         ...options,
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       if (res.status === 401) {
@@ -761,27 +775,68 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/sponsors
-      else if (url.startsWith('/api/admin/sponsors')) {
-        let sponsors = getDb('sponsors', []);
-        if (method === 'GET') resolve({ sponsors });
-        if (method === 'POST') {
-          const newSponsor = { ...body, id: Date.now().toString() };
-          sponsors = [newSponsor, ...sponsors];
-          setDb('sponsors', sponsors);
-          resolve(newSponsor);
+      // /api/admin/events/:id/waiting-room
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/waiting-room/)) {
+        const eventId = url.split('/')[4];
+        const action = url.split('/')[6];
+        let queue = getDb(`waiting_${eventId}`, [
+          {
+            id: 'wr_mock_1',
+            fullName: 'Anjali Sharma',
+            email: 'anjali@example.com',
+            isPriority: false,
+            joinedAt: new Date(Date.now() - 120000).toISOString(),
+          },
+          {
+            id: 'wr_mock_2',
+            fullName: 'Rahul Verma',
+            email: 'rahul@example.com',
+            isPriority: false,
+            joinedAt: new Date(Date.now() - 90000).toISOString(),
+          },
+          {
+            id: 'wr_mock_3',
+            fullName: 'Priya Kapoor',
+            email: 'priya@example.com',
+            isPriority: true,
+            joinedAt: new Date(Date.now() - 60000).toISOString(),
+          },
+        ]);
+        if (method === 'GET') resolve({ queue, total: queue.length });
+        if (method === 'POST' && !action) {
+          const newEntry = { ...body, id: `wr_${Date.now()}`, joinedAt: new Date().toISOString() };
+          queue = [...queue, newEntry];
+          setDb(`waiting_${eventId}`, queue);
+          resolve(newEntry);
         }
-        if (method === 'PUT') {
-          const id = url.split('/').pop();
-          sponsors = sponsors.map((s) => (s.id === id ? { ...body, id } : s));
-          setDb('sponsors', sponsors);
-          resolve({ ...body, id });
+        if (method === 'POST' && action === 'admit-one') {
+          const [admitted, ...rest] = queue;
+          setDb(`waiting_${eventId}`, rest);
+          resolve({ admitted });
+        }
+        if (method === 'POST' && action === 'admit-all') {
+          const count = queue.length;
+          setDb(`waiting_${eventId}`, []);
+          resolve({ count, admitted: true });
+        }
+        if (method === 'POST' && action === 'move-front') {
+          const entryId = url.split('/')[5];
+          const idx = queue.findIndex((e) => e.id === entryId);
+          if (idx >= 0) {
+            const [entry] = queue.splice(idx, 1);
+            queue.unshift({ ...entry, isPriority: true });
+            setDb(`waiting_${eventId}`, queue);
+          }
+          resolve({ ok: true });
+        }
+        if (method === 'POST' && action === 'message') {
+          resolve({ ok: true });
         }
         if (method === 'DELETE') {
-          const id = url.split('/').pop();
-          sponsors = sponsors.filter((s) => s.id !== id);
-          setDb('sponsors', sponsors);
-          resolve({ success: true });
+          const entryId = url.split('/')[5];
+          queue = queue.filter((e) => e.id !== entryId);
+          setDb(`waiting_${eventId}`, queue);
+          resolve({ ok: true });
         }
       }
 
@@ -815,46 +870,152 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/reports/engagement
-      else if (url.startsWith('/api/admin/reports/engagement')) {
-        if (method === 'GET') {
-          // Generate mock engagement data
-          const seedUsers = Array.from({ length: 45 }, (_, i) => {
-            const eventsAttended = Math.floor(Math.random() * 15);
-            const portfolioCompletion = Math.floor(Math.random() * 101);
-            const activeDays30 = Math.floor(Math.random() * 31);
-            const activeDays90 = Math.floor(Math.random() * 91);
-
-            // Engagement scoring logic:
-            // 40% based on active days in last 30 days (max 30 points -> scaled to 40)
-            // 30% based on events attended (max 10 events -> scaled to 30)
-            // 30% based on portfolio completion (max 100 -> scaled to 30)
-            const score30 = Math.min((activeDays30 / 30) * 40, 40);
-            const scoreEvents = Math.min((eventsAttended / 10) * 30, 30);
-            const scorePortfolio = (portfolioCompletion / 100) * 30;
-            const engagementScore = Math.round(score30 + scoreEvents + scorePortfolio);
-
-            // Inactive user detection:
-            // Less than 2 active days in the last 30 days AND attended 0 events
-            const isInactive = activeDays30 < 2 && eventsAttended === 0;
-
-            return {
-              id: `user-${i + 1}`,
-              name: `Community Member ${i + 1}`,
-              eventsAttended,
-              portfolioCompletion,
-              activeDays30,
-              activeDays90,
-              engagementScore,
-              status: isInactive ? 'Inactive' : 'Active',
-            };
-          });
-
-          // Sort by engagement score descending
-          seedUsers.sort((a, b) => b.engagementScore - a.engagementScore);
-
-          resolve({ users: seedUsers });
+      // /api/admin/events/:eventId/registrations
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'GET') resolve({ registrations: regs });
+        if (method === 'POST') {
+          const newReg = {
+            ...body,
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+          };
+          regs = [newReg, ...regs];
+          regDb[eventId] = regs;
+          setDb('event_registrations', regDb);
+          resolve(newReg);
         }
+      }
+
+      // /api/admin/events/:eventId/attendance
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'POST' && body) {
+          const idx = regs.findIndex(
+            (r) => r.email === body.email || r.ticket_token === body.token
+          );
+          if (idx >= 0) {
+            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
+            regDb[eventId] = regs;
+            setDb('event_registrations', regDb);
+            resolve({ ...regs[idx], already_attended: false });
+          } else {
+            resolve({ error: 'Registration not found' });
+          }
+        }
+      }
+
+      // /api/admin/qa/:eventId/questions
+      else if (url.match(/\/api\/admin\/qa\/[^\/]+\/questions/)) {
+        const parts = url.split('/');
+        const eventId = parts[4];
+        let qaDb = getDb('qa_questions', {});
+        let qs = qaDb[eventId] || [];
+
+        if (method === 'GET') {
+          const sortBy = new URL(url).searchParams.get('sortBy') || 'upvotes';
+          const sorted = [...qs];
+          if (sortBy === 'upvotes') sorted.sort((a, b) => b.upvotes - a.upvotes);
+          else if (sortBy === 'recent') sorted.sort((a, b) => b.createdAt - a.createdAt);
+          else if (sortBy === 'unanswered')
+            sorted.sort((a, b) => (a.status === 'answered' ? 1 : -1));
+          resolve({ questions: sorted });
+        }
+        if (method === 'PATCH' && parts[6] === 'moderate') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) {
+            if (body.action === 'feature') q.isFeatured = true;
+            else if (body.action === 'unfeature') q.isFeatured = false;
+            else if (body.action === 'answered') q.status = 'answered';
+            else if (body.action === 'duplicate') q.status = 'duplicate';
+            else if (body.action === 'remove') {
+              qs = qs.filter((qq) => qq.id !== qId);
+            }
+          }
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+        if (method === 'POST' && parts[6] === 'answer') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) {
+            q.answer = body.answer;
+            q.answeredBy = 'Speaker (Offline)';
+            q.status = 'answered';
+          }
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+        if (method === 'POST' && parts[6] === 'upvote') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) q.upvotes = (q.upvotes || 0) + 1;
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/qa/:eventId/polls
+      else if (url.match(/\/api\/admin\/qa\/[^\/]+\/polls/)) {
+        const parts = url.split('/');
+        const eventId = parts[4];
+        let pollDb = getDb('qa_polls', {});
+        let ps = pollDb[eventId] || [];
+
+        if (method === 'GET') resolve({ polls: ps });
+        if (method === 'POST' && !parts[6]) {
+          const newPoll = {
+            ...body,
+            id: Date.now().toString(),
+            options: body.options.map((opt, i) => ({
+              id: `${Date.now()}-${i}`,
+              text: opt,
+              votes: 0,
+              voters: [],
+            })),
+            totalVotes: 0,
+            status: 'active',
+            createdAt: Date.now(),
+          };
+          ps = [newPoll, ...ps];
+          pollDb[eventId] = ps;
+          setDb('qa_polls', pollDb);
+          resolve(newPoll);
+        }
+        if (method === 'POST' && parts[6] && parts[7] === 'close') {
+          const pollId = parts[6];
+          const poll = ps.find((p) => p.id === pollId);
+          if (poll) poll.status = 'closed';
+          pollDb[eventId] = ps;
+          setDb('qa_polls', pollDb);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/events/:eventId/analytics
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        const total = regs.length;
+        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
+        const attended = regs.filter((r) => r.attended).length;
+        resolve({
+          eventId,
+          stats: { total, confirmed, waitlisted: total - confirmed, attended },
+          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
+          departmentBreakdown: [],
+          yearBreakdown: [],
+          waitlist: [],
+        });
       }
     }, 300); // simulate slight network delay
   });
@@ -1300,63 +1461,39 @@ export const api = {
       }),
   },
 
-  sponsorships: {
-    getAll: () => fetchWithAuth('/api/admin/sponsors'),
-    create: async (sponsor) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      const result = await fetchWithAuth('/api/admin/sponsors', {
+  waitingRoom: {
+    getQueue: (eventId) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room`),
+    admitOne: (eventId) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/admit-one`, {
         method: 'POST',
-        body: JSON.stringify(sponsor),
-      });
-      eventEmitter.emit(EVENTS.SPONSOR_CREATED, result);
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor added',
-      });
-      broadcastContentUpdate('sponsors');
-      return result;
-    },
-    update: async (id, sponsor) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      const result = await fetchWithAuth(`/api/admin/sponsors/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(sponsor),
-      });
-      eventEmitter.emit(EVENTS.SPONSOR_UPDATED, result);
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor updated',
-      });
-      broadcastContentUpdate('sponsors');
-      return result;
-    },
-    delete: async (id) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      await fetchWithAuth(`/api/admin/sponsors/${id}`, { method: 'DELETE' });
-      eventEmitter.emit(EVENTS.SPONSOR_DELETED, { id });
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor deleted',
-      });
-      broadcastContentUpdate('sponsors');
-    },
+      }),
+    admitAll: (eventId) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/admit-all`, {
+        method: 'POST',
+      }),
+    remove: (eventId, entryId) =>
+      fetchWithAuth(
+        `/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/${encodeURIComponent(entryId)}`,
+        { method: 'DELETE' }
+      ),
+    moveToFront: (eventId, entryId) =>
+      fetchWithAuth(
+        `/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/${encodeURIComponent(entryId)}/move-front`,
+        { method: 'POST' }
+      ),
+    sendMessage: (eventId, message) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/message`, {
+        method: 'POST',
+        body: JSON.stringify({ message }),
+      }),
   },
 
+  impersonate: {
+    start: (userId) => fetchWithAuth(`/api/admin/impersonate/start/${userId}`, { method: 'POST' }),
+    stop: () => fetchWithAuth('/api/admin/impersonate/stop', { method: 'POST' }),
+    status: () => fetchWithAuth('/api/admin/impersonate/status'),
+  },
   forum: {
     getAll: async (params = {}) => {
       const query = new URLSearchParams(params).toString();
@@ -1403,57 +1540,44 @@ export const api = {
     },
   },
 
-  rbac: {
-    getRoles: () => fetchWithAuth('/api/admin/rbac/roles'),
-    getPermissions: () => fetchWithAuth('/api/admin/rbac/permissions'),
-    getPermissionMatrix: () => fetchWithAuth('/api/admin/rbac/matrix'),
-    createRole: async (role) => {
-      const result = await fetchWithAuth('/api/admin/rbac/roles', {
+  subscriptions: {
+    getAll: async () => {
+      if (auth.isOfflineMode()) {
+        const subs = safeJsonParse(localStorage.getItem('ns_db_subscriptions'), []);
+        return { subscriptions: subs };
+      }
+      return fetchWithAuth('/api/admin/subscriptions');
+    },
+    getStats: async () => {
+      if (auth.isOfflineMode()) {
+        const subs = safeJsonParse(localStorage.getItem('ns_db_subscriptions'), []);
+        return {
+          total: subs.length,
+          premium: subs.filter((s) => s.tier === 'premium').length,
+          pro: subs.filter((s) => s.tier === 'pro').length,
+          revenue: subs.reduce((sum, s) => sum + (s.price || 0), 0),
+        };
+      }
+      return fetchWithAuth('/api/admin/subscriptions/stats');
+    },
+    create: async (userId, tierId) => {
+      const result = await fetchWithAuth('/api/admin/subscriptions', {
         method: 'POST',
-        body: JSON.stringify(role),
+        body: JSON.stringify({ userId, tierId }),
       });
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role created' });
+      eventEmitter.emit(EVENTS.SUBSCRIPTION_CREATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Subscription created' });
       return result;
     },
-    updateRole: async (name, role) => {
-      const result = await fetchWithAuth(`/api/admin/rbac/roles/${name}`, {
-        method: 'PUT',
-        body: JSON.stringify(role),
-      });
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role updated' });
-      return result;
-    },
-    deleteRole: async (name) => {
-      await fetchWithAuth(`/api/admin/rbac/roles/${name}`, { method: 'DELETE' });
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role deleted' });
-    },
-    getUsersWithRoles: () => fetchWithAuth('/api/admin/rbac/users'),
-    assignRole: async (assignment) => {
-      const result = await fetchWithAuth('/api/admin/rbac/assign', {
+    cancel: async (userId) => {
+      const result = await fetchWithAuth(`/api/admin/subscriptions/${userId}/cancel`, {
         method: 'POST',
-        body: JSON.stringify(assignment),
       });
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role assigned' });
+      eventEmitter.emit(EVENTS.SUBSCRIPTION_CANCELLED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Subscription cancelled' });
       return result;
     },
-    revokeRole: async (userId, roleName) => {
-      await fetchWithAuth(`/api/admin/rbac/assign/${userId}/${roleName}`, {
-        method: 'DELETE',
-      });
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role revoked' });
-    },
-    bulkAssignRoles: async (assignments) => {
-      const result = await fetchWithAuth('/api/admin/rbac/bulk-assign', {
-        method: 'POST',
-        body: JSON.stringify({ assignments }),
-      });
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Roles assigned in bulk' });
-      return result;
-    },
-    getAuditLogs: (params = {}) => {
-      const query = new URLSearchParams(params).toString();
-      return fetchWithAuth(`/api/admin/rbac/audit${query ? `?${query}` : ''}`);
-    },
+    getBillingHistory: (userId) => fetchWithAuth(`/api/admin/subscriptions/${userId}/billing`),
   },
 };
 

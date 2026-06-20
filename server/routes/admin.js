@@ -11,6 +11,7 @@ import {
   rollbackConfig,
 } from '../utils/configApproval.js';
 import { apiRateLimiter } from '../middleware/rateLimiter.js';
+import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
 import {
   runIntegrityCheck,
   detectCorruption,
@@ -23,6 +24,12 @@ import {
   getReadOnlyStatus,
   createIncidentLog,
 } from '../routes/readOnlyMode.js';
+import {
+  activateReadOnlyMode as activateReadOnlyMode2,
+  deactivateReadOnlyMode as deactivateReadOnlyMode2,
+  getReadOnlyStatus as getReadOnlyStatus2,
+  createIncidentLog as createIncidentLog2,
+} from '../utils/readOnlyMode.js';
 import {
   getServiceStatus,
   getIncidentTimeline,
@@ -42,11 +49,38 @@ const router = Router();
 const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 /**
- * GET /api/admin/membership — Fetch membership responses from
- * Google Apps Script. Returns an empty list if the script URL
- * or secret is not configured.
+ * Raw membership fetch helper, wrapped in a circuit breaker to protect
+ * against repeated failures from the upstream Google Apps Script endpoint.
  */
-router.get('/api/admin/membership', adminAuth, async (req, res) => {
+async function _rawMembershipFetch(scriptUrl, secret) {
+  const response = await fetch(scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getResponses', token: secret }),
+  });
+  if (!response.ok) {
+    throw new Error(`Google Apps Script returned ${response.status}`);
+  }
+  return response.json();
+}
+
+const membershipBreaker = circuitBreakerRegistry.register(
+  'membership-gas',
+  new CircuitBreaker(_rawMembershipFetch, {
+    name: 'membership-gas',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 15000,
+    maxCoolDownPeriod: 120000,
+  })
+);
+
+/**
+ * GET /membership — Fetch membership responses from Google Apps Script,
+ * protected by a circuit breaker. Returns an empty list if the script URL
+ * or secret is not configured, or if the circuit is open.
+ */
+router.get('/membership', adminAuth, async (req, res) => {
   const scriptUrl = process.env.MEMBERSHIP_SCRIPT_URL;
   const secret = process.env.MEMBERSHIP_SECRET;
 
@@ -55,28 +89,22 @@ router.get('/api/admin/membership', adminAuth, async (req, res) => {
   }
 
   try {
-    const response = await tracedFetch(scriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getResponses', token: secret }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Google Apps Script returned ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await membershipBreaker.execute(scriptUrl, secret);
     return res.json({ responses: data.responses || [] });
   } catch (err) {
+    if (err.code === 'CIRCUIT_OPEN') {
+      console.warn('[Membership] Circuit breaker is OPEN, returning empty responses');
+      return res.json({ responses: [] });
+    }
     console.error('[Membership] Failed to fetch responses:', err.message);
     return res.status(500).json({ error: 'Failed to fetch membership responses' });
   }
 });
 
 /**
- * GET /api/admin/me — Returns the authenticated admin's username.
+ * GET /me — Returns the authenticated admin's username.
  */
-router.get('/api/admin/me', adminAuth, (req, res) => {
+router.get('/me', adminAuth, (req, res) => {
   return res.json({ username: req.adminSession.username });
 });
 

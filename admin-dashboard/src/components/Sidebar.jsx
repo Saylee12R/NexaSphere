@@ -13,6 +13,30 @@ const links = [
   { to: '/dashboard/analytics', label: 'Analytics', icon: 'BarChart' },
   { to: '/dashboard/events', label: 'Events', icon: 'Calendar', requiredScope: 'events:read' },
   {
+    to: '/dashboard/waiting-room',
+    label: 'Waiting Room',
+    icon: 'Clock',
+    requiredScope: 'events:read',
+  },
+  {
+    to: '/dashboard/event-registrations',
+    label: 'Registrations',
+    icon: 'FileText',
+    requiredScope: 'events:read',
+  },
+  {
+    to: '/dashboard/event-scanner',
+    label: 'Scanner',
+    icon: 'Camera',
+    requiredScope: 'events:write',
+  },
+  {
+    to: '/dashboard/event-analytics',
+    label: 'Analytics',
+    icon: 'BarChart',
+    requiredScope: 'events:read',
+  },
+  {
     to: '/dashboard/activity-events',
     label: 'Activity Events',
     icon: 'Target',
@@ -56,27 +80,10 @@ const links = [
     icon: 'Activity',
   },
   {
-    to: '/dashboard/sponsorships',
-    label: 'Sponsorships',
-    icon: 'Handshake',
+    to: '/dashboard/qa-poll',
+    label: 'Q&A / Polling',
+    icon: 'MessageSquare',
     requiredScope: 'events:read',
-  },
-  {
-    to: '/dashboard/compliance',
-    label: 'Compliance',
-    icon: 'Shield',
-    requiredScope: 'settings:admin',
-  },
-  {
-    to: '/dashboard/scheduled-tasks',
-    label: 'Scheduled Tasks',
-    icon: 'Clock',
-    requiredScope: 'settings:admin',
-  },
-  {
-    to: '/dashboard/alerts',
-    label: 'Alerts',
-    icon: 'Bell',
   },
 ];
 

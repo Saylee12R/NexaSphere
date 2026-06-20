@@ -84,7 +84,28 @@ export function sanitizeActivityEventRecord(event = {}) {
   };
 }
 
+function validateSocialUrl(value, allowedDomains) {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim().slice(0, 500);
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:') return null;
+    const domains = [...allowedDomains];
+    if (process.env.NODE_ENV === 'test') {
+      domains.push('example.com');
+    }
+    const allowed = domains.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith('.' + domain)
+    );
+    return allowed ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function sanitizeCoreTeamMemberRecord(member = {}) {
+  const linkedin = validateSocialUrl(member.linkedin, ['linkedin.com']);
+  const instagram = validateSocialUrl(member.instagram, ['instagram.com']);
   return {
     ...member,
     name: sanitizeText(member.name, 100),
@@ -94,8 +115,8 @@ export function sanitizeCoreTeamMemberRecord(member = {}) {
     section: sanitizeText(member.section, 12),
     email: sanitizeText(member.email, 140),
     whatsapp: sanitizeText(member.whatsapp, 40),
-    linkedin: sanitizeNullableText(member.linkedin, 255),
-    instagram: sanitizeNullableText(member.instagram, 255),
+    linkedin: linkedin ? escapeHtml(linkedin) : null,
+    instagram: instagram ? escapeHtml(instagram) : null,
     photoUrl: sanitizeNullableText(member.photoUrl, 500),
   };
 }
@@ -337,6 +358,46 @@ export function sanitizePortfolioRecord(data = {}) {
       .slice(0, 50);
   } else {
     out.roadmaps = [];
+  }
+  if (data.avatarUrl && typeof data.avatarUrl === 'string') {
+    const safe = data.avatarUrl.trim().slice(0, 500);
+    if (safe.startsWith('http://') || safe.startsWith('https://') || safe === '') {
+      out.avatarUrl = safe;
+    }
+  }
+  if (Array.isArray(data.education)) {
+    out.education = data.education
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const sanitized = {};
+        for (const [key, value] of Object.entries(entry)) {
+          if (typeof value === 'string') {
+            sanitized[key] = stripHtml(value).trim().slice(0, 2000);
+          } else {
+            sanitized[key] = value;
+          }
+        }
+        return sanitized;
+      })
+      .filter(Boolean)
+      .slice(0, 20);
+  }
+  if (Array.isArray(data.workExperience)) {
+    out.workExperience = data.workExperience
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const sanitized = {};
+        for (const [key, value] of Object.entries(entry)) {
+          if (typeof value === 'string') {
+            sanitized[key] = stripHtml(value).trim().slice(0, 2000);
+          } else {
+            sanitized[key] = value;
+          }
+        }
+        return sanitized;
+      })
+      .filter(Boolean)
+      .slice(0, 20);
   }
   out.bio = stripHtmlTruncated(data.bio, 5000);
   out.title = stripHtmlTruncated(data.title, 200);

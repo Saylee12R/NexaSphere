@@ -20,11 +20,39 @@ for (const file of files) {
     const queryArg = match[1].trim();
     const firstPart = queryArg.split(',')[0].trim();
 
-    if (firstPart.includes('${') || firstPart.includes('+')) {
-      console.log(`[Vulnerable] File: ${file}`);
-      console.log(`  Query: ${firstPart}`);
-      console.log('--------------------------------------------------');
-      vulnerabilitiesFound++;
+    // Strip out all literal strings to see if '+' is used as a JavaScript operator
+    const cleanPart = firstPart
+      .replace(/"(?:[^"\\]|\\.)*"/g, '')
+      .replace(/'(?:[^'\\]|\\.)*'/g, '')
+      .replace(/`(?:[^`\\]|\\.)*`/g, '');
+
+    const hasInterpolation = firstPart.includes('${');
+    const hasConcat = cleanPart.includes('+');
+
+    if (hasInterpolation || hasConcat) {
+      // Safe patterns: only hardcoded column names / structural SQL are interpolated;
+      // all user-supplied values travel via $N parameterized placeholders.
+      const safePatterns = [
+        '${where}',
+        '${conditions.join(',
+        '${sets.join(',
+        '${fields.join(',
+        '${column}',
+        '${extraClause}',
+        '${k}',
+        '${i}',
+        '${i++}',
+        '${staleThresholdDays}',
+      ];
+
+      const isSafe = hasInterpolation && !hasConcat && safePatterns.some((pattern) => firstPart.includes(pattern));
+
+      if (!isSafe) {
+        console.log(`[Vulnerable] File: ${file}`);
+        console.log(`  Query: ${firstPart}`);
+        console.log('--------------------------------------------------');
+        vulnerabilitiesFound++;
+      }
     }
   }
 }

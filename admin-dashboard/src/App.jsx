@@ -19,9 +19,7 @@ import { AnnouncementsManager } from './pages/AnnouncementsManager';
 import { PortfolioManager } from './pages/PortfolioManager';
 import { StreamManager } from './pages/StreamManager';
 import { CircuitBreakerManager } from './pages/CircuitBreakerManager';
-import { ResourcesManager } from './pages/ResourcesManager';
-import { ScheduledTasksManager } from './pages/ScheduledTasksManager';
-import { AlertManager } from './pages/AlertManager';
+import { WaitingRoomManager } from './pages/WaitingRoomManager';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -45,6 +43,7 @@ function DashboardLayout() {
   return (
     <div className="app-layout">
       <OfflineBanner />
+      <ImpersonationBanner />
       <Sidebar />
       <main className="main-content" id="main-content">
         <ErrorBoundary>
@@ -78,9 +77,7 @@ export default function App() {
             <Route path="/dashboard/mentorship" element={<MentorshipManager />} />
             <Route path="/dashboard/streams" element={<StreamManager />} />
             <Route path="/dashboard/circuit-breaker" element={<CircuitBreakerManager />} />
-            <Route path="/dashboard/resources" element={<ResourcesManager />} />
-            <Route path="/dashboard/scheduled-tasks" element={<ScheduledTasksManager />} />
-            <Route path="/dashboard/alerts" element={<AlertManager />} />
+            <Route path="/dashboard/waiting-room" element={<WaitingRoomManager />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

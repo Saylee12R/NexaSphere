@@ -68,7 +68,7 @@ git clone https://github.com/<your-username>/NexaSphere-GSSOc.git
 cd NexaSphere-GSSOc
 ```
 
-3. **Add the upstream remote** so you can sync with the original repo:
+1. **Add the upstream remote** so you can sync with the original repo:
 
 ```bash
 git remote add upstream https://github.com/Piyush025s07/NexaSphere-GSSOc.git

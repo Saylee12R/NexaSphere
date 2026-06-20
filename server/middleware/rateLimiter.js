@@ -159,7 +159,27 @@ export const activityAuthRateLimiter = rateLimit({
   },
 });
 
-// Portfolio update rate limiter — 10 requests per IP per 15 minutes
+// Sync batch rate limiter — 10 requests per IP per minute.
+// Applied to the write-heavy POST /api/sync/batch which previously had no
+// rate limiting or authentication at all.
+export const syncRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:sync:'),
+  handler: (req, res, next, options) => {
+    logger.warn('Sync batch rate limit exceeded', {
+      ip: req.ip,
+      path: req.originalUrl || req.path,
+      method: req.method,
+    });
+    res.status(options.statusCode).json({
+      error: 'Too many sync requests from this IP, please try again later.',
+    });
+  },
+});
+
 // Portfolio update rate limiter — 10 requests per IP per 15 minutes
 export const portfolioRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -172,11 +192,25 @@ export const portfolioRateLimiter = rateLimit({
   ),
 });
 
-// ---------------------------------------------------------------------------
-// Startup guard — call once during server boot to catch missing exports early.
-// Throws immediately if any limiter failed to initialise, preventing the silent
-// "undefined middleware" failure mode that this issue was created to fix.
-// ---------------------------------------------------------------------------
+// Event registration rate limiter — 10 requests per IP per hour
+export const eventRegistrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:event-reg:'),
+  handler: (req, res, _next, options) => {
+    logger.warn('Event registration rate limit exceeded', {
+      ip: req.ip,
+      path: req.originalUrl || req.path,
+      method: req.method,
+    });
+    res.status(options.statusCode).json({
+      error: 'Too many registration attempts. Please try again later.',
+    });
+  },
+});
+
 // Search rate limiter: 30 requests per minute per IP.
 export const searchRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -195,6 +229,11 @@ export const searchRateLimiter = rateLimit({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Startup guard — call once during server boot to catch missing exports early.
+// Throws immediately if any limiter failed to initialise, preventing the silent
+// "undefined middleware" failure mode that this issue was created to fix.
+// ---------------------------------------------------------------------------
 export function validateLimiters() {
   const limiters = {
     apiRateLimiter,
@@ -202,7 +241,9 @@ export function validateLimiters() {
     authRateLimiter,
     notificationRateLimiter,
     activityAuthRateLimiter,
+    syncRateLimiter,
     portfolioRateLimiter,
+    eventRegistrationLimiter,
     searchRateLimiter,
   };
 

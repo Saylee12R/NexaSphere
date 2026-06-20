@@ -4,7 +4,9 @@ import logger from '../utils/logger.js';
 
 export const startSlackAuth = (req, res) => {
   const clientId = process.env.SLACK_CLIENT_ID;
-  const redirectUri = process.env.SLACK_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/slack/auth/callback`;
+  const redirectUri =
+    process.env.SLACK_REDIRECT_URI ||
+    `${req.protocol}://${req.get('host')}/api/slack/auth/callback`;
 
   if (!clientId) {
     logger.warn('[SlackController] Client ID is not configured.');
@@ -18,12 +20,16 @@ export const startSlackAuth = (req, res) => {
 export const slackAuthCallback = async (req, res) => {
   const code = req.query.code;
   if (!code) {
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_error=missing_code`);
+    return res.redirect(
+      `${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_error=missing_code`
+    );
   }
 
   const clientId = process.env.SLACK_CLIENT_ID;
   const clientSecret = process.env.SLACK_CLIENT_SECRET;
-  const redirectUri = process.env.SLACK_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/slack/auth/callback`;
+  const redirectUri =
+    process.env.SLACK_REDIRECT_URI ||
+    `${req.protocol}://${req.get('host')}/api/slack/auth/callback`;
 
   try {
     const tokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
@@ -40,7 +46,9 @@ export const slackAuthCallback = async (req, res) => {
     const data = await tokenResponse.json();
     if (!data.ok) {
       logger.error('[SlackController] Slack OAuth token exchange failed:', data.error);
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_error=${encodeURIComponent(data.error)}`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_error=${encodeURIComponent(data.error)}`
+      );
     }
 
     const bot_token = data.access_token;
@@ -55,10 +63,14 @@ export const slackAuthCallback = async (req, res) => {
       channel_id,
     });
 
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_success=true`);
+    return res.redirect(
+      `${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_success=true`
+    );
   } catch (err) {
     logger.error('[SlackController] Slack OAuth callback error:', err.message);
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_error=internal_error`);
+    return res.redirect(
+      `${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard?slack_error=internal_error`
+    );
   }
 };
 

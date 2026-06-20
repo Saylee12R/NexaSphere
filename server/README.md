@@ -60,7 +60,7 @@ The `server/` directory contains the **Node.js / Express** backend API that powe
 
 ## 3. Directory Structure
 
-```
+```text
 server/
 ├── index.js                       ← Entry point (Express app + Socket.io init)
 │
@@ -125,7 +125,7 @@ server/
 ├── jest.config.js                 ← Jest test configuration
 ├── supabase-schema.sql            ← Full database schema (reference)
 └── seed_recommendation_data.sql   ← Sample data for recommendations
-```
+```text
 
 ---
 
@@ -148,14 +148,14 @@ npm run migrate:latest
 # Start the development server
 npm run dev
 # → Server running at http://localhost:8080
-```
+```text
 
 Verify the server is running:
 
 ```bash
 curl http://localhost:8080/healthz
 # → { "status": "ok" }
-```
+```text
 
 ---
 
@@ -201,9 +201,9 @@ curl http://localhost:8080/healthz
 
 Every request follows this chain — **never skip a layer**:
 
-```
+```text
 Route → Middleware → Controller → Service → Repository → PostgreSQL
-```
+```text
 
 ### Rules
 
