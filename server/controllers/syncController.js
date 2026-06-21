@@ -11,14 +11,22 @@ export const getDeploymentHealth = async (req, res) => {
 export const syncController = {
   async getSyncStatus(req, res) {
     try {
-      await withDb(async (client) => {
-        // Ping database
+      const result = await withDb(async (client) => {
         await client.query('SELECT 1');
+        const pendingRes = await client.query(
+          `SELECT COUNT(*)::int AS count
+           FROM events
+           WHERE updated_at > NOW() - INTERVAL '24 hours'`
+        );
+        return pendingRes.rows[0].count;
       });
       return res.json({
         status: 'ok',
         serverTime: new Date().toISOString(),
         databaseConnected: true,
+        lastSyncTimestamp: req.query.since || null,
+        pendingOperations: result,
+        compressionSupported: true,
       });
     } catch (err) {
       return res.status(500).json({
@@ -48,11 +56,17 @@ export const syncController = {
            WHERE updated_at > $1`,
           [sinceDate]
         );
+        const portfolioRes = await client.query(
+          `SELECT id, title, updated_at
+           FROM portfolios
+           WHERE updated_at > $1`,
+          [sinceDate]
+        );
 
         return res.json({
           serverTime: new Date().toISOString(),
           events: eventsRes.rows,
-          portfolios: [],
+          portfolios: portfolioRes.rows,
         });
       });
     } catch (err) {
@@ -156,10 +170,55 @@ export const syncController = {
       return res.status(hasConflicts ? 409 : 200).json({
         serverTime: new Date().toISOString(),
         results,
+        retryAfterConflict: hasConflicts
+          ? 'Use POST /api/sync/resolve-conflicts to force update'
+          : undefined,
       });
     } catch (err) {
       logger.error('Sync batch execution failed', { error: err.message });
       return res.status(500).json({ error: 'Sync batch failed' });
+    }
+  },
+
+  async resolveConflicts(req, res) {
+    const { changes } = req.body;
+    if (!Array.isArray(changes)) {
+      return res.status(400).json({ error: 'Expected "changes" array in request body' });
+    }
+
+    const results = [];
+    try {
+      await withDb(async (client) => {
+        for (const change of changes) {
+          if (!change || typeof change !== 'object') {
+            results.push({ status: 'error', message: 'Invalid change object' });
+            continue;
+          }
+          const { type, id, data } = change;
+          if (type === 'event' && id && data) {
+            await client.query(
+              `INSERT INTO events (id, name, date_text, description, updated_at)
+               VALUES ($1, $2, $3, $4, NOW())
+               ON CONFLICT (id) DO UPDATE
+               SET name = EXCLUDED.name,
+                   description = EXCLUDED.description,
+                   updated_at = NOW()`,
+              [id, data.name, data.date_text || new Date().toISOString(), data.description]
+            );
+            results.push({ id, type, status: 'resolved' });
+          } else {
+            results.push({ id, type, status: 'ignored', message: 'Unsupported sync type' });
+          }
+        }
+      });
+
+      return res.json({
+        serverTime: new Date().toISOString(),
+        results,
+      });
+    } catch (err) {
+      logger.error('Conflict resolution failed', { error: err.message });
+      return res.status(500).json({ error: 'Conflict resolution failed' });
     }
   },
 };
