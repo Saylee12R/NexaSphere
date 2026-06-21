@@ -18,14 +18,17 @@ const adminAuth = adminAuthMiddleware.requireAdmin;
  */
 router.post(
   '/api/notifications/mark-read',
-  adminAuth,
+  requireStudentAuth,
   notificationRateLimiter,
   async (req, res) => {
     try {
-      const { id, userId } = req.body || {};
-      if (!id) return res.status(400).json({ error: 'id required' });
-      const uid = userId || 'global';
-      const ok = await notificationsService.markAsRead(uid, id);
+      const { id } = req.body || {};
+
+      if (!id) {
+        return res.status(400).json({ error: 'id required' });
+      }
+      const authenticatedUserId = req.studentUser?.sub || req.studentUser?.id;
+      const ok = await notificationsService.markAsRead(authenticatedUserId, id);
       return res.json({ success: ok });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -38,12 +41,12 @@ router.post(
  */
 router.post(
   '/api/notifications/mark-all-read',
-  adminAuth,
+  requireStudentAuth,
   notificationRateLimiter,
   async (req, res) => {
     try {
-      const { userId } = req.body || {};
-      await notificationsService.markAllAsRead(userId || 'global');
+      const authenticatedUserId = req.studentUser?.sub || req.studentUser?.id;
+      await notificationsService.markAllAsRead(authenticatedUserId);
       return res.json({ success: true });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -69,15 +72,22 @@ router.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, asyn
 /**
  * DELETE /api/notifications — Clear all notifications for a user.
  */
-router.delete('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
-  try {
-    const userId = req.query.userId || 'global';
-    await notificationsService.clearAll(userId);
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+router.delete(
+  '/api/notifications',
+  requireStudentAuth,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      const authenticatedUserId = req.studentUser?.sub || req.studentUser?.id;
+
+      await notificationsService.clearAll(authenticatedUserId);
+
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
 /**
  * POST /api/notifications — Create a new notification (admin).
