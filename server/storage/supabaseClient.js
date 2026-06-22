@@ -1,5 +1,6 @@
 import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
 import { tracedFetch } from '../config/appContext.js';
+import { isIP } from 'net';
 
 export const SUPABASE_URL = process.env.SUPABASE_URL || '';
 export const SUPABASE_SERVICE_KEY =
