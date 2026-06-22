@@ -4,10 +4,26 @@ import { dashboardController } from '../controllers/dashboardController.js';
 
 const router = express.Router();
 
-router.get('/api/dashboard/stats', requireStudentAuth, dashboardController.getStats);
+import { apiRateLimiter } from '../middleware/rateLimiter.js';
 
-router.get('/api/dashboard/quests', requireStudentAuth, dashboardController.getQuests);
+router.get(
+  '/api/dashboard/stats',
+  apiRateLimiter,
+  requireStudentAuth,
+  dashboardController.getStats
+);
 
-router.get('/api/dashboard/leaderboard', requireStudentAuth, dashboardController.getLeaderboard);
+router.get(
+  '/api/dashboard/quests',
+  apiRateLimiter,
+  requireStudentAuth,
+  dashboardController.getQuests
+);
 
+router.get(
+  '/api/dashboard/leaderboard',
+  apiRateLimiter,
+  requireStudentAuth,
+  dashboardController.getLeaderboard
+);
 export default router;
