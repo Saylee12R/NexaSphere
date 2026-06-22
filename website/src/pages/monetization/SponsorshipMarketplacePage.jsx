@@ -35,7 +35,11 @@ export default function SponsorshipMarketplacePage({ onBack }) {
       try {
         const d = await apiClient(url);
         setCompanies(d.companies || []);
-      } catch {}
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('[SponsorshipMarketplacePage] Failed to fetch companies:', err.message);
+        }
+      }
   }, []);
 
   const fetchPackages = useCallback(async () => {
@@ -44,7 +48,11 @@ export default function SponsorshipMarketplacePage({ onBack }) {
       try {
         const d = await apiClient(url);
         setPackages(d.packages || []);
-      } catch {}
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('[SponsorshipMarketplacePage] Failed to fetch packages:', err.message);
+        }
+      }
   }, []);
 
   const fetchProposals = useCallback(async () => {
@@ -53,7 +61,11 @@ export default function SponsorshipMarketplacePage({ onBack }) {
       try {
         const d = await apiClient(url);
         setProposals(d.proposals || []);
-      } catch {}
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('[SponsorshipMarketplacePage] Failed to fetch proposals:', err.message);
+        }
+      }
   }, []);
 
   const fetchAgreements = useCallback(async () => {
@@ -62,7 +74,11 @@ export default function SponsorshipMarketplacePage({ onBack }) {
       try {
         const d = await apiClient(url);
         setAgreements(d.agreements || []);
-      } catch {}
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('[SponsorshipMarketplacePage] Failed to fetch agreements:', err.message);
+        }
+      }
   }, []);
 
   useEffect(() => {
