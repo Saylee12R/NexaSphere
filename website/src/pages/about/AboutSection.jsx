@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 const WHATSAPP = 'https://chat.whatsapp.com/Jjc5cuUKENu0RC1vWSEs20';
 const LINKEDIN = 'https://www.linkedin.com/showcase/glbajaj-nexasphere/';
@@ -17,6 +17,13 @@ const values = [
 
 export default function AboutSection() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  // Tracks animationend listeners added dynamically inside the
+  // IntersectionObserver callback so they can be explicitly removed on
+  // unmount — { once: true } only cleans up after the event actually
+  // fires, but if the component unmounts mid-animation the listener is
+  // still attached and would mutate a detached DOM node's style when it
+  // eventually fires.
+  const pendingAnimationListenersRef = useRef([]);
 
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -24,15 +31,17 @@ export default function AboutSection() {
         entries.forEach((e) => {
           if (e.isIntersecting && !e.target.classList.contains('fired')) {
             e.target.classList.add('fired');
-            e.target.addEventListener(
-              'animationend',
-              () => {
-                e.target.style.opacity = '1';
-                e.target.style.transform = 'none';
-              },
-              { once: true }
-            );
-            obs.unobserve(e.target);
+            const target = e.target;
+            const handler = () => {
+              target.style.opacity = '1';
+              target.style.transform = 'none';
+              pendingAnimationListenersRef.current = pendingAnimationListenersRef.current.filter(
+                (entry) => entry.target !== target
+              );
+            };
+            target.addEventListener('animationend', handler, { once: true });
+            pendingAnimationListenersRef.current.push({ target, handler });
+            obs.unobserve(target);
           }
         });
       },
@@ -43,7 +52,13 @@ export default function AboutSection() {
         '#section-about .pop-in,#section-about .pop-left,#section-about .pop-right,#section-about .pop-word'
       )
       .forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      pendingAnimationListenersRef.current.forEach(({ target, handler }) => {
+        target.removeEventListener('animationend', handler);
+      });
+      pendingAnimationListenersRef.current = [];
+    };
   }, []);
 
   useEffect(() => {
