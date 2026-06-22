@@ -5,6 +5,7 @@
 
 import logger from '../utils/logger.js';
 import { captureMessage, addBreadcrumb } from '../utils/sentry.js';
+import { recordSlowQuery } from '../utils/queryLogger.js';
 
 /**
  * Simple time-windowed metrics tracker
@@ -229,6 +230,8 @@ const recordDbQueryMetric = (queryText, durationMs, error = null) => {
   if (error) {
     dbQueryMetrics.queries[normalizedQuery].errors += 1;
   }
+
+  recordSlowQuery(queryText, durationMs, { error: error?.message });
 };
 
 const registrationsHistory = [];
