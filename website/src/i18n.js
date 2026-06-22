@@ -1,17 +1,22 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-
 import translationEN from './locales/en.json';
 import translationHI from './locales/hi.json';
+import translationES from './locales/es.json';
+import translationFR from './locales/fr.json';
+import translationDE from './locales/de.json';
+import translationPT from './locales/pt.json';
+import translationAR from './locales/ar.json';
 
 const resources = {
-  en: {
-    translation: translationEN
-  },
-  hi: {
-    translation: translationHI
-  }
+  en: { translation: translationEN },
+  hi: { translation: translationHI },
+  es: { translation: translationES },
+  fr: { translation: translationFR },
+  de: { translation: translationDE },
+  pt: { translation: translationPT },
+  ar: { translation: translationAR },
 };
 
 i18n
@@ -20,19 +25,20 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
+    supportedLngs: ['en', 'hi', 'es', 'fr', 'de', 'pt', 'ar'],
     interpolation: {
-      escapeValue: false // react already escapes from xss
+      escapeValue: false,
     },
     detection: {
       order: ['localStorage', 'navigator'],
-      caches: ['localStorage']
-    }
+      caches: ['localStorage'],
+    },
   });
 
-// Set direction based on language
 i18n.on('languageChanged', (lng) => {
   const dir = i18n.dir(lng);
   document.documentElement.dir = dir;
+  document.documentElement.lang = lng;
 });
 
 export default i18n;

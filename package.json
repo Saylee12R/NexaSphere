@@ -1,6 +1,7 @@
 {
   "name": "nexasphere-monorepo",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "description": "NexaSphere — GL Bajaj Tech Community Platform. Monorepo containing the website, admin dashboard, and server.",
   "workspaces": [
@@ -17,6 +18,8 @@
     "dev:server": "cd server && node index.js",
     "dev:all": "concurrently \"npm run dev:website\" \"npm run dev:admin\" \"npm run dev:server\"",
     "build": "npm run build --workspace=website",
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test accessibility.spec.js",
     "build:website": "npm run build --workspace=website",
     "build:admin": "npm run build --workspace=admin-dashboard",
     "build:all": "npm run build:website && npm run build:admin",
@@ -25,22 +28,49 @@
     "test": "npm run test --workspace=website",
     "test:admin": "npm run test --workspace=admin-dashboard",
     "test:server": "cd server && npm test",
-    "lint": "eslint website/src admin-dashboard/src --ext .js,.jsx",
-    "lint:fix": "eslint website/src admin-dashboard/src --ext .js,.jsx --fix",
-    "format": "prettier --write \"website/src/**/*.{js,jsx,css}\" \"admin-dashboard/src/**/*.{js,jsx,css}\"",
-    "format:check": "prettier --check \"website/src/**/*.{js,jsx,css}\" \"admin-dashboard/src/**/*.{js,jsx,css}\"",
+    "lint": "eslint website/src --ext .js,.jsx",
+    "lint:fix": "eslint website/src --ext .js,.jsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "echo 'No TypeScript in this project' && exit 0",
     "prepare": "node -e \"try { require('husky'); require('child_process').execSync('husky', {stdio:'inherit'}) } catch(e) { console.log('husky not available, skipping') }\""
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
+    "concurrently": "^10.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.5",
-    "prettier": "^3.8.3"
+    "lint-staged": "^17.0.6",
+    "prettier": "^3.8.3",
+    "prisma": "^7.8.0"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "prettier --write"
     ]
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-arm64-gnu": "1.0.3",
+    "@rolldown/binding-linux-x64-gnu": "1.0.3",
+    "@rolldown/binding-linux-x64-musl": "1.0.3",
+    "@rolldown/binding-win32-x64-msvc": "^1.1.1",
+    "@rollup/rollup-linux-arm64-gnu": "4.61.1",
+    "@rollup/rollup-linux-arm64-musl": "4.60.0",
+    "@rollup/rollup-linux-x64-gnu": "4.60.0",
+    "@rollup/rollup-linux-x64-musl": "4.60.0",
+    "lightningcss-linux-arm64-gnu": "1.32.0",
+    "lightningcss-linux-x64-gnu": "1.32.0",
+    "lightningcss-linux-x64-musl": "1.32.0",
+    "lightningcss-win32-x64-msvc": "^1.32.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "jwt-decode": "^4.0.0",
+    "lru-cache": "^11.5.1",
+    "next-intl": "^4.13.0"
+  },
+  "overrides": {
+    "ws": "^8.20.2",
+    "form-data": "^4.0.1",
+    "dompurify": "^3.4.9",
+    "engine.io-client": "^6.6.2"
   }
 }

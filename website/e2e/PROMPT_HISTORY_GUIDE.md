@@ -17,6 +17,7 @@ This implementation adds a **Prompt History & Workspace system** to NexaSphere's
 **Purpose:** Manages persistent storage of prompts using IndexedDB with localStorage fallback.
 
 **Key Functions:**
+
 - `initializeDB()` - Initialize IndexedDB database
 - `savePrompt(prompt, response, workspace)` - Save prompt-response pair
 - `getAllPrompts(workspace)` - Retrieve all prompts, optionally filtered by workspace
@@ -29,7 +30,8 @@ This implementation adds a **Prompt History & Workspace system** to NexaSphere's
 - `importPrompts(file)` - Import from JSON file
 
 **Storage Schema:**
-```javascript
+
+````javascript
 {
   id: number,                    // Auto-incremented
   userPrompt: string,            // User's message
@@ -39,13 +41,14 @@ This implementation adds a **Prompt History & Workspace system** to NexaSphere's
   pinned: boolean,               // Pinned status
   queries: [string]              // For search indexing
 }
-```
+```text
 
 ### Workspace Service (`src/lib/workspaceService.js`)
 
 **Purpose:** Manage workspaces/projects for organizing prompts.
 
 **Key Functions:**
+
 - `initializeWorkspaces()` - Create default workspaces
 - `getWorkspaces()` - List all workspaces
 - `createWorkspace(name, color)` - Create new workspace
@@ -55,6 +58,7 @@ This implementation adds a **Prompt History & Workspace system** to NexaSphere's
 - `updateWorkspaceItemCount(id, count)` - Update statistics
 
 **Default Workspaces:**
+
 1. `default` - General conversations
 2. `coding` - Coding & debugging
 3. `research` - Research topics
@@ -64,12 +68,14 @@ This implementation adds a **Prompt History & Workspace system** to NexaSphere's
 #### 1. **PromptHistorySidebar** (`src/components/history/PromptHistorySidebar.jsx`)
 
 Collapsible sidebar showing:
+
 - Workspace selector dropdown
 - List of prompts in selected workspace
 - Pin/delete actions for each prompt
 - Time-formatted timestamps
 
 **Props:**
+
 - `isOpen: boolean` - Show/hide sidebar
 - `onSelectPrompt: (prompt) => void` - Callback when prompt selected
 - `currentWorkspace: string` - Active workspace
@@ -77,29 +83,34 @@ Collapsible sidebar showing:
 #### 2. **SearchBar** (`src/components/history/SearchBar.jsx`)
 
 Inline search component featuring:
+
 - Real-time keyword search
 - Results dropdown showing matching prompts
 - Clear button
 - Loading spinner
 
 **Props:**
+
 - `onSelectPrompt: (prompt) => void` - Callback on selection
 - `workspace: string` - Search within workspace
 
 #### 3. **PinnedChats** (`src/components/history/PinnedChats.jsx`)
 
 Displays pinned conversations in a compact format with:
+
 - Pin count badge
 - Quick unpin action
 - Click to restore conversation
 
 **Props:**
+
 - `onSelectPrompt: (prompt) => void` - Callback on selection
 - `workspace: string` - Filter by workspace
 
 ### Updated Chatbot Component (`src/shared/Chatbot.jsx`)
 
 **New Features:**
+
 1. **Sidebar Toggle** - History button (📋) in header
 2. **Workspace Selector** - Dropdown in input area
 3. **Auto-Save** - Captures prompt-response on each exchange
@@ -107,20 +118,22 @@ Displays pinned conversations in a compact format with:
 5. **Integrated Search & Pinned UI**
 
 **State Management:**
+
 ```javascript
 const [showSidebar, setShowSidebar] = useState(false);
 const [currentWorkspace, setCurrentWorkspace] = useState('default');
-```
+```text
 
 **Auto-Save Hook:**
+
 ```javascript
 useEffect(() => {
   // Triggers on new messages
   if (messages.length >= 2) {
-    savePrompt(lastUserMsg.text, lastBotMsg.text, currentWorkspace)
+    savePrompt(lastUserMsg.text, lastBotMsg.text, currentWorkspace);
   }
 }, [messages, currentWorkspace]);
-```
+```text
 
 ## Styling
 
@@ -135,6 +148,7 @@ useEffect(() => {
    - Mobile optimizations
 
 **Key Design Elements:**
+
 - Glass-morphism aesthetic matching NexaSphere theme
 - Dark theme (indigo/red color scheme)
 - Smooth animations and transitions
@@ -157,7 +171,7 @@ useEffect(() => {
 
 ```bash
 npm run test
-```
+```text
 
 ### Test Coverage Goals
 
@@ -190,7 +204,7 @@ await initializeDB();
 
 // Save a prompt
 await savePrompt('User question', 'AI response', 'workspace-id');
-```
+```text
 
 #### Create New Workspace
 
@@ -198,7 +212,7 @@ await savePrompt('User question', 'AI response', 'workspace-id');
 import { createWorkspace } from '../lib/workspaceService';
 
 const workspace = createWorkspace('My Project', '#6366f1');
-```
+```text
 
 #### Retrieve Prompts
 
@@ -210,7 +224,7 @@ const prompts = await getAllPrompts('workspace-id');
 
 // Search
 const results = await searchPrompts('keyword', 'workspace-id');
-```
+```text
 
 ## Browser Compatibility
 
@@ -245,7 +259,7 @@ const results = await searchPrompts('keyword', 'workspace-id');
 
 ## File Structure
 
-```
+```text
 src/
 ├── lib/
 │   ├── promptStore.js                 # Storage layer (IndexedDB)
@@ -265,7 +279,7 @@ src/
 │   └── Chatbot.jsx                    # Updated with auto-save
 └── styles/
     └── chatbot.css                    # Updated styling
-```
+```text
 
 ## Related Issues
 
@@ -275,6 +289,7 @@ src/
 ## Contribution Guidelines
 
 When modifying this feature:
+
 1. Follow coding standards from CONTRIBUTING.md
 2. Update tests for new functionality
 3. Maintain IndexedDB schema compatibility
@@ -288,7 +303,7 @@ When modifying this feature:
 
 ```javascript
 console.log('IndexedDB available:', !!window.indexedDB);
-```
+```text
 
 ### View Stored Data (DevTools)
 
@@ -302,11 +317,13 @@ console.log('IndexedDB available:', !!window.indexedDB);
 // Clear all prompts
 localStorage.removeItem('nexasphere_prompts');
 indexedDB.deleteDatabase('NexaSphereDB');
-```
+```text
 
 ## Support
 
 For issues or questions:
+
 1. Check the test files for usage examples
 2. Review component props documentation
 3. Open an issue on GitHub with reproduction steps
+````

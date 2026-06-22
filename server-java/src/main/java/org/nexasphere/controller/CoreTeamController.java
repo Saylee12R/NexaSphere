@@ -36,6 +36,12 @@ public class CoreTeamController {
     public ResponseEntity<CoreTeamMemberEntity> add(@Valid @RequestBody CoreTeamMemberEntity member) {
         member.setId(null);
         member.setName(sanitizer.clean(member.getName()));
+        member.setRole(sanitizer.clean(member.getRole()));
+        member.setBranch(sanitizer.clean(member.getBranch()));
+        member.setYear(sanitizer.clean(member.getYear()));
+        member.setEmail(sanitizer.clean(member.getEmail()));
+        member.setLinkedin(sanitizer.clean(member.getLinkedin()));
+        member.setPhoto(sanitizer.clean(member.getPhoto()));
         return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(member));
     }
 
@@ -49,22 +55,22 @@ public class CoreTeamController {
                 existing.setName(sanitizer.clean(member.getName()));
             }
             if (member.getRole() != null) {
-                existing.setRole(member.getRole());
+                existing.setRole(sanitizer.clean(member.getRole()));
             }
             if (member.getBranch() != null) {
-                existing.setBranch(member.getBranch());
+                existing.setBranch(sanitizer.clean(member.getBranch()));
             }
             if (member.getYear() != null) {
-                existing.setYear(member.getYear());
+                existing.setYear(sanitizer.clean(member.getYear()));
             }
             if (member.getEmail() != null) {
-                existing.setEmail(member.getEmail());
+                existing.setEmail(sanitizer.clean(member.getEmail()));
             }
             if (member.getLinkedin() != null) {
-                existing.setLinkedin(member.getLinkedin());
+                existing.setLinkedin(sanitizer.clean(member.getLinkedin()));
             }
             if (member.getPhoto() != null) {
-                existing.setPhoto(member.getPhoto());
+                existing.setPhoto(sanitizer.clean(member.getPhoto()));
             }
 
             CoreTeamMemberEntity saved = Objects.requireNonNull(

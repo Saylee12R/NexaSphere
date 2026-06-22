@@ -7,7 +7,7 @@ const STORAGE_KEYS = {
   ACTIVITIES: 'dashboard_activities',
   ACHIEVEMENTS: 'dashboard_achievements',
   WEEKLY: 'dashboard_weekly',
-  PROFILE: 'dashboard_profile'
+  PROFILE: 'dashboard_profile',
 };
 
 // Empty data structures (not mock data)
@@ -17,15 +17,20 @@ const EMPTY_DATA = {
     eventsAttended: 0,
     currentStreak: 0,
     contributions: 0,
-    longestStreak: 0
+    longestStreak: 0,
   },
   activities: [],
   achievements: [],
   weeklyActivity: [
-    { day: 'Mon', count: 0 }, { day: 'Tue', count: 0 }, { day: 'Wed', count: 0 },
-    { day: 'Thu', count: 0 }, { day: 'Fri', count: 0 }, { day: 'Sat', count: 0 }, { day: 'Sun', count: 0 }
+    { day: 'Mon', count: 0 },
+    { day: 'Tue', count: 0 },
+    { day: 'Wed', count: 0 },
+    { day: 'Thu', count: 0 },
+    { day: 'Fri', count: 0 },
+    { day: 'Sat', count: 0 },
+    { day: 'Sun', count: 0 },
   ],
-  profileCompletion: 0
+  profileCompletion: 0,
 };
 
 export const dashboardRepository = {
@@ -42,10 +47,12 @@ export const dashboardRepository = {
         activities: this.getActivities(),
         achievements: this.getAchievements(),
         weeklyActivity: this.getWeeklyActivity(),
-        profileCompletion: this.getProfileCompletion()
+        profileCompletion: this.getProfileCompletion(),
       };
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      if (import.meta.env.DEV) {
+        console.error('[dashboardRepository] Failed to load dashboard data:', error.message);
+      }
       return EMPTY_DATA;
     }
   },
@@ -88,7 +95,7 @@ export const dashboardRepository = {
 
   addAchievement(achievement) {
     const current = this.getAchievements();
-    if (!current.find(a => a.id === achievement.id)) {
+    if (!current.find((a) => a.id === achievement.id)) {
       const updated = [achievement, ...current];
       localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(updated));
     }
@@ -96,7 +103,7 @@ export const dashboardRepository = {
 
   updateWeeklyActivity(day, count) {
     const current = this.getWeeklyActivity();
-    const updated = current.map(d => d.day === day ? { ...d, count: d.count + count } : d);
+    const updated = current.map((d) => (d.day === day ? { ...d, count: d.count + count } : d));
     localStorage.setItem(STORAGE_KEYS.WEEKLY, JSON.stringify(updated));
   },
 
@@ -106,6 +113,6 @@ export const dashboardRepository = {
 
   // Clear all data (for testing)
   clearAllData() {
-    Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
-  }
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  },
 };

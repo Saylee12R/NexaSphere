@@ -7,10 +7,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CertificateVerifyPage from '../pages/certificates/CertificateVerifyPage';
+import apiClient from '../utils/apiClient.js';
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock apiClient
+vi.mock('../utils/apiClient.js', () => ({
+  default: vi.fn(),
+}));
 
 // Mock import.meta.env
 vi.stubGlobal('import', {
@@ -41,7 +43,7 @@ const INVALID_RESPONSE = {
 };
 
 beforeEach(() => {
-  mockFetch.mockReset();
+  vi.mocked(apiClient).mockReset();
 });
 
 afterEach(() => {
@@ -50,22 +52,19 @@ afterEach(() => {
 
 describe('CertificateVerifyPage', () => {
   it('shows loading state initially', () => {
-    mockFetch.mockReturnValue(new Promise(() => {})); // never resolves
+    vi.mocked(apiClient).mockReturnValue(new Promise(() => {})); // never resolves
     render(<CertificateVerifyPage certificateId={CERT_ID} onGoHome={() => {}} />);
     expect(screen.getByRole('status')).toBeInTheDocument(); // spinner
     expect(screen.getByText(/Verifying certificate/i)).toBeInTheDocument();
   });
 
   it('renders verified badge and student info for a valid certificate', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => VALID_RESPONSE,
-    });
+    vi.mocked(apiClient).mockResolvedValueOnce(VALID_RESPONSE);
 
     render(<CertificateVerifyPage certificateId={CERT_ID} onGoHome={() => {}} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Certificate Verified/i)).toBeInTheDocument();
+      expect(screen.getByText('Certificate Verified')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Anshika Rai')).toBeInTheDocument();
@@ -75,10 +74,7 @@ describe('CertificateVerifyPage', () => {
   });
 
   it('renders invalid badge for an unknown certificate ID', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => INVALID_RESPONSE,
-    });
+    vi.mocked(apiClient).mockResolvedValueOnce(INVALID_RESPONSE);
 
     render(<CertificateVerifyPage certificateId="NS-CERT-INVALID0000" onGoHome={() => {}} />);
 
@@ -100,7 +96,7 @@ describe('CertificateVerifyPage', () => {
   });
 
   it('renders error state when fetch fails', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+    vi.mocked(apiClient).mockRejectedValueOnce(new Error('Network error'));
 
     render(<CertificateVerifyPage certificateId={CERT_ID} onGoHome={() => {}} />);
 
@@ -112,14 +108,14 @@ describe('CertificateVerifyPage', () => {
   });
 
   it('shows NexaSphere branding', () => {
-    mockFetch.mockReturnValue(new Promise(() => {}));
+    vi.mocked(apiClient).mockReturnValue(new Promise(() => {}));
     render(<CertificateVerifyPage certificateId={CERT_ID} onGoHome={() => {}} />);
     expect(screen.getByText('NexaSphere')).toBeInTheDocument();
     expect(screen.getByText(/Certificate Verification Portal/i)).toBeInTheDocument();
   });
 
   it('has a back button that calls onGoHome', () => {
-    mockFetch.mockReturnValue(new Promise(() => {}));
+    vi.mocked(apiClient).mockReturnValue(new Promise(() => {}));
     const onGoHome = vi.fn();
     render(<CertificateVerifyPage certificateId={CERT_ID} onGoHome={onGoHome} />);
     const backBtn = screen.getByRole('button', { name: /Go back to homepage/i });

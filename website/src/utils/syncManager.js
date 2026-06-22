@@ -20,11 +20,7 @@
  *  nexasphere:queue-change   — queue size changed (from offlineQueue)
  */
 
-import {
-  getQueue,
-  removeFromQueue,
-  updateRetryCount,
-} from './offlineQueue.js';
+import { getQueue, removeFromQueue, updateRetryCount } from './offlineQueue.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -70,8 +66,7 @@ async function replayRequest(entry) {
   // Re-attach auth token from current session (not from stored headers)
   const authHeaders = {};
   try {
-    const token = sessionStorage.getItem('ns-auth-token') ||
-                  localStorage.getItem('ns-auth-token');
+    const token = sessionStorage.getItem('ns-auth-token') || localStorage.getItem('ns-auth-token');
     if (token) {
       authHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -84,12 +79,38 @@ async function replayRequest(entry) {
     headers: {
       'Content-Type': 'application/json',
       ...headers,
-      ...authHeaders,   // live token always wins
+      ...authHeaders, // live token always wins
     },
   };
 
   if (body && method !== 'GET' && method !== 'HEAD') {
     fetchOptions.body = body; // already JSON-serialized string
+  }
+
+  // Validate URL to prevent Client-Side SSRF / Malicious redirect injections
+  try {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const parsedUrl = new URL(url);
+      const allowedHost = window.location.host;
+      // Restrict targeting to identical hosts / loopback protections
+      if (
+        parsedUrl.host !== allowedHost &&
+        !parsedUrl.hostname.endsWith('.api.nexasphere.internal')
+      ) {
+        const isLocalIp =
+          /(^127\.)|(^192\.168\.)|(^10\.)|(^172\.(1[6-9]|2[0-9]|3[0-1])\.)|(^::1$)|(^169\.254\.)/.test(
+            parsedUrl.hostname
+          );
+        if (isLocalIp || parsedUrl.hostname === 'localhost') {
+          console.error('Blocked potential SSRF target payload:', parsedUrl.hostname);
+          return { success: false, shouldRetry: false };
+        }
+      }
+    } else if (url.startsWith('//')) {
+      return { success: false, shouldRetry: false };
+    }
+  } catch (e) {
+    return { success: false, shouldRetry: false };
   }
 
   const response = await fetch(url, fetchOptions);
@@ -152,13 +173,19 @@ async function runSync() {
         console.log(`[SyncManager] ✓ Synced: ${method} ${url}`);
       } else if (shouldRetry && retryCount < MAX_RETRIES) {
         await updateRetryCount(id, retryCount + 1);
-        console.warn(`[SyncManager] ↻ Retry scheduled (${retryCount + 1}/${MAX_RETRIES}): ${method} ${url}`);
+        console.warn(
+          `[SyncManager] ↻ Retry scheduled (${retryCount + 1}/${MAX_RETRIES}): ${method} ${url}`
+        );
       } else {
         // Max retries exceeded or permanent 4xx failure
         await removeFromQueue(id);
         failed++;
         console.error(`[SyncManager] ✗ Permanently failed: ${method} ${url}`);
-        emit('nexasphere:sync-failed', { id, url, error: 'Max retries exceeded or permanent error' });
+        emit('nexasphere:sync-failed', {
+          id,
+          url,
+          error: 'Max retries exceeded or permanent error',
+        });
       }
     } catch (err) {
       // Network still down or fetch threw
@@ -199,7 +226,10 @@ async function tryRegisterSWSync() {
       console.log('[SyncManager] SW Background Sync registered.');
     }
   } catch (err) {
-    console.warn('[SyncManager] SW Background Sync unavailable, using window.online fallback.', err);
+    console.warn(
+      '[SyncManager] SW Background Sync unavailable, using window.online fallback.',
+      err
+    );
   }
 }
 
@@ -208,7 +238,7 @@ async function tryRegisterSWSync() {
 function handleOnline() {
   console.log('[SyncManager] Connection restored — triggering sync.');
   tryRegisterSWSync(); // attempt SW sync first
-  runSync();           // also trigger app-level sync immediately
+  runSync(); // also trigger app-level sync immediately
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

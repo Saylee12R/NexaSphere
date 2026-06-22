@@ -1,0 +1,117 @@
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+
+const EventFeedbackForm = () => {
+  const { eventId } = useParams();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    ratingOverall: 5,
+    wouldAttendAgain: true,
+    recommendFriend: true,
+    suggestions: '',
+    bestParts: '',
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...formData, eventId }),
+      });
+      if (response.ok) {
+        setSubmitted(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="p-8 bg-white rounded-lg shadow text-center">
+          <h2 className="text-2xl font-bold text-green-600 mb-4">Thank You!</h2>
+          <p>Your feedback helps us continuously improve our events.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow rounded-lg mt-10">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Event Feedback</h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Overall Rating (1-5)
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="5"
+            value={formData.ratingOverall}
+            onChange={(e) => setFormData({ ...formData, ratingOverall: parseInt(e.target.value) })}
+            className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+            required
+          />
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={formData.wouldAttendAgain}
+              onChange={(e) => setFormData({ ...formData, wouldAttendAgain: e.target.checked })}
+              className="rounded border-gray-300 text-blue-600 shadow-sm"
+            />
+            <span className="ml-2 text-sm text-gray-700">Would attend again?</span>
+          </label>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            What were the best parts?
+          </label>
+          <textarea
+            rows="3"
+            value={formData.bestParts}
+            onChange={(e) => setFormData({ ...formData, bestParts: e.target.value })}
+            className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Any suggestions for improvement?
+          </label>
+          <textarea
+            rows="3"
+            value={formData.suggestions}
+            onChange={(e) => setFormData({ ...formData, suggestions: e.target.value })}
+            className="w-full border-gray-300 rounded-md shadow-sm p-2 border"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Submit Feedback
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default EventFeedbackForm;

@@ -1,23 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 // ── Copy Popup ──
 function CopyPopup({ value, onClose }) {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef(null);
+  const copiedTimeoutRef = useRef(null);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    const sanitized = String(value || '').replace(/[\x00-\x08\x0B\x0C\x0D\x0E-\x1F\x7F-\x9F]/g, '');
+    navigator.clipboard
+      .writeText(sanitized)
+      .then(() => {
+        setCopied(true);
+        if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+        copiedTimeoutRef.current = setTimeout(() => {
+          setCopied(false);
+          copiedTimeoutRef.current = null;
+        }, 2000);
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
     const handler = (e) => {
       if (!e.target.closest('.copy-popup')) onClose();
     };
-    setTimeout(() => document.addEventListener('click', handler), 0);
-    return () => document.removeEventListener('click', handler);
+    timeoutRef.current = setTimeout(() => {
+      document.addEventListener('click', handler);
+    }, 0);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+      document.removeEventListener('click', handler);
+    };
   }, [onClose]);
 
   return (
@@ -30,12 +51,27 @@ function CopyPopup({ value, onClose }) {
   );
 }
 
+// ── URL safety helper: only allow https:// from allowed domains ──
+function isSafeSocialUrl(url, allowedDomains) {
+  if (!url || typeof url !== 'string') return '#';
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return '#';
+    return allowedDomains.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith('.' + domain)
+    )
+      ? url
+      : '#';
+  } catch {
+    return '#';
+  }
+}
+
 // ── Normalize WhatsApp: handle plain numbers OR full URLs ──
 function getWhatsappDisplay(raw) {
   if (!raw) return null;
-  // Already a full URL
-  if (raw.startsWith('http')) return raw;
-  // Plain number — just show it as-is for copy
+  if (raw.startsWith('https://wa.me/')) return raw;
+  if (raw.startsWith('http')) return '#';
   return raw;
 }
 
@@ -45,7 +81,9 @@ function ModalContent({ member, onClose }) {
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -60,17 +98,30 @@ function ModalContent({ member, onClose }) {
   return (
     <div
       className="modal-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="modal-box">
         {/* Close */}
-        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
 
         {/* Photo */}
-        <img 
-          src={(!member.photo || imgError) ? 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(member.name) + '&backgroundColor=7b6fff&textColor=ffffff' : member.photo} 
-          alt={member.name} 
-          className="modal-photo" 
+        <img
+          src={
+            !member.photo || imgError
+              ? 'https://api.dicebear.com/7.x/initials/svg?seed=' +
+                encodeURIComponent(member.name) +
+                '&backgroundColor=7b6fff&textColor=ffffff'
+              : member.photo
+          }
+          alt={member.name}
+          className="modal-photo"
+          loading="lazy"
+          width="120"
+          height="120"
           onError={() => setImgError(true)}
         />
 
@@ -99,7 +150,7 @@ function ModalContent({ member, onClose }) {
           <div className="modal-social">
             {member.linkedin && (
               <a
-                href={member.linkedin}
+                href={isSafeSocialUrl(member.linkedin, ['linkedin.com'])}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="modal-social-btn btn-linkedin"
@@ -110,17 +161,22 @@ function ModalContent({ member, onClose }) {
 
             {member.whatsapp && (
               <div style={{ position: 'relative' }}>
-                {whatsappValue.startsWith('http') ? (
+                {whatsappValue && whatsappValue.startsWith('https://wa.me/') ? (
                   <a
                     href={whatsappValue}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="modal-social-btn btn-whatsapp"
-                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
                     💬 WhatsApp
                   </a>
-                ) : (
+                ) : whatsappValue ? (
                   <>
                     <button
                       className="modal-social-btn btn-whatsapp"
@@ -135,13 +191,13 @@ function ModalContent({ member, onClose }) {
                       <CopyPopup value={whatsappValue} onClose={() => setActivePopup(null)} />
                     )}
                   </>
-                )}
+                ) : null}
               </div>
             )}
 
             {member.instagram && (
               <a
-                href={member.instagram}
+                href={isSafeSocialUrl(member.instagram, ['instagram.com'])}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="modal-social-btn btn-instagram"
@@ -176,8 +232,5 @@ function ModalContent({ member, onClose }) {
 // ── Export: renders via Portal so it's never clipped by any parent ──
 export default function TeamMemberModal({ member, onClose }) {
   if (!member) return null;
-  return createPortal(
-    <ModalContent member={member} onClose={onClose} />,
-    document.body
-  );
+  return createPortal(<ModalContent member={member} onClose={onClose} />, document.body);
 }

@@ -1,3 +1,4 @@
+# CI/CD Build and Test Workflow
 name: CI — Build & Test
 
 on:
@@ -7,7 +8,27 @@ on:
     branches: [main, master, develop]
 
 jobs:
-  # ── Frontend (website) build ──────────────────────────────────────────────
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Prettier Check
+        run: npm run format:check
+
   website:
     name: Website — Build
     runs-on: ubuntu-latest
@@ -17,12 +38,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - name: Upgrade npm to v11 (matches lockfile generator)
+        run: npm install -g npm@11
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: npm install --legacy-peer-deps
 
       - name: Build (production)
         run: npm run build --workspace=website
@@ -31,15 +54,15 @@ jobs:
           VITE_API_BASE: ''
 
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: website-dist
           path: website/dist/
           retention-days: 3
 
-  # ── Admin Dashboard build ─────────────────────────────────────────────────
+  # ── Admin Dashboard ───────────────────────────────────────────────────────
   admin-dashboard:
-    name: Admin Dashboard — Build
+    name: Admin Dashboard — Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -47,12 +70,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - name: Upgrade npm to v11 (matches lockfile generator)
+        run: npm install -g npm@11
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: npm install --legacy-peer-deps
+
+      - name: Run unit tests
+        run: npm run test --workspace=admin-dashboard
+        env:
+          NODE_ENV: test
 
       - name: Build (production)
         run: npm run build --workspace=admin-dashboard
@@ -63,25 +93,85 @@ jobs:
   server:
     name: Server — Install & Unit Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: server/package-lock.json
+
+      - name: Upgrade npm to v11 (matches lockfile generator)
+        run: npm install -g npm@11
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: npm install --legacy-peer-deps
+
+      - name: Run SQL Injection security audit
+        run: npm run audit:sql
+
+      - name: Run dependency security scan
+        run: npm audit --audit-level=high
 
       - name: Run unit tests
-        run: npm test --workspace=server
+        run: npm test
         env:
           NODE_ENV: test
           # Provide stub env vars so server startup helpers don't crash
           ADMIN_USERNAME: test-admin
-          ADMIN_PASSWORD: TestPass123!ABC
-          ADMIN_EVENT_PASSWORD: EventPass123!XYZ
+          ADMIN_PASSWORD: ${{ secrets.CI_ADMIN_PASSWORD || 'ci_test_password_stub' }}
+          ADMIN_EVENT_PASSWORD: ${{ secrets.CI_ADMIN_EVENT_PASSWORD || 'ci_test_event_password_stub' }}
           PORT: 8787
+          CORS_ORIGIN: 'http://localhost,http://127.0.0.1'
+
+  report:
+    name: CI Summary Report
+    runs-on: ubuntu-latest
+
+    needs:
+      - lint
+      - website
+      - admin-dashboard
+      - server
+
+    if: always() && github.event_name == 'pull_request'
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Post PR Summary
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const results = {
+              lint: '${{ needs.lint.result }}',
+              website: '${{ needs.website.result }}',
+              adminDashboard: '${{ needs.admin-dashboard.result }}',
+              server: '${{ needs.server.result }}',
+            };
+
+            const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
+
+            const body = `
+            ## CI Pipeline Results
+
+            ${icon(results.lint)} Lint — ${results.lint}
+            ${icon(results.website)} Website build — ${results.website}
+            ${icon(results.adminDashboard)} Admin dashboard tests — ${results.adminDashboard}
+            ${icon(results.server)} Server tests — ${results.server}
+
+            ${Object.values(results).every(r => r === 'success') ? 'CI pipeline completed successfully.' : '⚠️ One or more jobs failed. Please review the logs.'}
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body
+            });

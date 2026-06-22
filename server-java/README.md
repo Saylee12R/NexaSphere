@@ -7,6 +7,7 @@
 <br/>
 
 ---
+
 ## 📌 Overview
 
 <br/>
@@ -44,11 +45,11 @@ Spring Boot 3 backend service providing:
 
 Before starting, ensure you have:
 
-| Tool           | Version | Download                                  |
-| -------------- | ------- | ----------------------------------------- |
-| **Java JDK**   | 17+     | https://www.oracle.com/java/technologies/ |
-| **Maven**      | 3.8+    | https://maven.apache.org/download.cgi     |
-| **PostgreSQL** | Latest  | https://www.postgresql.org/download/      |
+| Tool           | Version | Download                                    |
+| -------------- | ------- | ------------------------------------------- |
+| **Java JDK**   | 17+     | <https://www.oracle.com/java/technologies/> |
+| **Maven**      | 3.8+    | <https://maven.apache.org/download.cgi>     |
+| **PostgreSQL** | Latest  | <https://www.postgresql.org/download/>      |
 
 <br/>
 
@@ -77,6 +78,7 @@ mvn clean install
 <br/>
 
 ---
+
 ### 2️⃣ Run Development Server
 
 <br/>
@@ -89,11 +91,12 @@ mvn spring-boot:run
 
 <br/>
 
-**✅ Server Running on:** http://localhost:8080
+**✅ Server Running on:** <http://localhost:8080>
 
 <br/>
 
 ---
+
 ### 3️⃣ Run Production Server
 
 <br/>
@@ -121,11 +124,11 @@ mvn spring-boot:run
 
 ### Essential Variables
 
-| Variable           | Example                     | Purpose                  |
-| ------------------ | --------------------------- | ------------------------ |
-| **ADMIN_EMAIL**    | your-admin-email@example.com | Admin login email        |
-| **ADMIN_PASSWORD** | your-secure-password         | Admin login password     |
-| **CORS_ORIGIN**    | http://localhost:5173       | Allowed frontend origins |
+| Variable           | Example                        | Purpose                  |
+| ------------------ | ------------------------------ | ------------------------ |
+| **ADMIN_EMAIL**    | <your-admin-email@example.com> | Admin login email        |
+| **ADMIN_PASSWORD** | your-secure-password           | Admin login password     |
+| **CORS_ORIGIN**    | <http://localhost:5173>        | Allowed frontend origins |
 
 <br/>
 
@@ -350,7 +353,7 @@ POST   /api/admin/logout
 
 <br/>
 
-NexaSphere includes interactive API documentation powered by OpenAPI 3 (Swagger UI). 
+NexaSphere includes interactive API documentation powered by OpenAPI 3 (Swagger UI).
 Once the server is running, you can access the documentation using the following URLs:
 
 - **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
@@ -361,6 +364,7 @@ To test secure admin endpoints directly from Swagger UI, click the **Authorize**
 <br/>
 
 ---
+
 ## 🔐 Authentication
 
 <br/>
@@ -555,7 +559,7 @@ server.port=9090
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? 📧 Contact <nexasphere@glbajajgroup.org>
 
 **Backend Version:** 1.0 | **Last Updated:** May 2026
 

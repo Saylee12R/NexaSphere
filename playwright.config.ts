@@ -1,55 +1,61 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
-
-/**
- * Playwright configuration for E2E testing
- */
 export default defineConfig({
-  testDir: "./e2e",
-  /* Run tests in files in parallel */
+  testDir: './e2e',
+  testMatch: '**/*.spec.ts',
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  // Global per-test timeout — 30 s default is too tight for slow CI runners
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: { timeout: 15_000 },
+  reporter: [
+    ['html', { outputFolder: 'e2e/test-results/report' }],
+    ['json', { outputFile: 'e2e/test-results/results.json' }],
+    ['list'],
+  ],
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:5175",
-    trace: "on-first-retry",
-    userAgent: "Playwright",
+    baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5175',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    actionTimeout: process.env.CI ? 20_000 : 10_000,
+    navigationTimeout: process.env.CI ? 30_000 : 15_000,
+    userAgent: 'Playwright-E2E',
   },
 
-  /* Configure projects for major browsers */
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        userAgent: `${devices['Desktop Chrome'].userAgent} Playwright-E2E`,
+      },
     },
     {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        userAgent: `${devices['Desktop Firefox'].userAgent} Playwright-E2E`,
+      },
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:5175",
-    reuseExistingServer: !process.env.CI,
-  },
-  // NOTE: Start dev server manually with: npm run dev
+  outputDir: 'e2e/test-results/output',
+
+  webServer: [
+    {
+      command: 'npm run dev',
+      url: process.env.E2E_BASE_URL || 'http://127.0.0.1:5175',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+      // Forward proxy target and PWA flag so the Vite dev server uses the
+      // correct backend port in CI (8080) instead of the default (8787).
+      env: {
+        VITE_API_PROXY_TARGET: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8787',
+        DISABLE_PWA: process.env.DISABLE_PWA || 'false',
+      },
+    },
+  ],
 });

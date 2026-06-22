@@ -44,23 +44,30 @@ const UserGrowthChart = React.memo(function UserGrowthChart({ data = [] }) {
                   <stop offset="95%" stopColor="#cc1111" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+              <CartesianGrid stroke="var(--border-color, rgba(255,255,255,0.08))" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={formatTick}
                 tickLine={false}
                 axisLine={false}
                 minTickGap={20}
+                tick={{ fill: 'var(--text-secondary, var(--t2, #888))', fontSize: 11 }}
               />
-              <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={40} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                width={40}
+                tick={{ fill: 'var(--text-secondary, var(--t2, #888))', fontSize: 11 }}
+              />
               <Tooltip
                 labelFormatter={formatTick}
                 contentStyle={{
-                  background: 'rgba(10, 10, 10, 0.95)',
-                  border: '1px solid rgba(204, 17, 17, 0.28)',
+                  background: 'var(--bg-secondary, var(--bg-card, #0a0a0a))',
+                  border: '1px solid var(--border-color, rgba(204, 17, 17, 0.28))',
                   borderRadius: '14px',
-                  color: '#fff',
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)'
+                  color: 'var(--text-primary, #fff)',
+                  boxShadow: 'var(--shadow-card, 0 24px 60px rgba(0, 0, 0, 0.35))',
                 }}
               />
               <Area

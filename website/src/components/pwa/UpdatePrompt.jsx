@@ -1,63 +1,108 @@
 /**
- * UpdatePrompt — NexaSphere PWA
- * ================================
- * Displays a toast when a new Service Worker version is available,
- * triggered by vite-plugin-pwa's updateSW callback.
+ * UpdatePrompt.jsx
+ * ─────────────────
+ * Toast shown when a new service worker is waiting to activate.
+ * Receives the `updateSW` function via the 'nexasphere:sw-update' event
+ * dispatched by registerSW.js.
  *
- * Props:
- *  updateSW  fn   — call this to activate the new SW and reload
+ * Mount this once in App.jsx (AppShell level):
+ *   <UpdatePrompt />
  */
 
-import { useState } from 'react';
-import '../../styles/pwa.css';
+import { useState, useEffect, useCallback } from 'react';
+import './UpdatePrompt.css';
 
-export default function UpdatePrompt({ updateSW }) {
-  const [visible, setVisible]   = useState(true);
-  const [loading, setLoading]   = useState(false);
+export default function UpdatePrompt() {
+  const [updateSW, setUpdateSW] = useState(null);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
-  const handleUpdate = async () => {
-    setLoading(true);
-    try {
-      await updateSW(true); // true = reload after SW activation
-    } catch {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    // Listen for new SW version waiting
+    const onUpdate = (e) => {
+      setUpdateSW(() => e.detail.updateSW);
+      setDismissed(false);
+    };
 
-  const handleDismiss = () => {
-    setVisible(false);
-  };
+    // Listen for offline-ready confirmation
+    const onOffline = () => setOfflineReady(true);
 
-  if (!visible) return null;
+    window.addEventListener('nexasphere:sw-update', onUpdate);
+    window.addEventListener('nexasphere:sw-offline-ready', onOffline);
+
+    return () => {
+      window.removeEventListener('nexasphere:sw-update', onUpdate);
+      window.removeEventListener('nexasphere:sw-offline-ready', onOffline);
+    };
+  }, []);
+
+  // Auto-dismiss offline toast after 4 seconds
+  useEffect(() => {
+    if (!offlineReady) return;
+    const t = setTimeout(() => setOfflineReady(false), 4000);
+    return () => clearTimeout(t);
+  }, [offlineReady]);
+
+  const handleUpdate = useCallback(async () => {
+    if (!updateSW) return;
+    await updateSW(true); // true = reload page after SW activation
+  }, [updateSW]);
+
+  const handleDismiss = useCallback(() => {
+    setDismissed(true);
+    setUpdateSW(null);
+  }, []);
+
+  const showUpdateToast = updateSW && !dismissed;
+
+  if (!showUpdateToast && !offlineReady) return null;
 
   return (
-    <div
-      className="pwa-update-toast pwa-update--visible"
-      role="status"
-      aria-live="polite"
-      aria-label="App update available"
-    >
-      <span className="pwa-update__icon" aria-hidden="true">🎉</span>
-      <span className="pwa-update__text">
-        <strong>New version</strong> of NexaSphere is ready
-      </span>
-      <button
-        id="pwa-update-btn"
-        className="pwa-btn-update"
-        onClick={handleUpdate}
-        disabled={loading}
-        aria-label="Reload to apply the new version"
-      >
-        {loading ? 'Updating…' : 'Update'}
-      </button>
-      <button
-        id="pwa-update-dismiss-btn"
-        className="pwa-btn-close"
-        onClick={handleDismiss}
-        aria-label="Dismiss update notification"
-      >
-        ✕
-      </button>
-    </div>
+    <>
+      {/* ── Update available toast ─────────────────────────────────────── */}
+      {showUpdateToast && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          aria-label="App update available"
+          className="pwa-update-toast pwa-update--visible"
+        >
+          <span className="pwa-update__icon" aria-hidden="true">
+            🔄
+          </span>
+          <span className="pwa-update__text">A new version of NexaSphere is available.</span>
+          <button
+            id="pwa-update-btn"
+            className="pwa-btn-update"
+            onClick={handleUpdate}
+            aria-label="Reload to update"
+          >
+            Update now
+          </button>
+          <button
+            id="pwa-update-dismiss-btn"
+            className="pwa-btn-dismiss"
+            onClick={handleDismiss}
+            aria-label="Dismiss update notification"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── Offline-ready toast ────────────────────────────────────────── */}
+      {offlineReady && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pwa-update-toast pwa-offline-ready--visible"
+        >
+          <span className="pwa-update__icon" aria-hidden="true">
+            ✅
+          </span>
+          <span className="pwa-update__text">NexaSphere is ready to work offline.</span>
+        </div>
+      )}
+    </>
   );
 }

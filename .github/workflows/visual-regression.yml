@@ -1,0 +1,40 @@
+name: Visual Regression Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install website dependencies
+        run: npm ci
+        working-directory: website
+
+      - name: Install admin-dashboard dependencies
+        run: npm ci
+        working-directory: admin-dashboard
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run visual regression tests
+        run: npx playwright test --config=playwright.visual.config.ts
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: visual-tests/report/
+          retention-days: 14

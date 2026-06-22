@@ -1,25 +1,82 @@
-## Description
-
-Briefly describe the changes made in this pull request.
+# Summary
 
 ## Related Issue
 
-Closes #
+Fixes #[ISSUE_NUMBER]
 
 ## Type of Change
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation update
-- [ ] Chore or maintenance
+- [ ] Feature
+- [ ] Bug Fix
+- [ ] UI/UX Improvement
+- [ ] Performance Optimization
+- [ ] Security Enhancement
+- [ ] Refactoring
+- [ ] Documentation
+- [ ] Testing
+- [ ] Infrastructure
+- [ ] Integration
 
-## Checklist
+## Changes Implemented
 
-- [ ] I have tested these changes locally.
-- [ ] I have run the relevant lint, build, or test commands.
-- [ ] I have linked the related issue.
-- [ ] My changes follow the existing project style.
+## Technical Details
+
+### Frontend
+
+### Backend
+
+### Database
+
+### API
+
+### Infrastructure
 
 ## Screenshots
 
-Add screenshots or screen recordings for UI changes, if applicable.
+### Before
+
+### After
+
+## Testing
+
+### Unit Tests
+
+- [ ]
+
+### Integration Tests
+
+- [ ]
+
+### E2E Tests
+
+- [ ]
+
+### Manual Testing
+
+- [ ]
+
+## Security Review
+
+## Accessibility Review
+
+## Performance Impact
+
+## Breaking Changes
+
+- [ ] No Breaking Changes
+- [ ] Breaking Changes Documented
+
+## Deployment Notes
+
+## Rollback Plan
+
+## Checklist
+
+- [ ] Code follows project standards
+- [ ] Tests added or updated
+- [ ] Documentation updated
+- [ ] Security reviewed
+- [ ] Accessibility reviewed
+- [ ] Performance validated
+- [ ] CI/CD passing
+- [ ] Ready for review

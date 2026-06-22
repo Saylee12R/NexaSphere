@@ -349,4 +349,92 @@
  *                       example: http://localhost:3000/api/swagger.json
  */
 
+/**
+ * @swagger
+ * /api/monitoring/deployment-status:
+ *   get:
+ *     summary: Get deployment status
+ *     description: Retrieve deployment health and rollback readiness information
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Deployment status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: healthy
+ *                 rollbackAvailable:
+ *                   type: boolean
+ *                 trafficSwitchReady:
+ *                   type: boolean
+ */
+
+/**
+ * @swagger
+ * /api/monitoring/security-patches:
+ *   get:
+ *     summary: Get security patch status
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Security patch scan result
+ */
+
+
+/**
+ * @swagger
+ * /api/monitoring/security-patches/report:
+ *   get:
+ *     summary: Get complete security patch report
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Detailed security patch report
+ */
+
+/**
+ * @swagger
+ * /api/monitoring/encryption-status:
+ *   get:
+ *     summary: Get encryption security status
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Encryption status details
+ */
+
+
+/**
+ * @swagger
+ * /api/monitoring/key-rotation:
+ *   post:
+ *     summary: Rotate encryption key
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Encryption key rotated successfully
+ */
+
+
+/**
+ * @swagger
+ * /api/monitoring/encryption-audit:
+ *   get:
+ *     summary: Get encryption audit logs
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: List of encryption activities
+ */
+
 export default {};

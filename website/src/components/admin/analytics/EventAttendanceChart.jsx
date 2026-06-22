@@ -25,16 +25,28 @@ const EventAttendanceChart = React.memo(function EventAttendanceChart({ data = [
         <div className="chart-shell">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={decimatedData} margin={{ left: -10, right: 8 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} minTickGap={16} />
-              <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={40} />
+              <CartesianGrid stroke="var(--border-color, rgba(255,255,255,0.08))" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tickLine={false}
+                axisLine={false}
+                minTickGap={16}
+                tick={{ fill: 'var(--text-secondary, var(--t2, #888))', fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                width={40}
+                tick={{ fill: 'var(--text-secondary, var(--t2, #888))', fontSize: 11 }}
+              />
               <Tooltip
                 contentStyle={{
-                  background: 'rgba(10, 10, 10, 0.95)',
-                  border: '1px solid rgba(204, 17, 17, 0.28)',
+                  background: 'var(--bg-secondary, var(--bg-card, #0a0a0a))',
+                  border: '1px solid var(--border-color, rgba(204, 17, 17, 0.28))',
                   borderRadius: '14px',
-                  color: '#fff',
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)'
+                  color: 'var(--text-primary, #fff)',
+                  boxShadow: 'var(--shadow-card, 0 24px 60px rgba(0, 0, 0, 0.35))',
                 }}
               />
               <Legend />

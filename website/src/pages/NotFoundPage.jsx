@@ -2,27 +2,26 @@ export default function NotFoundPage({ onGoHome }) {
   return (
     <div
       style={{
-        minHeight: "80vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        padding: "40px 24px",
+        minHeight: '80vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: '40px 24px',
       }}
     >
       <div
         style={{
           fontFamily: "'Orbitron',monospace",
-          fontSize: "clamp(5rem,18vw,10rem)",
+          fontSize: 'clamp(5rem,18vw,10rem)',
           fontWeight: 900,
-          background:
-            "linear-gradient(135deg,#CC1111 0%,#EE2222 50%,#FF4444 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
+          background: 'linear-gradient(135deg,#CC1111 0%,#EE2222 50%,#FF4444 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
           lineHeight: 1,
-          marginBottom: "16px",
+          marginBottom: '16px',
         }}
       >
         404
@@ -30,21 +29,21 @@ export default function NotFoundPage({ onGoHome }) {
       <h2
         style={{
           fontFamily: "'Orbitron',monospace",
-          fontSize: "clamp(1rem,3vw,1.5rem)",
+          fontSize: 'clamp(1rem,3vw,1.5rem)',
           fontWeight: 700,
-          color: "var(--t1)",
-          marginBottom: "12px",
+          color: 'var(--color-text-primary)',
+          marginBottom: '12px',
         }}
       >
         Page Not Found
       </h2>
       <p
         style={{
-          color: "var(--t2)",
-          fontSize: "1rem",
-          maxWidth: "380px",
+          color: 'var(--color-text-secondary)',
+          fontSize: '1rem',
+          maxWidth: '380px',
           lineHeight: 1.7,
-          marginBottom: "32px",
+          marginBottom: '32px',
         }}
       >
         The page you&apos;re looking for doesn&apos;t exist or may have moved.
@@ -52,7 +51,11 @@ export default function NotFoundPage({ onGoHome }) {
       <button
         className="btn btn-primary"
         onClick={onGoHome}
-        style={{ cursor: "pointer" }}
+        style={{
+          cursor: 'pointer',
+          backgroundColor: 'var(--color-primary)',
+          color: 'var(--color-text-on-primary)',
+        }}
       >
         ← Go Home
       </button>

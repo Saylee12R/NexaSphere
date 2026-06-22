@@ -15,7 +15,8 @@ function RippleBtn({ cls, children, href, onClick }) {
     el.style.left = e.clientX - r.left + 'px';
     el.style.top = e.clientY - r.top + 'px';
     b.appendChild(el);
-    setTimeout(() => el.remove(), 700);
+    const t = setTimeout(() => el.remove(), 700);
+    timeoutsRef.current.push(t);
     onClick && onClick(e);
   };
   if (href)
@@ -85,7 +86,7 @@ function OrbitRings({ isLight }) {
       }}
     >
       {rings.map((rg, i) => (
-        <g key={i} transform={tilts[i]}>
+        <g key={`svg-ring-${i}`} transform={tilts[i]}>
           <ellipse
             cx="250"
             cy="250"
@@ -200,7 +201,7 @@ function StatsBar({ vis, isLight }) {
     >
       {items.map((s, i) => (
         <div
-          key={i}
+          key={`stat-item-${i}`}
           style={{
             flex: 1,
             padding: '13px 6px',
@@ -277,7 +278,7 @@ function Atmosphere({ isLight }) {
       >
         {Array.from({ length: 9 }, (_, i) => (
           <div
-            key={i}
+            key={`circle-${i}`}
             style={{
               position: 'absolute',
               left: `${8 + i * 10}%`,

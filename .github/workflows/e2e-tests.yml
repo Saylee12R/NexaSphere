@@ -1,0 +1,151 @@
+name: E2E Tests
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  pull_request:
+    paths:
+      - 'website/**'
+      - 'server/**'
+      - 'e2e/**'
+      - 'playwright.config.ts'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  E2E_BASE_URL: 'http://127.0.0.1:5175'
+  E2E_API_BASE: 'http://127.0.0.1:8080'
+
+jobs:
+  e2e-tests:
+    name: E2E (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nexasphere
+          POSTGRES_PASSWORD: nexasphere
+          POSTGRES_DB: nexasphere_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Install Playwright browsers
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: Install Accessibility Testing Tools
+        # Technical Requirement: axe-core integration for automated testing
+        run: npm install @axe-core/playwright
+
+      - name: Set up test environment
+        run: |
+          cp .env.example .env 2>/dev/null || true
+          cp website/.env.example website/.env 2>/dev/null || true
+          cp server/.env.example server/.env 2>/dev/null || true
+          echo "DATABASE_URL=postgresql://nexasphere:nexasphere@localhost:5432/nexasphere_test" >> .env
+          echo "DATABASE_URL=postgresql://nexasphere:nexasphere@localhost:5432/nexasphere_test" >> server/.env
+          echo "E2E_API_BASE=http://localhost:8080" >> .env
+          echo "VITE_API_BASE=http://localhost:8080" >> website/.env
+          echo "CORS_ORIGIN=http://localhost:5175,http://localhost:5001" >> server/.env
+          echo "ADMIN_EVENT_PASSWORD=ChangeMe123!Event" >> server/.env
+          echo "JWT_SECRET=nexasphere-jwt-dev-secret-change-in-production" >> server/.env
+
+      - name: Start server
+        run: |
+          cd server
+          npm install
+          npm run migrate:latest
+          node index.js &
+          echo "SERVER_PID=$!"
+          cd ..
+        env:
+          NODE_ENV: test
+          START_SERVER: 'true'
+          DATABASE_URL: postgresql://nexasphere:nexasphere@127.0.0.1:5432/nexasphere_test
+          PORT: 8080
+          FRONTEND_URL: http://localhost:5175,http://127.0.0.1:5175
+          CORS_ORIGIN: http://localhost:5175,http://127.0.0.1:5175
+          ADMIN_USERS_JSON: '[{"username":"admin","password":"admin123","role":"SuperAdmin"}]'
+          ADMIN_EVENT_PASSWORD: StrongEventPassword123!
+        timeout-minutes: 5
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            curl -s http://127.0.0.1:8080/api/health && exit 0
+            sleep 2
+          done
+          echo "Server failed to start"
+          exit 1
+
+      - name: Run E2E tests (${{ matrix.browser }})
+        run: npx playwright test e2e/auth.spec.ts e2e/main.spec.ts e2e/prompt-history.spec.ts --project=${{ matrix.browser }}
+        timeout-minutes: 50
+        env:
+          PWTEST_HEADLESS: true
+          VITE_API_PROXY_TARGET: http://127.0.0.1:8080
+          DISABLE_PWA: 'true'
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-test-results-${{ matrix.browser }}
+          path: |
+            e2e/test-results/
+            test-results/
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-html-report-${{ matrix.browser }}
+          path: e2e/test-results/report/
+          retention-days: 7
+
+      - name: Check pass rate
+        if: always()
+        run: |
+          if [ -f "e2e/test-results/results.json" ]; then
+            TOTAL=$(jq '.stats.expected' e2e/test-results/results.json)
+            FAILURES=$(jq '.stats.unexpected' e2e/test-results/results.json)
+            RATE=$(echo "scale=2; ($TOTAL - $FAILURES) * 100 / $TOTAL" | bc)
+            echo "Pass rate: ${RATE}%"
+            if (( $(echo "$RATE < 95" | bc -l) )); then
+              echo "Pass rate below 95% threshold!"
+              exit 1
+            fi
+          fi

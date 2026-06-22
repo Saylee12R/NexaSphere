@@ -1,57 +1,152 @@
-// src/hooks/useRecommendations.js
-import { useState, useEffect, useCallback } from 'react';
-import { userInterestTracker } from '../services/recommendation/userInterestTracker';
-import { recommendationEngine } from '../services/recommendation/recommendationEngine';
+import React, { useState, useEffect, useCallback } from 'react';
 
-export function useRecommendations(events) {
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+/**
+ * useRecommendations hook
+ *
+ * Returns personalised event recommendations for the given userId.
+ * Also exposes helpers for tracking interactions and saving preferences.
+ */
+export function useRecommendations(userId, { limit = 10, page = 1 } = {}) {
   const [recommendations, setRecommendations] = useState([]);
-  const [userInterests, setUserInterests] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [similarEvents, setSimilarEvents] = useState({});
+  const [source, setSource] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchRecommendations = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/recommendations?userId=${encodeURIComponent(userId)}&limit=${limit}&page=${page}`
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setRecommendations(data.recommendations ?? []);
+      setSource(data.source);
+      setTotal(data.total ?? 0);
+    } catch (err) {
+      console.error('[useRecommendations] fetch error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, limit, page]);
 
   useEffect(() => {
-    if (events && events.length > 0) {
-      generateRecommendations();
-    }
-  }, [events]);
+    fetchRecommendations();
+  }, [fetchRecommendations]);
 
-  const generateRecommendations = useCallback(() => {
-    const interests = userInterestTracker.getUserInterests();
-    const history = userInterestTracker.getEventHistory();
-    
-    setUserInterests(interests);
-    
-    const recs = recommendationEngine.getRecommendations(events, interests, history, 10);
-    setRecommendations(recs);
-    setLoading(false);
-  }, [events]);
+  const trackInteraction = useCallback(
+    async (eventId, type) => {
+      if (!userId) return;
+      try {
+        await fetch(`${API_BASE}/api/recommendations/interact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, eventId, type }),
+        });
+      } catch (err) {
+        console.error('[useRecommendations] track error:', err);
+      }
+    },
+    [userId]
+  );
 
-  const trackEvent = useCallback((eventId, action, metadata) => {
-    userInterestTracker.trackEventInteraction(eventId, action, metadata);
-    generateRecommendations();
-  }, [generateRecommendations]);
-
-  const getSimilarEvents = useCallback((event, limit = 3) => {
-    if (similarEvents[event.id]) {
-      return similarEvents[event.id];
-    }
-    
-    const similar = recommendationEngine.getSimilarEvents(event, events, limit);
-    setSimilarEvents(prev => ({ ...prev, [event.id]: similar }));
-    return similar;
-  }, [events, similarEvents]);
-
-  const setUserPreferences = useCallback((categories, tags) => {
-    userInterestTracker.setUserPreferences(categories, tags);
-    generateRecommendations();
-  }, [generateRecommendations]);
+  const savePreferences = useCallback(
+    async (interests, preferredDays = []) => {
+      if (!userId) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/recommendations/preferences/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ interests, preferredDays }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await fetchRecommendations(); // refresh after saving
+      } catch (err) {
+        console.error('[useRecommendations] savePreferences error:', err);
+      }
+    },
+    [userId, fetchRecommendations]
+  );
 
   return {
     recommendations,
-    userInterests,
+    source,
+    total,
     loading,
-    trackEvent,
-    getSimilarEvents,
-    setUserPreferences
+    error,
+    refresh: fetchRecommendations,
+    trackInteraction,
+    savePreferences,
   };
+}
+
+/**
+ * useSimilarEvents hook
+ */
+export function useSimilarEvents(eventId, { limit = 6 } = {}) {
+  const [similar, setSimilar] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!eventId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/recommendations/similar/${encodeURIComponent(eventId)}?limit=${limit}`
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!cancelled) setSimilar(data.similar ?? []);
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, limit]);
+
+  return { similar, loading, error };
+}
+
+/**
+ * useTrendingEvents hook
+ */
+export function useTrendingEvents({ limit = 10 } = {}) {
+  const [trending, setTrending] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/api/recommendations/trending?limit=${limit}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!cancelled) setTrending(data.trending ?? []);
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [limit]);
+
+  return { trending, loading, error };
 }

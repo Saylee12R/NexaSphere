@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'system';
+type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeContextType {
-  theme: Theme | null;
-  resolvedTheme: Theme;
+  theme: Theme;
+  resolvedTheme: ResolvedTheme;
   isDark: boolean;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -13,13 +14,16 @@ interface ThemeContextType {
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme | null>(() => {
-    // Check if user has explicitly set a preference
-    const stored = localStorage.getItem('ns-theme') as Theme | null;
-    return stored || null;
+  const [theme, setThemeState] = useState<Theme>(() => {
+    try {
+      const stored = localStorage.getItem('ns-theme') as Theme | null;
+      return stored || 'system';
+    } catch {
+      return 'system';
+    }
   });
 
-  const [systemTheme, setSystemTheme] = useState<Theme>(() => {
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
@@ -50,7 +54,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  const resolvedTheme = theme || systemTheme;
+  const resolvedTheme = theme === 'system' ? systemTheme : theme;
   const isDark = resolvedTheme === 'dark';
 
   useEffect(() => {
@@ -60,7 +64,24 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('ns-theme', newTheme);
+    try {
+      localStorage.setItem('ns-theme', newTheme);
+      
+      // Sync with database if token exists
+      const token = localStorage.getItem('ns_student_token');
+      if (token) {
+        fetch('/api/auth/theme', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ theme: newTheme })
+        }).catch(err => console.error('Failed to sync theme preference:', err));
+      }
+    } catch {
+      // Storage/Network unavailable
+    }
   };
 
   const toggleTheme = () => {

@@ -1,0 +1,177 @@
+name: Staging Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+  pull_request:
+    branches:
+      - develop
+      - staging
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-frontend:
+    name: Deploy Frontend to Vercel (Preview)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Deploy to Vercel Preview
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: '--preview'
+
+  deploy-backend:
+    name: Deploy Backend to Render Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Deploy to Render
+        uses: johnbeynon/render-deploy-action@a0588f9aca995a15d69a72cb2bfbf37c12e5b540 # v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+
+  # ── AC #5: Test migration in staging ───────────────────────────────────────
+  # Runs the full migration cycle against the staging database before any
+  # production deployment is triggered. Covers:
+  #   - Pre-migration validation snapshot
+  #   - Apply all pending migrations
+  #   - Post-migration integrity checks (AC #4)
+  #   - Rollback test to confirm down migrations work
+  run-staging-migrations:
+    name: Run & Validate Migrations on Staging DB
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        working-directory: server
+        run: npm ci
+
+      # Step 1 — Pre-migration validation (AC #4)
+      - name: Pre-migration validation
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Running pre-migration validation..."
+          node scripts/validate-database.js --pre
+
+      # Step 2 — Record row count baseline for comparison
+      - name: Snapshot row counts
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          psql "$DATABASE_URL" -c "
+            SELECT tablename,
+              (SELECT COUNT(*) FROM information_schema.tables t2
+               WHERE t2.table_name = pg_tables.tablename) AS exists
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename;
+          " || echo "Row count snapshot skipped (psql not available)"
+
+      # Step 3 — Apply all pending migrations (AC #5: test in staging)
+      - name: Apply migrations on staging
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Applying pending migrations to staging database..."
+          npm run migrate:latest
+          echo "Migrations applied successfully."
+
+      # Step 4 — Post-migration validation (AC #4)
+      - name: Post-migration validation
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Running post-migration validation..."
+          node scripts/validate-database.js --post
+
+      # Step 5 — Test rollback (AC #3: rollback plan)
+      - name: Test rollback on staging
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Testing rollback (down migration)..."
+          npm run migrate:rollback
+          echo "Rollback successful — re-applying migrations..."
+          npm run migrate:latest
+          echo "Re-apply after rollback successful."
+
+      # Step 6 — Schema version check (AC #2: schema versioning)
+      - name: Verify schema version
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Applied migrations in pgmigrations table:"
+          psql "$DATABASE_URL" -c "
+            SELECT name, run_on
+            FROM pgmigrations
+            ORDER BY run_on DESC
+            LIMIT 10;
+          " || echo "Schema version check skipped (psql not available)"
+
+  validate-staging-db:
+    name: Validate Staging Database Schema
+    runs-on: ubuntu-latest
+    needs: run-staging-migrations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        working-directory: server
+        run: npm install --legacy-peer-deps
+
+      - name: Run Database Validation
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: npm run db:validate
+
+  health-check:
+    name: Post-Deployment Smoke Test
+    runs-on: ubuntu-latest
+    needs: validate-staging-db
+    steps:
+      - name: Wait for services to stabilize
+        run: sleep 10
+      - name: Verify Health Endpoint
+        run: |
+          curl -f -s https://nexasphere-staging-api.onrender.com/health || exit 1

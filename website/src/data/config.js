@@ -1,5 +1,3 @@
-export const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '');
-
 export const THEME_STORAGE_KEY = 'ns-theme';
 export const DEFAULT_THEME = 'dark';
 
@@ -7,7 +5,7 @@ export const EVENTS_API_ENDPOINT = '/api/content/events';
 
 export const NAV_HEIGHTS = {
   DESKTOP: 86,
-  MOBILE: 56
+  MOBILE: 56,
 };
 
 export const SCROLL_TIMEOUT = 50;

@@ -41,6 +41,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Redis Session Store -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
@@ -89,6 +94,12 @@
             <artifactId>bucket4j_jdk17-core</artifactId>
             <version>8.18.0</version>
         </dependency>
+
+        <dependency>
+    <groupId>org.owasp.encoder</groupId>
+    <artifactId>encoder</artifactId>
+    <version>1.2.3</version>
+</dependency>
 
         <!-- OpenAPI / Swagger UI -->
         <dependency>

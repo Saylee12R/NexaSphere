@@ -3,13 +3,16 @@
 ## Quick Setup (5 minutes)
 
 ### 1. Install & Start
-```bash
+
+````bash
 npm install
 npm run dev
-```
+```text
+
 Visit `http://localhost:5173` in your browser.
 
 ### 2. Test the Feature
+
 1. Click the chat bubble (💬) in bottom-right
 2. Click history button (📋) in chat header
 3. Type a message and send
@@ -18,17 +21,20 @@ Visit `http://localhost:5173` in your browser.
 ## Key Features to Test
 
 ### ✅ Auto-Save
+
 - [ ] Send a prompt → Wait 2 seconds
 - [ ] Click 📋 button → See history
 - [ ] Refresh page → History persists
 
 ### ✅ Search
+
 - [ ] Open chat and send "Hello world"
 - [ ] Click search bar
 - [ ] Type "world"
 - [ ] See result in dropdown
 
 ### ✅ Workspaces
+
 - [ ] Open chat → Select "Coding & Debug" from dropdown
 - [ ] Send a message
 - [ ] Switch to "Research" workspace
@@ -36,6 +42,7 @@ Visit `http://localhost:5173` in your browser.
 - [ ] Switch back → Original messages reappear
 
 ### ✅ Pin Conversations
+
 - [ ] Open history sidebar (📋)
 - [ ] Hover over any message
 - [ ] Click 📌 icon
@@ -43,6 +50,7 @@ Visit `http://localhost:5173` in your browser.
 - [ ] Click 🗑️ to unpin
 
 ### ✅ Restore Conversations
+
 - [ ] Send message: "Tell me a joke"
 - [ ] Wait for response
 - [ ] Click 📋 to open history
@@ -50,6 +58,7 @@ Visit `http://localhost:5173` in your browser.
 - [ ] Chat loads with that conversation
 
 ### ✅ Mobile Responsive
+
 - [ ] Open DevTools (F12)
 - [ ] Toggle device toolbar (iPhone, iPad)
 - [ ] Open chat
@@ -58,17 +67,19 @@ Visit `http://localhost:5173` in your browser.
 ## Quick Test Scenarios
 
 ### Scenario 1: First-Time User
-```
+
+```text
 1. Click chat bubble
 2. Type "Hi"
 3. Get response
 4. Check history (should show 1 item)
 5. Close and reopen chat
 6. History still there? ✅
-```
+```text
 
 ### Scenario 2: Multiple Workspaces
-```
+
+```text
 1. Send "Python question" in default workspace
 2. Switch to "Coding" workspace
 3. Send "JavaScript question"
@@ -78,10 +89,11 @@ Visit `http://localhost:5173` in your browser.
 7. Verify each workspace has its own prompts
 8. Switch between workspaces
 9. See correct prompts for each ✅
-```
+```text
 
 ### Scenario 3: Search & Pin
-```
+
+```text
 1. Send 5 different prompts
 2. Pin 2 of them
 3. Verify pinned section shows
@@ -89,83 +101,96 @@ Visit `http://localhost:5173` in your browser.
 5. Get relevant results
 6. Click result to restore
 7. Old conversation loads ✅
-```
+```text
 
 ## Debug Commands
 
 ### Check IndexedDB
+
 ```javascript
 // In browser console:
 const db = await indexedDB.databases();
 console.log('Databases:', db);
-```
+```text
 
 ### View All Prompts
+
 ```javascript
 // In browser console:
 import { getAllPrompts } from '@/lib/promptStore';
 const all = await getAllPrompts();
 console.log('Prompts:', all);
-```
+```text
 
 ### Clear All Data
+
 ```javascript
 // In browser console:
 localStorage.clear();
 indexedDB.deleteDatabase('NexaSphereDB');
 location.reload();
-```
+```text
 
 ### Check Storage Size
+
 ```javascript
 // In browser DevTools:
 // Go to Application → Storage → Estimate Usage
-```
+```text
 
 ## File Locations for Code Review
 
 ### Core Logic
+
 - **Storage**: `src/lib/promptStore.js`
 - **Workspaces**: `src/lib/workspaceService.js`
 
 ### UI Components
+
 - **Sidebar**: `src/components/history/PromptHistorySidebar.jsx`
 - **Search**: `src/components/history/SearchBar.jsx`
 - **Pinned**: `src/components/history/PinnedChats.jsx`
 - **Main Chat**: `src/shared/Chatbot.jsx` (updated)
 
 ### Styles
+
 - **All CSS**: `src/components/history/*.css` + `src/styles/chatbot.css`
 
 ### Tests
+
 - **Unit**: `src/lib/__tests__/*.test.js`
 - **E2E**: `e2e/prompt-history.spec.ts`
 
 ### Documentation
+
 - **Full Guide**: `PROMPT_HISTORY_GUIDE.md`
 - **Implementation**: `IMPLEMENTATION_SUMMARY.md`
 
 ## Running Tests
 
 ### All Tests
+
 ```bash
 npm run test
-```
+```text
 
 ### Watch Mode
+
 ```bash
 npm run test:watch
-```
+```text
 
 ### E2E Tests Only
+
 ```bash
 npm run test:e2e
-```
+```text
 
 ### Coverage Report
+
 ```bash
 npm run test:coverage
-```
+```text
 
 ## Key Things to Check
 
@@ -201,27 +226,27 @@ npm run test:coverage
 
 ## Common Issues & Fixes
 
-| Issue | Solution |
-|-------|----------|
-| History not showing | Check if IndexedDB is available. Try clearing cache. |
-| Search not working | Refresh page. Check browser console for errors. |
-| Sidebar won't open | Verify CSS is loaded. Check network tab. |
-| Auto-save not working | Check browser quota. Try clearing storage. |
-| Mobile responsive broken | Check viewport meta tag. Test on actual device. |
+| Issue                    | Solution                                             |
+| ------------------------ | ---------------------------------------------------- |
+| History not showing      | Check if IndexedDB is available. Try clearing cache. |
+| Search not working       | Refresh page. Check browser console for errors.      |
+| Sidebar won't open       | Verify CSS is loaded. Check network tab.             |
+| Auto-save not working    | Check browser quota. Try clearing storage.           |
+| Mobile responsive broken | Check viewport meta tag. Test on actual device.      |
 
 ## Performance Baselines
 
-| Operation | Target | Actual |
-|-----------|--------|--------|
-| Save prompt | <100ms | ~10ms |
-| Load history | <100ms | ~20ms |
-| Search 100 items | <100ms | ~30ms |
-| Render sidebar | <200ms | ~50ms |
-| Page refresh | <2s | ~500ms |
+| Operation        | Target | Actual |
+| ---------------- | ------ | ------ |
+| Save prompt      | <100ms | ~10ms  |
+| Load history     | <100ms | ~20ms  |
+| Search 100 items | <100ms | ~30ms  |
+| Render sidebar   | <200ms | ~50ms  |
+| Page refresh     | <2s    | ~500ms |
 
 ## Commit Message Template
 
-```
+```text
 feat: Add prompt history & workspace system (Issue #100)
 
 - Implement IndexedDB storage layer with localStorage fallback
@@ -237,7 +262,7 @@ feat: Add prompt history & workspace system (Issue #100)
 BREAKING CHANGE: None
 CLOSES: #100
 TESTING: See IMPLEMENTATION_SUMMARY.md for test coverage
-```
+```text
 
 ## PR Checklist
 
@@ -287,11 +312,12 @@ const ws = createWorkspace('New Project', '#3b82f6');
 // Get workspaces
 import { getWorkspaces } from '@/lib/workspaceService';
 const workspaces = getWorkspaces();
-```
+```text
 
 ## Success Criteria
 
 ✅ **Your implementation is complete when:**
+
 1. All tests pass
 2. Feature works end-to-end
 3. Mobile responsive verified
@@ -305,5 +331,6 @@ const workspaces = getWorkspaces();
 
 ---
 
-**Ready to test!** 🚀  
+**Ready to test!** 🚀
 Open `http://localhost:5173` and try the feature.
+````

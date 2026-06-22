@@ -12,8 +12,8 @@ npm run dev                 # runs on http://localhost:5174
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
+| Variable        | Description                                         |
+| --------------- | --------------------------------------------------- |
 | `VITE_API_BASE` | Java backend URL (e.g. `https://api.nexasphere.in`) |
 
 ## Deployment (Vercel)
@@ -33,16 +33,18 @@ Also add the admin dashboard URL to `CORS_ORIGIN` in the Java backend environmen
 - Event-driven UI — no page reloads on mutations
 - Skeleton loaders, toast notifications, accessible confirmation modals
 - Auto-redirect to login on session expiry
+
 ## 👨‍💼 NexaSphere Admin Dashboard
 
 ## Standalone React + Vite Application
 
- > **Complete admin interface** for managing NexaSphere community events,
- > activities and team members
+> **Complete admin interface** for managing NexaSphere community events,
+> activities and team members
 
 <br/>
 
 ---
+
 ## 📌 Overview
 
 <br/>
@@ -72,15 +74,16 @@ Dedicated admin application providing:
 <br/>
 
 ---
+
 ## ⚙️ Requirements
 
 <br/>
 
-| Requirement              | Version               |
-| ------------------------ | --------------------- |
-| **Node.js**              | 20+                   |
-| **npm**                  | Latest                |
-| **Running Java Backend** | http://localhost:8080 |
+| Requirement              | Version                 |
+| ------------------------ | ----------------------- |
+| **Node.js**              | 20+                     |
+| **npm**                  | Latest                  |
+| **Running Java Backend** | <http://localhost:8080> |
 
 <br/>
 
@@ -131,7 +134,7 @@ npm run dev
 
 <br/>
 
-**✅ Access Dashboard:** http://localhost:5174
+**✅ Access Dashboard:** <http://localhost:5174>
 
 <br/>
 
@@ -144,6 +147,7 @@ Credentials are configured via environment variables on the backend only. Set `A
 <br/>
 
 ---
+
 ## 📋 Environment Variables
 
 <br/>
@@ -239,7 +243,6 @@ admin-dashboard/
 <br/>
 
 ---
-
 
 ## 🎯 Core Features
 
@@ -451,6 +454,7 @@ DELETE /api/admin/core-team/{id}   ← Delete member
 <br/>
 
 ---
+
 ## 🧪 Testing
 
 <br/>
@@ -480,7 +484,6 @@ npm run test EventForm.test.jsx
 <br/>
 
 ---
-
 
 ## 🚀 Deployment Guide
 
@@ -567,7 +570,7 @@ Click **"Deploy"** and wait for completion.
 
 <br/>
 
-**📍 Live URL:** https://admin-nexasphere.vercel.app
+**📍 Live URL:** <https://admin-nexasphere.vercel.app>
 
 <br/>
 
@@ -599,7 +602,7 @@ npm run preview
 
 <br/>
 
-**Access:** http://localhost:4173
+**Access:** <http://localhost:4173>
 
 <br/>
 
@@ -738,6 +741,7 @@ export default function EventForm({ onSubmit, event }) {
 <br/>
 
 ---
+
 ## 🚀 Performance Tips
 
 <br/>
@@ -757,7 +761,7 @@ export default function EventForm({ onSubmit, event }) {
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? 📧 Contact <nexasphere@glbajajgroup.org>
 
 **Dashboard Version:** 1.0 | **Last Updated:** May 2026
 

@@ -1,7 +1,10 @@
+import { CopyButton } from '../components/CopyButton';
+import { DashboardCardSkeleton } from '../components/DashboardCardSkeleton';
 import { useState, useEffect } from 'react';
 import { api, auth } from '../services/api';
 import { Skeleton } from '../components/Skeleton';
 import { AdminIcon } from '../components/AdminIcon';
+import { PermissionGuard } from '../components/PermissionGuard';
 
 export function DashboardHome() {
   const [stats, setStats] = useState(null);
@@ -58,7 +61,10 @@ export function DashboardHome() {
 
       {loading ? (
         <div className="stats-grid">
-          <Skeleton height={100} count={3} />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
         </div>
       ) : (
         <div className="stats-grid">
@@ -69,6 +75,15 @@ export function DashboardHome() {
             <div>
               <div className="stat-value">{stats.totalEvents}</div>
               <div className="stat-label">Total Events</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <span className="stat-icon">
+              <AdminIcon name="Clock" size={28} aria-hidden="true" />
+            </span>
+            <div>
+              <div className="stat-value">{stats.upcomingEvents}</div>
+              <div className="stat-label">Upcoming Events</div>
             </div>
           </div>
           <div className="stat-card">
@@ -108,19 +123,25 @@ export function DashboardHome() {
       <div className="quick-links">
         <h3>Quick Actions</h3>
         <div className="quick-grid">
-          <a href="/dashboard/events" className="quick-card" aria-label="Manage events">
-            <AdminIcon name="Calendar" size={18} aria-hidden="true" /> Events
-          </a>
-          <a
-            href="/dashboard/activity-events"
-            className="quick-card"
-            aria-label="Manage activities"
-          >
-            <AdminIcon name="Target" size={18} aria-hidden="true" /> Activities
-          </a>
-          <a href="/dashboard/core-team" className="quick-card" aria-label="Manage core team">
-            <AdminIcon name="Users" size={18} aria-hidden="true" /> Team
-          </a>
+          <PermissionGuard requiredScope="events:read">
+            <a href="/dashboard/events" className="quick-card" aria-label="Manage events">
+              <AdminIcon name="Calendar" size={18} aria-hidden="true" /> Events
+            </a>
+          </PermissionGuard>
+          <PermissionGuard requiredScope="events:read">
+            <a
+              href="/dashboard/activity-events"
+              className="quick-card"
+              aria-label="Manage activities"
+            >
+              <AdminIcon name="Target" size={18} aria-hidden="true" /> Activities
+            </a>
+          </PermissionGuard>
+          <PermissionGuard requiredScope="settings:admin">
+            <a href="/dashboard/core-team" className="quick-card" aria-label="Manage core team">
+              <AdminIcon name="Users" size={18} aria-hidden="true" /> Team
+            </a>
+          </PermissionGuard>
           <a
             href="/dashboard/membership"
             className="quick-card"
@@ -128,6 +149,15 @@ export function DashboardHome() {
           >
             <AdminIcon name="FileText" size={18} aria-hidden="true" /> Membership
           </a>
+        </div>
+        <div
+          style={{
+            marginTop: '20px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <CopyButton text={window.location.origin + '/dashboard'} label="Copy Dashboard Link" />
         </div>
       </div>
     </div>

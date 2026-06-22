@@ -3,7 +3,28 @@ import { useSocketContext } from '../context/SocketContext';
 import { useSocket } from './useSocket';
 import { useWorkspaceStore } from '../store/workspaceStore';
 
-export function useSocketSync(roomId: string, user: any) {
+import type { UserInfo } from '../store/workspaceStore';
+
+// ── Socket event payload types ────────────────────────────────────────
+interface DocumentChangePayload {
+  content: string;
+}
+interface UserJoinedPayload {
+  socketId: string;
+  user: UserInfo;
+}
+interface UserLeftPayload {
+  socketId: string;
+}
+interface CursorMovedPayload {
+  socketId: string;
+  cursor: { x: number; y: number };
+}
+interface TypingPayload {
+  socketId: string;
+}
+
+export function useSocketSync(roomId: string, user: UserInfo) {
   const { socket, isConnected } = useSocketContext();
   const setDocumentContent = useWorkspaceStore((state) => state.setDocumentContent);
   const setStatus = useWorkspaceStore((state) => state.setStatus);
@@ -33,27 +54,27 @@ export function useSocketSync(roomId: string, user: any) {
   });
 
   // Sync events
-  useSocket('document_change', (payload) => {
+  useSocket<[DocumentChangePayload]>('document_change', (payload) => {
     setDocumentContent(payload.content);
   });
 
-  useSocket('user_joined', (payload) => {
+  useSocket<[UserJoinedPayload]>('user_joined', (payload) => {
     addUser(payload.socketId, payload.user);
   });
 
-  useSocket('user_left', (payload) => {
+  useSocket<[UserLeftPayload]>('user_left', (payload) => {
     removeUser(payload.socketId);
   });
 
-  useSocket('cursor_moved', (payload) => {
+  useSocket<[CursorMovedPayload]>('cursor_moved', (payload) => {
     updateUserCursor(payload.socketId, payload.cursor);
   });
 
-  useSocket('typing_start', (payload) => {
+  useSocket<[TypingPayload]>('typing_start', (payload) => {
     updateUserTyping(payload.socketId, true);
   });
 
-  useSocket('typing_stop', (payload) => {
+  useSocket<[TypingPayload]>('typing_stop', (payload) => {
     updateUserTyping(payload.socketId, false);
   });
 
@@ -84,12 +105,12 @@ export function useSocketSync(roomId: string, user: any) {
 
   const emitTyping = () => {
     if (!socket) return;
-    socket.emit('typing_start', { roomId });
-    
+    socket.emit('typing_start', { roomId, user: { name: user.name } });
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
     // Auto-stop typing after 1 second of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit('typing_stop', { roomId });

@@ -18,21 +18,21 @@ export const Skeleton = ({
   height,
   className = '',
   count = 1,
-  style = {}
+  style = {},
 }) => {
   const elements = [];
-  
+
   for (let i = 0; i < count; i++) {
     elements.push(
       <span
-        key={i}
+        key={`skeleton-el-${i}`}
         className={`nx-skeleton ${animate ? 'nx-skeleton-animate' : ''} ${className}`}
         style={{
           width: width || '100%',
           height: height || '1em',
           borderRadius: rounded ? '50%' : undefined,
           display: 'inline-block',
-          ...style
+          ...style,
         }}
         aria-busy="true"
         aria-hidden="true"
@@ -44,12 +44,18 @@ export const Skeleton = ({
   return <>{elements}</>;
 };
 
-export const SkeletonText = ({ lines = 3, animate = true, lastLineWidth = '60%', gap = '8px', ...props }) => {
+export const SkeletonText = ({
+  lines = 3,
+  animate = true,
+  lastLineWidth = '60%',
+  gap = '8px',
+  ...props
+}) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap }}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
-          key={i}
+          key={`skeleton-text-line-${i}`}
           animate={animate}
           height="1em"
           width={i === lines - 1 ? lastLineWidth : '100%'}

@@ -1,0 +1,17 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backup via API
+        run: |
+          curl -s -X POST "${{ secrets.APP_URL }}/api/admin/backups/manual" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"source": "daily-cron"}'

@@ -1,30 +1,36 @@
-import { useState, useRef } from "react";
+import { useState, useRef } from 'react';
 
 export default function ResumeUploader({ onUpload }) {
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const inputRef = useRef();
+
+  const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
   const handleFile = (f) => {
     if (!f) return;
     const allowed = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (!allowed.includes(f.type)) {
-      setError("Please upload a PDF or DOC/DOCX file.");
+      setError('Please upload a PDF or DOC/DOCX file.');
       return;
     }
-    setError("");
+    if (f.size > MAX_SIZE_BYTES) {
+      setError('File exceeds the 5 MB size limit. Please upload a smaller file.');
+      return;
+    }
+    setError('');
     setFile(f);
     onUpload(f);
   };
 
   return (
     <div
-      className={`uploader-zone ${dragging ? "dragging" : ""}`}
+      className={`uploader-zone ${dragging ? 'dragging' : ''}`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -41,7 +47,7 @@ export default function ResumeUploader({ onUpload }) {
         ref={inputRef}
         type="file"
         accept=".pdf,.doc,.docx"
-        style={{ display: "none" }}
+        style={{ display: 'none' }}
         onChange={(e) => handleFile(e.target.files[0])}
       />
       {file ? (

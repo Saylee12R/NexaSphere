@@ -1,25 +1,102 @@
-import { useState, useEffect, useCallback } from 'react';
-import apiClient from '../utils/apiClient.js';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import socketClient from '../utils/socketClient';
 import { buildUrl, getApiBase, getSocketServerUrl } from '../utils/runtimeConfig';
+import { StudentAuthContext } from '../context/StudentAuthContext';
+import prefsService from '../services/notifications/preferences';
+import analytics from './analytics/useNotificationAnalytics';
 
+function getAuthHeaders() {
+  // Wrapped in try-catch — localStorage.getItem throws SecurityError
+  // in Safari private browsing mode.
+  let token = null;
+  try {
+    token = localStorage.getItem('ns_student_token') || localStorage.getItem('ns_admin_token');
+  } catch {
+    // Storage unavailable — proceed without auth token.
+  }
+  return token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    : { 'Content-Type': 'application/json' };
+}
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const authContext = useContext(StudentAuthContext);
+  const user = authContext?.user;
+  const userId = user?.sub || user?.id || user?.userId;
+  const userEmail = user?.email;
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   // Initialize socket and listen to real-time events
   useEffect(() => {
     let isMounted = true;
+    let prefMap = {};
+
+    async function loadPrefs() {
+      try {
+        const list = await prefsService.fetchPreferences(userId || 'global');
+        const map = {};
+        for (const p of list || []) map[p.category] = p;
+        prefMap = map;
+      } catch (e) {
+        prefMap = {};
+      }
+    }
+
+    loadPrefs();
 
     // Fetch persisted notifications from server (if available)
     (async () => {
       try {
-        const res = await fetch(buildUrl(getApiBase(), '/api/notifications'));
-        if (res.ok) {
-          const json = await res.json();
-          if (isMounted && Array.isArray(json.notifications)) setNotifications(json.notifications);
+        let resolvedUserId = userId;
+        if (!resolvedUserId) {
+          let storedUser = null;
+          try {
+            storedUser = localStorage.getItem('ns_user');
+          } catch {
+            // Storage unavailable — skip stored user lookup.
+          }
+          if (storedUser) {
+            try {
+              const u = JSON.parse(storedUser);
+              resolvedUserId = u?.id || u?.userId;
+            } catch (e) {
+              if (import.meta.env.DEV) {
+                console.error('[useNotifications] Error parsing stored user info:', e.message);
+              }
+            }
+          }
+        }
+
+        const fetchUrls = [buildUrl(getApiBase(), '/api/notifications')];
+        if (resolvedUserId) {
+          fetchUrls.push(buildUrl(getApiBase(), `/api/notifications?userId=${resolvedUserId}`));
+        }
+
+        const responses = await Promise.all(
+          fetchUrls.map((url) =>
+            fetch(url, { headers: getAuthHeaders() }).then((res) =>
+              res.ok ? res.json() : { notifications: [] }
+            )
+          )
+        );
+
+        if (isMounted) {
+          const allNotifications = responses.flatMap((r) => r.notifications || []);
+          // De-duplicate by unique id
+          const seen = new Set();
+          const uniqueNotifications = [];
+          for (const item of allNotifications) {
+            if (item && item.id && !seen.has(item.id)) {
+              seen.add(item.id);
+              uniqueNotifications.push(item);
+            }
+          }
+          // Sort by creation date (newest first)
+          uniqueNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setNotifications(uniqueNotifications);
         }
       } catch (err) {
         // ignore fetch errors — fallback to empty list
@@ -33,19 +110,10 @@ export function useNotifications() {
       return undefined;
     }
 
-    // Identify user if logged in (for personalized notifications)
-    const storedUser = localStorage.getItem('ns_user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        if (user.id || user.userId) {
-          socketClient.identifyUser(user.id || user.userId, user.email);
-          // Join authenticated user-specific channel
-          socketClient.joinRoom(`user-${user.id || user.userId}`);
-        }
-      } catch (e) {
-        console.error('Error parsing stored user info', e);
-      }
+    // Personalised socket identification (user-specific notification channel)
+    if (userId) {
+      socketClient.identifyUser(userId, userEmail);
+      socketClient.joinRoom(`user-${userId}`);
     }
 
     // Join general notification and announcement channels
@@ -54,51 +122,104 @@ export function useNotifications() {
 
     // Setup real-time event handlers mapping to the notification feed
     const handleRegistration = (data) => {
-      setNotifications(prev => {
-        // Prevent duplicate by checking if we recently added a similar notification
-        // Note: data.id would be better if server provides it
-        return [{
-          id: `reg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          type: 'connection',
-          title: 'Registration Confirmed! 🎉',
-          message: data.eventName ? `You are registered for "${data.eventName}"` : 'Your registration has been successfully confirmed.',
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        }, ...prev];
-      });
+      // Build notification object
+      const note = {
+        id: `reg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'registration_confirmations',
+        title: 'Registration Confirmed! 🎉',
+        message: data.eventName
+          ? `You are registered for "${data.eventName}"`
+          : 'Your registration has been successfully confirmed.',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Check preferences: if push is disabled or quiet hours/DND active, suppress locally
+      (async () => {
+        try {
+          const prefs = prefMap[note.type] || prefMap['global'] || {};
+          const channelEnabled = prefs.push !== false;
+          const dnd = (prefMap['global'] && prefMap['global'].dnd) || false;
+          const withinQuiet = (() => {
+            const qs =
+              prefs.quiet_start || (prefMap['global'] && prefMap['global'].quiet_start) || null;
+            const qe =
+              prefs.quiet_end || (prefMap['global'] && prefMap['global'].quiet_end) || null;
+            if (!qs || !qe) return false;
+            const toMin = (t) => {
+              const s = String(t).split(':');
+              return parseInt(s[0], 10) * 60 + parseInt(s[1], 10);
+            };
+            const now = new Date();
+            const m = now.getHours() * 60 + now.getMinutes();
+            const sMin = toMin(qs);
+            const eMin = toMin(qe);
+            return sMin <= eMin ? m >= sMin && m < eMin : m >= sMin || m < eMin;
+          })();
+
+          if (!channelEnabled || dnd || withinQuiet) {
+            // Do not show immediately; keep in queue for digest or ignore
+            // Simple local queue in localStorage
+            try {
+              const key = 'ns_notification_digest_queue';
+              const raw = localStorage.getItem(key);
+              const arr = raw ? JSON.parse(raw) : [];
+              arr.push({
+                ...note,
+                suppressedAt: new Date().toISOString(),
+                suppressedReason: !channelEnabled ? 'channel' : dnd ? 'dnd' : 'quiet',
+              });
+              localStorage.setItem(key, JSON.stringify(arr));
+            } catch (e) {}
+            return;
+          }
+
+          // Otherwise add to feed
+          setNotifications((prev) => [note, ...prev]);
+        } catch (e) {
+          setNotifications((prev) => [note, ...prev]);
+        }
+      })();
     };
 
     const handleWaitlist = (data) => {
-      setNotifications(prev => [{
+      const note = {
         id: `waitlist-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'mention',
+        type: 'announcements',
         title: 'Waitlist Promotion! 🚀',
-        message: data.eventName ? `Great news! You have been promoted for "${data.eventName}"` : 'You have been promoted from the waitlist.',
+        message: data.eventName
+          ? `Great news! You have been promoted for "${data.eventName}"`
+          : 'You have been promoted from the waitlist.',
         isRead: false,
         createdAt: new Date().toISOString(),
-      }, ...prev]);
+      };
+      setNotifications((prev) => [note, ...prev]);
     };
 
     const handleReminder = (data) => {
-      setNotifications(prev => [{
+      const note = {
         id: `reminder-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'system',
+        type: 'event_reminders',
         title: 'Upcoming Event Reminder ⏰',
-        message: data.eventName ? `"${data.eventName}" is starting soon! Don't miss it.` : 'An event is starting shortly.',
+        message: data.eventName
+          ? `"${data.eventName}" is starting soon! Don't miss it.`
+          : 'An event is starting shortly.',
         isRead: false,
         createdAt: new Date().toISOString(),
-      }, ...prev]);
+      };
+      setNotifications((prev) => [note, ...prev]);
     };
 
     const handleAttendance = (data) => {
-      setNotifications(prev => [{
+      const note = {
         id: `attendance-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'system',
+        type: 'messages',
         title: 'Attendance Confirmed! Check-in ✅',
         message: `Your check-in is complete! You earned ${data.points || 50} points.`,
         isRead: false,
         createdAt: new Date().toISOString(),
-      }, ...prev]);
+      };
+      setNotifications((prev) => [note, ...prev]);
     };
 
     // Note: The backend seems to emit 'registration-confirmed' but previously it mapped to 'registrationConfirmed'
@@ -108,7 +229,7 @@ export function useNotifications() {
     // 'waitlist-promotion' -> 'waitlistPromotion'
     // 'event-reminder' -> 'eventReminder'
     // 'attendance-marked' -> 'attendanceMarked'
-    
+
     // Register active listeners using the actual backend event names
     socketClient.on('registration-confirmed', handleRegistration);
     socketClient.on('waitlist-promotion', handleWaitlist);
@@ -122,41 +243,44 @@ export function useNotifications() {
       socketClient.off('waitlist-promotion', handleWaitlist);
       socketClient.off('event-reminder', handleReminder);
       socketClient.off('attendance-marked', handleAttendance);
-      
-      const storedUser = localStorage.getItem('ns_user');
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          if (user.id || user.userId) {
-            socketClient.leaveRoom(`user-${user.id || user.userId}`);
-          }
-        } catch (e) {}
+
+      if (userId) {
+        socketClient.leaveRoom(`user-${userId}`);
       }
-      
       socketClient.leaveRoom('notifications-room');
       socketClient.leaveRoom('global-announcements');
-      
+
       // DO NOT disconnect the shared socket here
     };
-  }, []);
+  }, [userId, userEmail]);
 
   const markAsRead = useCallback((id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     // Persist
     (async () => {
       try {
-        const base = import.meta?.env?.VITE_API_BASE || '';
-        await apiClient(base + '/api/notifications/mark-read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetch(buildUrl(getApiBase(), '/api/notifications/mark-read'), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ id }),
+        });
+        analytics.trackNotificationOpened({ id });
       } catch (e) {}
     })();
   }, []);
 
+  const trackAction = useCallback((id, action) => {
+    analytics.trackNotificationAction({ id, action });
+  }, []);
+
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     (async () => {
       try {
-        const base = import.meta?.env?.VITE_API_BASE || '';
-        await apiClient(base + '/api/notifications/mark-all-read', { method: 'POST' });
+        await fetch(buildUrl(getApiBase(), '/api/notifications/mark-all-read'), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+        });
       } catch (e) {}
     })();
   }, []);
@@ -165,14 +289,16 @@ export function useNotifications() {
     setNotifications([]);
     (async () => {
       try {
-        const base = import.meta?.env?.VITE_API_BASE || '';
-        await apiClient(base + '/api/notifications', { method: 'DELETE' });
+        await fetch(buildUrl(getApiBase(), '/api/notifications'), {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        });
       } catch (e) {}
     })();
   }, []);
 
   const togglePanel = useCallback(() => {
-    setIsOpen(prev => !prev);
+    setIsOpen((prev) => !prev);
   }, []);
 
   const closePanel = useCallback(() => {
@@ -188,5 +314,6 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     clearAll,
+    trackAction,
   };
 }

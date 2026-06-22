@@ -4,28 +4,55 @@ import '../styles/chatbot.css';
 import PromptHistorySidebar from '../components/history/PromptHistorySidebar';
 import SearchBar from '../components/history/SearchBar';
 import PinnedChats from '../components/history/PinnedChats';
-import { savePrompt } from '../lib/promptStore';
+import { savePrompt, exportPrompts } from '../lib/promptStore';
 import { initializeWorkspaces } from '../lib/workspaceService';
 import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
 
 const knowledgeBase = [
   {
-    keywords: ['nexasphere', 'about', 'community'],
+    keywords: ['nexasphere', 'about', 'community', 'what is'],
     answer:
-      'NexaSphere is the official technology and developer community at GL Bajaj Group of Institutions.',
+      'NexaSphere is the official tech ecosystem at GL Bajaj Group of Institutions, Mathura, run by students for students to foster innovation and learning.',
   },
   {
-    keywords: ['event', 'workshop', 'hackathon'],
-    answer: 'NexaSphere regularly organizes workshops, hackathons, and technical events.',
-  },
-  {
-    keywords: ['team', 'mentor', 'leader'],
+    keywords: ['hackathon', 'codathon', 'ideathon', 'promptathon'],
     answer:
-      'NexaSphere is managed by a dedicated team of mentors, organizers, and student leaders.',
+      'NexaSphere hosts various competitions: Hackathons (building apps), Codathons (DSA/Competitive Programming), Ideathons (pitching ideas), and Promptathons (AI prompting).',
   },
   {
-    keywords: ['join', 'member', 'membership'],
-    answer: 'You can join NexaSphere through the registration forms available on the website.',
+    keywords: ['workshop', 'git', 'github', 'react', 'learn'],
+    answer:
+      'We conduct hands-on workshops on Git, GitHub, React, and emerging tech. Check the "Activities" page for upcoming sessions!',
+  },
+  {
+    keywords: ['event', 'kss', 'insight', 'session'],
+    answer:
+      'NexaSphere organizes Knowledge Sharing Sessions (KSS) and Insight Sessions where peers share technical expertise and industry trends.',
+  },
+  {
+    keywords: ['team', 'mentor', 'leader', 'organizer', 'ayush', 'tanishk'],
+    answer:
+      'NexaSphere is led by Ayush Sharma and Tanishk Bansal, supported by a dedicated Core Team of developers, designers, and content creators.',
+  },
+  {
+    keywords: ['join', 'member', 'membership', 'register'],
+    answer:
+      'To join as a member, click the "Join" button on our homepage. Note: You must use your @glbajajgroup.org email address.',
+  },
+  {
+    keywords: ['apply', 'core team', 'recruitment', 'hiring'],
+    answer:
+      'Core Team applications open periodically. Keep an eye on the "Apply" button in the navigation bar or our WhatsApp community updates.',
+  },
+  {
+    keywords: ['contact', 'email', 'reach out', 'help'],
+    answer:
+      'You can reach us at nexasphere@glbajajgroup.org or via the official contact form on the website.',
+  },
+  {
+    keywords: ['history', 'save', 'workspace'],
+    answer:
+      'Your chats are automatically saved! Use the 📋 icon to toggle history, or use the workspace selector to organize your queries into General, Coding, or Research.',
   },
 ];
 
@@ -46,6 +73,7 @@ const Chatbot = () => {
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState([
     {
+      id: `msg-init`,
       role: 'bot',
       text: 'Nexa-Intelligence Online. How can I assist your journey?',
     },
@@ -79,16 +107,31 @@ const Chatbot = () => {
         // Only save if the bot message is more recent than the last saved one
         if (lastBotIndex > lastUserIndex) {
           savePrompt(lastUserMsg.text, lastBotMsg.text, currentWorkspace).catch((err) => {
-            console.error('Error saving prompt:', err);
+            if (import.meta.env.DEV) {
+              console.error('[Chatbot] Error saving prompt:', err.message);
+            }
           });
         }
       }
     }
   }, [messages, currentWorkspace]);
 
+  const sendFallbackResponse = (query) => {
+    const fallbackResponse = queryLocalKnowledge(query);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}-bot`,
+        role: 'bot',
+        text: fallbackResponse,
+      },
+    ]);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
-    const userMsg = { role: 'user', text: input };
+    const userMsg = { id: `msg-${Date.now()}-user`, role: 'user', text: input };
     setMessages((prev) => [...prev, userMsg]);
     const currentInput = input;
     setInput('');
@@ -97,17 +140,10 @@ const Chatbot = () => {
     const aiChatUrl = buildUrl(getAiApiBase(), '/ai/chat');
 
     if (!aiChatUrl) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'bot',
-          text: 'Nexa-AI is offline right now. The AI service URL is not configured for this deployment.',
-        },
-      ]);
+      sendFallbackResponse(currentInput);
       setIsSending(false);
       return;
     }
-
     try {
       const data = await apiClient(aiChatUrl, {
         method: 'POST',
@@ -115,19 +151,15 @@ const Chatbot = () => {
         body: JSON.stringify({ message: currentInput }),
         signal: controller.signal,
       });
-      setMessages((prev) => [...prev, { role: 'bot', text: data.reply }]);
-    } catch (e) {
-      console.error('AI chat request failed', e);
-
-      const fallbackResponse = queryLocalKnowledge(currentInput);
-
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'bot',
-          text: fallbackResponse,
-        },
+        { id: `msg-${Date.now()}-bot`, role: 'bot', text: data.reply },
       ]);
+    } catch (e) {
+      if (import.meta.env.DEV) {
+        console.error('[Chatbot] AI chat request failed:', e.message);
+      }
+      sendFallbackResponse(currentInput);
     } finally {
       setIsSending(false);
     }
@@ -136,11 +168,12 @@ const Chatbot = () => {
   const handleSelectPrompt = (prompt) => {
     setMessages([
       {
+        id: 'msg-init',
         role: 'bot',
         text: 'Nexa-Intelligence Online. How can I assist your journey?',
       },
-      { role: 'user', text: prompt.userPrompt },
-      { role: 'bot', text: prompt.botResponse },
+      { id: `msg-${Date.now()}-user`, role: 'user', text: prompt.userPrompt },
+      { id: `msg-${Date.now() + 1}-bot`, role: 'bot', text: prompt.botResponse },
     ]);
     setShowSidebar(false);
   };
@@ -198,8 +231,8 @@ const Chatbot = () => {
               <SearchBar onSelectPrompt={handleSelectPrompt} workspace={currentWorkspace} />
 
               <div className="chat-messages" ref={scrollRef}>
-                {messages.map((m, i) => (
-                  <div key={i} className={`msg-bubble ${m.role}`}>
+                {messages.map((m) => (
+                  <div key={m.id} className={`msg-bubble ${m.role}`}>
                     {m.text}
                   </div>
                 ))}
