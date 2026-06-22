@@ -521,7 +521,7 @@ const _rawSupabaseRequest = async function _rawSupabaseRequest(
   return text ? JSON.parse(text) : [];
 };
 
-export const supabaseRequest = _rawSupabaseRequest;
+export { _rawSupabaseRequest as supabaseRequest };
 
 export const supabaseBreaker = circuitBreakerRegistry.register(
   'index-supabase',
