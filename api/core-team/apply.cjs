@@ -12,7 +12,14 @@ function normalizePrivateKey(k) {
 }
 
 async function readJson(req) {
-  if (req.body && typeof req.body === 'object') return req.body;
+  // RECTIFIED: Check if the body was already consumed and processed by upstream middleware
+  if (req.body) {
+    try {
+      return typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch {
+      return {};
+    }
+  }
 
   const raw = await new Promise((resolve, reject) => {
     let data = '';
