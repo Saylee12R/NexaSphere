@@ -7,6 +7,8 @@ import {
   getDashboardSummary,
   getUserAnalytics,
   getEngagementFunnel,
+  getCustomFunnel,
+  getFunnelStepTypes,
   executeCustomReport,
   saveCustomReport,
   getCustomReports,
@@ -124,6 +126,10 @@ router.get('/events', async (_req, res) => {
 router.get('/summary', getDashboardSummary);
 router.get('/users', getUserAnalytics);
 router.get('/funnel', getEngagementFunnel);
+
+// Custom Funnel Analysis
+router.get('/funnel/steps', getFunnelStepTypes);
+router.post('/funnel/custom', getCustomFunnel);
 
 // Custom Reports
 router.get('/reports', getCustomReports);

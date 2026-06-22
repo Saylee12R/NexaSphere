@@ -49,6 +49,20 @@ export function ComprehensiveAnalytics() {
     <div className="page bg-gray-50 text-gray-900 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Admin Analytics Dashboard</h2>
+        <a
+          href="/dashboard/analytics/funnel"
+          style={{
+            background: '#6366f1',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            fontWeight: 600,
+            fontSize: '0.875rem',
+          }}
+        >
+          🔍 Funnel Analysis
+        </a>
       </div>
 
       {/* Overview Metrics */}
