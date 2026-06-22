@@ -33,6 +33,10 @@ export const forumService = {
     return forumRepository.createReply(threadId, input);
   },
 
+  async getReply(id) {
+    return forumRepository.getReplyById(id);
+  },
+
   async updateReply(id, content) {
     return forumRepository.updateReply(id, content);
   },
