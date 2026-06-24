@@ -7,6 +7,7 @@ import EventEmitter from 'events';
 import logger from '../utils/logger.js';
 import { emitToRoom, getRoom, emitToRole } from '../config/socket.js';
 import notificationsService from './notificationsService.js';
+import notificationPreferencesService from './notificationPreferencesService.js';
 import {
   sendRegistrationConfirmationEmail,
   sendWaitlistPromotionEmail,
@@ -14,6 +15,7 @@ import {
   sendAttendanceConfirmationEmail,
 } from './emailService.js';
 import { sendPushNotification, sendToTopic } from './pushNotificationService.js';
+import gamificationService from './gamificationService.js';
 
 class RealTimeEventManager extends EventEmitter {
   constructor() {
@@ -48,6 +50,21 @@ class RealTimeEventManager extends EventEmitter {
 
     // Deadline reminder
     this.on('deadline-reminder', this.handleDeadlineReminder.bind(this));
+
+    // Portfolio updated
+    this.on('portfolio-updated', this.handlePortfolioUpdated.bind(this));
+  }
+
+  /**
+   * Handle portfolio updated event
+   */
+  async handlePortfolioUpdated(data) {
+    try {
+      logger.info('Event: Portfolio updated', { username: data.username });
+      await gamificationService.evaluatePortfolio(data.username, data.portfolioData);
+    } catch (error) {
+      logger.error('Error handling portfolio updated event', { error: error.message });
+    }
   }
 
   /**
@@ -57,26 +74,56 @@ class RealTimeEventManager extends EventEmitter {
     try {
       logger.info('Event: Registration confirmed', { userId: data.userId, eventId: data.eventId });
 
-      // Send email
-      await sendRegistrationConfirmationEmail(data.userEmail, {
-        name: data.userName,
-        eventName: data.eventName,
-        eventDate: data.eventDate,
-        eventTime: data.eventTime,
-        eventLocation: data.eventLocation,
-      });
-
-      // Send push notification
-      if (data.pushToken) {
-        await sendPushNotification(data.pushToken, {
-          title: 'Registration Confirmed',
-          body: `You're registered for ${data.eventName}`,
-          data: {
-            eventId: data.eventId,
-            type: 'registration',
-          },
-          link: `/events/${data.eventId}`,
+      // Send email (respect preferences)
+      try {
+        const pref = await notificationPreferencesService.shouldDeliver(
+          data.userId || 'global',
+          'registration_confirmations',
+          'email'
+        );
+        if (pref.deliver) {
+          await sendRegistrationConfirmationEmail(data.userEmail, {
+            name: data.userName,
+            eventName: data.eventName,
+            eventDate: data.eventDate,
+            eventTime: data.eventTime,
+            eventLocation: data.eventLocation,
+          });
+        }
+      } catch (e) {
+        await sendRegistrationConfirmationEmail(data.userEmail, {
+          name: data.userName,
+          eventName: data.eventName,
+          eventDate: data.eventDate,
+          eventTime: data.eventTime,
+          eventLocation: data.eventLocation,
         });
+      }
+
+      // Send push notification (respect preferences)
+      if (data.pushToken) {
+        try {
+          const prefPush = await notificationPreferencesService.shouldDeliver(
+            data.userId || 'global',
+            'registration_confirmations',
+            'push'
+          );
+          if (prefPush.deliver) {
+            await sendPushNotification(data.pushToken, {
+              title: 'Registration Confirmed',
+              body: `You're registered for ${data.eventName}`,
+              data: { eventId: data.eventId, type: 'registration' },
+              link: `/events/${data.eventId}`,
+            });
+          }
+        } catch (e) {
+          await sendPushNotification(data.pushToken, {
+            title: 'Registration Confirmed',
+            body: `You're registered for ${data.eventName}`,
+            data: { eventId: data.eventId, type: 'registration' },
+            link: `/events/${data.eventId}`,
+          });
+        }
       }
 
       // Broadcast to notifications room
@@ -118,28 +165,60 @@ class RealTimeEventManager extends EventEmitter {
     try {
       logger.info('Event: Waitlist promotion', { userId: data.userId, eventId: data.eventId });
 
-      // Send email
-      await sendWaitlistPromotionEmail(data.userEmail, {
-        name: data.userName,
-        eventName: data.eventName,
-        eventDate: data.eventDate,
-        eventTime: data.eventTime,
-        confirmationId: data.confirmationId,
-        eventLink: `/events/${data.eventId}`,
-      });
-
-      // Send push notification
-      if (data.pushToken) {
-        await sendPushNotification(data.pushToken, {
-          title: '🎉 Waitlist Promotion',
-          body: `You've been promoted for ${data.eventName}!`,
-          data: {
-            eventId: data.eventId,
-            type: 'promotion',
-          },
-          link: `/events/${data.eventId}`,
-          tag: 'promotion',
+      // Send email (respect preferences)
+      try {
+        const pref = await notificationPreferencesService.shouldDeliver(
+          data.userId || 'global',
+          'announcements',
+          'email'
+        );
+        if (pref.deliver) {
+          await sendWaitlistPromotionEmail(data.userEmail, {
+            name: data.userName,
+            eventName: data.eventName,
+            eventDate: data.eventDate,
+            eventTime: data.eventTime,
+            confirmationId: data.confirmationId,
+            eventLink: `/events/${data.eventId}`,
+          });
+        }
+      } catch (e) {
+        await sendWaitlistPromotionEmail(data.userEmail, {
+          name: data.userName,
+          eventName: data.eventName,
+          eventDate: data.eventDate,
+          eventTime: data.eventTime,
+          confirmationId: data.confirmationId,
+          eventLink: `/events/${data.eventId}`,
         });
+      }
+
+      // Send push notification (respect preferences)
+      if (data.pushToken) {
+        try {
+          const prefPush = await notificationPreferencesService.shouldDeliver(
+            data.userId || 'global',
+            'announcements',
+            'push'
+          );
+          if (prefPush.deliver) {
+            await sendPushNotification(data.pushToken, {
+              title: '🎉 Waitlist Promotion',
+              body: `You've been promoted for ${data.eventName}!`,
+              data: { eventId: data.eventId, type: 'promotion' },
+              link: `/events/${data.eventId}`,
+              tag: 'promotion',
+            });
+          }
+        } catch (e) {
+          await sendPushNotification(data.pushToken, {
+            title: '🎉 Waitlist Promotion',
+            body: `You've been promoted for ${data.eventName}!`,
+            data: { eventId: data.eventId, type: 'promotion' },
+            link: `/events/${data.eventId}`,
+            tag: 'promotion',
+          });
+        }
       }
 
       // Broadcast event
@@ -180,29 +259,62 @@ class RealTimeEventManager extends EventEmitter {
     try {
       logger.info('Event: Reminder sent', { userId: data.userId, eventId: data.eventId });
 
-      // Send email
-      await sendEventReminderEmail(data.userEmail, {
-        name: data.userName,
-        eventName: data.eventName,
-        eventDate: data.eventDate,
-        eventTime: data.eventTime,
-        eventLocation: data.eventLocation,
-        timeUntilEvent: data.timeUntilEvent || 'soon',
-        eventLink: `/events/${data.eventId}`,
-      });
-
-      // Send push notification
-      if (data.pushToken) {
-        await sendPushNotification(data.pushToken, {
-          title: `⏰ ${data.eventName} is coming up!`,
-          body: `Don't forget: ${data.eventName} on ${data.eventDate}`,
-          data: {
-            eventId: data.eventId,
-            type: 'reminder',
-          },
-          link: `/events/${data.eventId}`,
-          tag: 'reminder',
+      // Send email (respect preferences)
+      try {
+        const pref = await notificationPreferencesService.shouldDeliver(
+          data.userId || 'global',
+          'event_reminders',
+          'email'
+        );
+        if (pref.deliver) {
+          await sendEventReminderEmail(data.userEmail, {
+            name: data.userName,
+            eventName: data.eventName,
+            eventDate: data.eventDate,
+            eventTime: data.eventTime,
+            eventLocation: data.eventLocation,
+            timeUntilEvent: data.timeUntilEvent || 'soon',
+            eventLink: `/events/${data.eventId}`,
+          });
+        }
+      } catch (e) {
+        await sendEventReminderEmail(data.userEmail, {
+          name: data.userName,
+          eventName: data.eventName,
+          eventDate: data.eventDate,
+          eventTime: data.eventTime,
+          eventLocation: data.eventLocation,
+          timeUntilEvent: data.timeUntilEvent || 'soon',
+          eventLink: `/events/${data.eventId}`,
         });
+      }
+
+      // Send push notification (respect preferences)
+      if (data.pushToken) {
+        try {
+          const prefPush = await notificationPreferencesService.shouldDeliver(
+            data.userId || 'global',
+            'event_reminders',
+            'push'
+          );
+          if (prefPush.deliver) {
+            await sendPushNotification(data.pushToken, {
+              title: `⏰ ${data.eventName} is coming up!`,
+              body: `Don't forget: ${data.eventName} on ${data.eventDate}`,
+              data: { eventId: data.eventId, type: 'reminder' },
+              link: `/events/${data.eventId}`,
+              tag: 'reminder',
+            });
+          }
+        } catch (e) {
+          await sendPushNotification(data.pushToken, {
+            title: `⏰ ${data.eventName} is coming up!`,
+            body: `Don't forget: ${data.eventName} on ${data.eventDate}`,
+            data: { eventId: data.eventId, type: 'reminder' },
+            link: `/events/${data.eventId}`,
+            tag: 'reminder',
+          });
+        }
       }
 
       // Notify user via WebSocket
@@ -236,25 +348,52 @@ class RealTimeEventManager extends EventEmitter {
     try {
       logger.info('Event: Attendance marked', { userId: data.userId, eventId: data.eventId });
 
-      // Send email
-      await sendAttendanceConfirmationEmail(data.userEmail, {
-        name: data.userName,
-        eventName: data.eventName,
-        eventDate: data.eventDate,
-        points: data.points,
-      });
-
-      // Send push notification
-      if (data.pushToken) {
-        await sendPushNotification(data.pushToken, {
-          title: 'Attendance Marked',
-          body: `Your attendance for ${data.eventName} has been recorded`,
-          data: {
-            eventId: data.eventId,
+      // Send email (respect preferences)
+      try {
+        const pref = await notificationPreferencesService.shouldDeliver(
+          data.userId || 'global',
+          'messages',
+          'email'
+        );
+        if (pref.deliver) {
+          await sendAttendanceConfirmationEmail(data.userEmail, {
+            name: data.userName,
+            eventName: data.eventName,
+            eventDate: data.eventDate,
             points: data.points,
-            type: 'attendance',
-          },
+          });
+        }
+      } catch (e) {
+        await sendAttendanceConfirmationEmail(data.userEmail, {
+          name: data.userName,
+          eventName: data.eventName,
+          eventDate: data.eventDate,
+          points: data.points,
         });
+      }
+
+      // Send push notification (respect preferences)
+      if (data.pushToken) {
+        try {
+          const prefPush = await notificationPreferencesService.shouldDeliver(
+            data.userId || 'global',
+            'messages',
+            'push'
+          );
+          if (prefPush.deliver) {
+            await sendPushNotification(data.pushToken, {
+              title: 'Attendance Marked',
+              body: `Your attendance for ${data.eventName} has been recorded`,
+              data: { eventId: data.eventId, points: data.points, type: 'attendance' },
+            });
+          }
+        } catch (e) {
+          await sendPushNotification(data.pushToken, {
+            title: 'Attendance Marked',
+            body: `Your attendance for ${data.eventName} has been recorded`,
+            data: { eventId: data.eventId, points: data.points, type: 'attendance' },
+          });
+        }
       }
 
       // Broadcast event

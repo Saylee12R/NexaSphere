@@ -8,7 +8,7 @@ import React, {
   Fragment,
 } from 'react';
 import { useSocketContext } from '../../context/SocketContext';
-import { useSocket } from '../../hooks/useSocket';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
 import {
   Plus,
   AlertCircle,
@@ -245,7 +245,7 @@ export default function KanbanBoard({
     return map;
   }, [state.tasks]);
 
-  useSocket(
+  useSocketEvent(
     'task_updated',
     (payload: { taskId: string; status: Task['status']; roomId: string }) => {
       if (!payload || payload.roomId !== roomId) return;
@@ -256,12 +256,12 @@ export default function KanbanBoard({
     }
   );
 
-  useSocket('task_created', (payload: Task & { roomId: string }) => {
+  useSocketEvent('task_created', (payload: Task & { roomId: string }) => {
     if (!payload || payload.roomId !== roomId) return;
     dispatch({ type: 'ADD_TASK', payload });
   });
 
-  useSocket('typing_start', (payload: { socketId: string; user?: { name: string } }) => {
+  useSocketEvent('typing_start', (payload: { socketId: string; user?: { name: string } }) => {
     if (!payload || payload.socketId === socket?.id) return;
     setTypingUsers((prev) => ({
       ...prev,
@@ -269,7 +269,7 @@ export default function KanbanBoard({
     }));
   });
 
-  useSocket('typing_stop', (payload: { socketId: string }) => {
+  useSocketEvent('typing_stop', (payload: { socketId: string }) => {
     if (!payload) return;
     setTypingUsers((prev) => {
       const next = { ...prev };
@@ -278,7 +278,7 @@ export default function KanbanBoard({
     });
   });
 
-  useSocket('presence_update', (payload: { users: User[] }) => {
+  useSocketEvent('presence_update', (payload: { users: User[] }) => {
     if (!payload) return;
     setCollaborators(payload.users.filter((u) => u.id !== user.id));
   });
@@ -442,6 +442,12 @@ export default function KanbanBoard({
             }
           }
         );
+      } else {
+        dispatch({ type: 'REMOVE_TASK', payload: tempId });
+        dispatch({
+          type: 'ROLLBACK',
+          payload: 'Not connected. Task could not be created.',
+        });
       }
     },
     [newTaskTitle, socket, roomId]
@@ -464,44 +470,6 @@ export default function KanbanBoard({
       });
     },
     [socket, roomId]
-  );
-
-  const TimelineView = () => (
-    <div className="flex-1 p-6 overflow-y-auto bg-[#0d0d0d]">
-      <div className="grid grid-cols-1 gap-4">
-        {state.tasks.map((task) => (
-          <div
-            key={task._id}
-            className="bg-[#1a1a1a] border border-white/10 rounded-lg p-4 flex items-center gap-6"
-          >
-            <div className="w-48 font-semibold text-sm truncate">{task.title}</div>
-            <div className="flex-1 h-2 bg-white/5 rounded-full relative">
-              {/* Visualizing task duration based on dates if available */}
-              <div
-                className="absolute h-full bg-blue-500 rounded-full"
-                style={{
-                  left: task.startDate ? '5%' : '10%',
-                  width: task.dueDate ? '60%' : '40%',
-                }}
-              ></div>
-            </div>
-            <div className="flex gap-3">
-              {task.dependencies && task.dependencies.length > 0 && (
-                <span
-                  className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20"
-                  title="Has dependencies"
-                >
-                  Linked
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-white/40">
-              <Clock size={12} className="inline mr-1" /> {task.dueDate || 'No Deadline'}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 
   const typingText = useMemo(() => {
@@ -689,11 +657,9 @@ export default function KanbanBoard({
                             )}
 
                             {task.isRecurring && (
-                              <RefreshCw
-                                size={12}
-                                className="text-emerald-400/60"
-                                title="Recurring task"
-                              />
+                              <span title="Recurring task">
+                                <RefreshCw size={12} className="text-emerald-400/60" />
+                              </span>
                             )}
                             {task.timeSpent && (
                               <div className="flex items-center gap-1 text-[10px] text-white/30">
@@ -785,7 +751,40 @@ export default function KanbanBoard({
           })}
         </div>
       ) : (
-        <TimelineView />
+        <div className="flex-1 p-6 overflow-y-auto bg-[#0d0d0d]">
+          <div className="grid grid-cols-1 gap-4">
+            {state.tasks.map((task) => (
+              <div
+                key={task._id}
+                className="bg-[#1a1a1a] border border-white/10 rounded-lg p-4 flex items-center gap-6"
+              >
+                <div className="w-48 font-semibold text-sm truncate">{task.title}</div>
+                <div className="flex-1 h-2 bg-white/5 rounded-full relative">
+                  <div
+                    className="absolute h-full bg-blue-500 rounded-full"
+                    style={{
+                      left: task.startDate ? '5%' : '10%',
+                      width: task.dueDate ? '60%' : '40%',
+                    }}
+                  ></div>
+                </div>
+                <div className="flex gap-3">
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <span
+                      className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20"
+                      title="Has dependencies"
+                    >
+                      Linked
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-white/40">
+                  <Clock size={12} className="inline mr-1" /> {task.dueDate || 'No Deadline'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

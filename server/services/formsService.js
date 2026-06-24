@@ -6,7 +6,7 @@ import {
   normalizePrivateKey,
 } from '../storage/supabaseClient.js';
 import { google } from 'googleapis';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v3';
 import { normalizeFormSubmission } from '../validators/formSchemas.js';
 import { getPublicAppUrl } from '../utils/publicAppUrl.js';
 import { sendWelcomeVerificationEmail } from './emailService.js';

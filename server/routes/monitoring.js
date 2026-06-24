@@ -14,10 +14,12 @@ import {
 } from '../services/errorTrackingService.js';
 import logger from '../utils/logger.js';
 import { validateDataIntegrity } from '../utils/dataIntegrityValidator.js';
-import { getSessionSecurityData } from '../utils/sessionSecurity.js';
 import { getMigrationStatus } from '../utils/migrationSafety.js';
 import { recordPageLoad } from '../observability/metrics.js';
-import { getServiceHealth, getFailoverStatus } from '../utils/failoverManager.js';
+import securityPatchManager from '../utils/securityPatchManager.js';
+import encryptionManager from '../utils/encryptionManager.js';
+import { databaseFailoverManager } from '../utils/databaseFailoverManager.js';
+import { apiSecurityManager } from '../utils/apiSecurityManager.js';
 
 function requireMonitoringAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -37,17 +39,41 @@ function requireMonitoringAuth(req, res, next) {
 
 /**
  * GET /api/monitoring/health
- * Public liveness probe with no auth required.
- * Returns only liveness status and a timestamp. Operational details such as
- * process uptime and NODE_ENV are deliberately omitted so unauthenticated
- * callers cannot fingerprint the environment or infer deployment timing. The
- * authenticated /metrics endpoint remains the source for detailed telemetry.
+ * Deep health check for Route53/ALB probes.
+ * Verifies connectivity to Database and Redis.
  */
-router.get('/health', (req, res) => {
-  res.status(200).json({
+router.get('/health', async (req, res) => {
+  const health = {
     status: 'healthy',
     timestamp: new Date(),
-  });
+    dependencies: { database: 'ok', redis: 'ok' },
+  };
+
+  try {
+    // Check Redis Connectivity
+    const redisPing = await redisClient.ping();
+    if (redisPing !== 'PONG') throw new Error('Redis down');
+  } catch (err) {
+    health.dependencies.redis = 'error';
+    health.status = 'unhealthy';
+  }
+
+  try {
+    // Check Database (Supabase or Local PG via existing helpers)
+    if (HAS_SUPABASE) {
+      await supabaseRequest('events?limit=1');
+    } else {
+      // Fallback to a simple query if local PG is used
+      const { withDb } = await import('../repositories/db.js');
+      await withDb((client) => client.query('SELECT 1'));
+    }
+  } catch (err) {
+    health.dependencies.database = 'error';
+    health.status = 'unhealthy';
+  }
+
+  const statusCode = health.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 /**
@@ -306,36 +332,6 @@ router.get('/backup-status', requireMonitoringAuth, (req, res) => {
 });
 
 /**
- * GET /api/monitoring/failover-status
- * Monitor critical service health and failover readiness
- */
-router.get('/failover-status', requireMonitoringAuth, (req, res) => {
-  try {
-    res.status(200).json({
-      success: true,
-      data: {
-        primaryService: 'online',
-        failoverReady: true,
-        serviceHealth: 'healthy',
-        activeInstance: 'primary',
-        uptimeSeconds: Math.floor(process.uptime()),
-        recoveryStatus: 'ready',
-      },
-      timestamp: new Date(),
-    });
-  } catch (error) {
-    logger.error('Error fetching failover status', {
-      error: error.message,
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch failover status',
-    });
-  }
-});
-
-/**
  * GET /api/monitoring/traces
  * Get recent request traces for dependency visualization and bottleneck identification
  */
@@ -493,20 +489,104 @@ router.get('/migration-status', requireMonitoringAuth, (req, res) => {
   }
 });
 
-router.get('/health', (req, res) => {
-  res.json(getServiceHealth());
+/**
+ * GET /api/monitoring/failover-status
+ * Monitor critical service health and failover readiness.
+ * This provides a more detailed view for DR purposes.
+ */
+router.get('/failover-status', requireMonitoringAuth, async (req, res) => {
+  const failoverStatus = {
+    primaryRegionStatus: 'unknown',
+    secondaryRegionStatus: 'unknown',
+    failoverReady: false,
+    lastChecked: new Date(),
+    details: {},
+  };
+
+  // Simulate checks for primary region (can reuse /health logic)
+  const primaryHealthRes = await fetch(
+    `http://localhost:${process.env.PORT || 8787}/api/monitoring/health`
+  );
+  const primaryHealth = await primaryHealthRes.json();
+  failoverStatus.primaryRegionStatus = primaryHealth.status;
+  failoverStatus.details.primary = primaryHealth.dependencies;
+
+  // In a real multi-region setup, you'd probe the secondary region's health endpoint here.
+  // For now, we'll assume secondary is ready if primary is healthy and DR is configured.
+  const isDrConfigured = process.env.DATABASE_URL_REPLICA && process.env.REDIS_URL_SECONDARY; // Example check
+  if (primaryHealth.status === 'healthy' && isDrConfigured) {
+    failoverStatus.secondaryRegionStatus = 'ready';
+    failoverStatus.failoverReady = true;
+  } else {
+    failoverStatus.secondaryRegionStatus = 'unconfigured_or_unhealthy';
+  }
+
+  res.status(200).json({ success: true, data: failoverStatus });
 });
 
-router.get('/failover-status', (req, res) => {
-  res.json(getFailoverStatus());
+// Get security patch scan result
+router.get('/security-patches', (req, res) => {
+  const result = securityPatchManager.checkSecurityUpdates();
+
+  return res.json({
+    success: true,
+    data: result,
+  });
 });
 
-router.get('/dependency-health', async (req, res) => {
-  // return dependency status
+// Get complete patch report
+router.get('/security-patches/report', (req, res) => {
+  const report = securityPatchManager.generatePatchReport();
+
+  return res.json({
+    success: true,
+    data: report,
+  });
 });
 
-router.get('/deployment-status', (req, res) => {
-  res.json(deploymentStatus);
+// Get encryption security status
+router.get('/encryption-status', (req, res) => {
+  const status = encryptionManager.getEncryptionStatus();
+
+  return res.json({
+    success: true,
+    data: status,
+  });
+});
+
+// Rotate encryption key
+router.post('/key-rotation', (req, res) => {
+  const result = encryptionManager.rotateEncryptionKey();
+
+  return res.json({
+    success: true,
+    message: result.message,
+    rotatedAt: result.rotatedAt,
+  });
+});
+
+// Get encryption audit logs
+router.get('/encryption-audit', (req, res) => {
+  const logs = encryptionManager.getEncryptionAuditLogs();
+
+  return res.json({
+    success: true,
+    data: logs,
+  });
+});
+
+router.get('/database/status', (req, res) => {
+  res.json({
+    success: true,
+    data: databaseFailoverManager.getFailoverReport(),
+  });
+});
+
+router.get('/security/report', (req, res) => {
+  res.json({
+    success: true,
+    data: apiSecurityManager.getSecurityReport(),
+  });
 });
 
 export default router;

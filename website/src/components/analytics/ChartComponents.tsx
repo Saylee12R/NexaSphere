@@ -21,8 +21,8 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
   return (
     <div
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: `1px solid ${hovered ? 'rgba(204,17,17,0.25)' : 'rgba(255,255,255,0.07)'}`,
+        background: 'var(--bg-card, var(--card-bg, rgba(255,255,255,0.03)))',
+        border: `1px solid ${hovered ? 'var(--border-hover, rgba(204,17,17,0.35))' : 'var(--border-color, rgba(255,255,255,0.08))'}`,
         borderRadius: '14px',
         padding: '1.4rem 1.5rem',
         display: 'flex',
@@ -41,7 +41,7 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
             fontFamily: "'Orbitron', sans-serif",
             fontSize: '1rem',
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--text-primary, var(--t1, #ffffff))',
             letterSpacing: '0.05em',
             margin: '0 0 0.25rem',
           }}
@@ -55,7 +55,7 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
               fontSize: '0.78rem',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'var(--text-secondary, var(--t2, rgba(255,255,255,0.5)))',
               margin: 0,
             }}
           >
@@ -73,7 +73,7 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(10,10,10,0.8)',
+              background: 'var(--bg-overlay, rgba(0,0,0,0.65))',
               zIndex: 10,
               borderRadius: '8px',
             }}
@@ -83,8 +83,8 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
                 width: '28px',
                 height: '28px',
                 borderRadius: '50%',
-                border: '3px solid rgba(255,255,255,0.08)',
-                borderTop: '3px solid #CC1111',
+                border: '3px solid var(--border-color, rgba(255,255,255,0.08))',
+                borderTop: '3px solid var(--c1, #cc1111)',
                 animation: 'spin 0.7s linear infinite',
               }}
             />
@@ -115,21 +115,21 @@ export const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, l
     return (
       <div
         style={{
-          background: '#0d0d0d',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'var(--bg-secondary, var(--bg2, #0d0d0d))',
+          border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
           borderRadius: '10px',
           padding: '0.75rem 1rem',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow-card, 0 8px 32px rgba(0,0,0,0.4))',
           fontFamily: "'Rajdhani', sans-serif",
         }}
       >
         <p
           style={{
-            color: 'rgba(255,255,255,0.7)',
+            color: 'var(--text-primary, var(--t1, #ffffff))',
             fontWeight: 600,
             marginBottom: '0.5rem',
             paddingBottom: '0.5rem',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.08))',
             margin: '0 0 0.5rem',
           }}
         >
@@ -154,10 +154,21 @@ export const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, l
                 flexShrink: 0,
               }}
             />
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem' }}>
+            <span
+              style={{
+                color: 'var(--text-secondary, var(--t2, rgba(255,255,255,0.5)))',
+                fontSize: '0.82rem',
+              }}
+            >
               {entry.name}:
             </span>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.82rem' }}>
+            <span
+              style={{
+                color: 'var(--text-primary, var(--t1, #ffffff))',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+              }}
+            >
               {entry.value.toLocaleString()}
             </span>
           </div>

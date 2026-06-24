@@ -44,7 +44,7 @@ export const authRateLimiter = rateLimit({
   windowMs: AUTH_WINDOW_MS,
   max: AUTH_MAX_ATTEMPTS,
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: true,
   store: createRateLimitStore('auth-limit:'),
   handler: createRateLimitHandler('Authentication'),
 });
@@ -57,7 +57,7 @@ export const protectedActionRateLimiter = rateLimit({
   windowMs: AUTH_WINDOW_MS,
   max: AUTH_MAX_ATTEMPTS,
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: true,
   store: createRateLimitStore('protected-action-limit:'),
   handler: createRateLimitHandler('Protected Action'),
 });
@@ -70,7 +70,7 @@ export const passwordResetRateLimiter = rateLimit({
   windowMs: RESET_WINDOW_MS,
   max: RESET_MAX_ATTEMPTS,
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: true,
   store: createRateLimitStore('password-reset-limit:'),
   handler: (req, res, _next, options) => {
     const ipAddress = req.ip;

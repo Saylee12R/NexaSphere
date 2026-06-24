@@ -11,11 +11,13 @@ Nginx is placed at the front of the application architecture to act as a reverse
 ### Configuration (`gateway/nginx.conf`)
 
 - It defines an `upstream` block targeting the `api` service containers on port `8787`:
+
   ```nginx
   upstream backend_server {
       server api:8787;
   }
   ```
+
 - Because the `api` containers are deployed on a Docker custom network, Docker’s embedded DNS server dynamically resolves the `api` name to all running container IPs, performing round-robin load balancing.
 - HTTPS/SSL termination occurs at Nginx, routing secure client requests to backend containers.
 
@@ -43,11 +45,13 @@ When multiple instances of the backend API run concurrently, standard in-memory 
 ### 2.2 Socket.IO State Sharing
 
 - Real-time WebSockets are synchronized across all running instances using the `@socket.io/redis-adapter`:
+
   ```javascript
   const pubClient = getRedisClient();
   const subClient = pubClient.duplicate();
   io.adapter(createAdapter(pubClient, subClient));
   ```
+
 - This ensures that when a socket event is broadcast (e.g., notification alert), it is relayed across all scaled instances and reaches the correct client regardless of which server node they are connected to.
 
 ---

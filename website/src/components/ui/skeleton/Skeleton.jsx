@@ -25,7 +25,7 @@ export const Skeleton = ({
   for (let i = 0; i < count; i++) {
     elements.push(
       <span
-        key={i}
+        key={`skeleton-el-${i}`}
         className={`nx-skeleton ${animate ? 'nx-skeleton-animate' : ''} ${className}`}
         style={{
           width: width || '100%',
@@ -55,7 +55,7 @@ export const SkeletonText = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap }}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
-          key={i}
+          key={`skeleton-text-line-${i}`}
           animate={animate}
           height="1em"
           width={i === lines - 1 ? lastLineWidth : '100%'}

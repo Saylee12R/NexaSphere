@@ -130,3 +130,5 @@ ci-logs.txt
 *_EXAMPLE*.js
 *_EXAMPLE*.jsx
 vault-secrets.json
+visual-tests/output/
+visual-tests/report/

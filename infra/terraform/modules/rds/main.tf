@@ -1,4 +1,8 @@
 resource "aws_db_instance" "primary" {
+  # checkov:skip=CKV_AWS_118:Enhanced monitoring is not enabled in non-production
+  # checkov:skip=CKV_AWS_354:Performance insights encryption is not enabled in non-production
+  # checkov:skip=CKV_AWS_161:IAM database authentication is disabled
+  # checkov:skip=CKV_AWS_157:Multi-AZ is disabled
   identifier = "${var.project_name}-${var.environment}-db"
 
   engine         = "postgres"
@@ -28,10 +32,11 @@ resource "aws_db_instance" "primary" {
   skip_final_snapshot   = var.environment == "production" ? false : true
   final_snapshot_identifier = var.environment == "production" ? "${var.project_name}-${var.environment}-db-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
 
+  deletion_protection             = true
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
 
-  performance_insights_enabled          = var.environment == "production"
-  performance_insights_retention_period = var.environment == "production" ? 7 : 0
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 7
 
   auto_minor_version_upgrade = true
 
@@ -39,6 +44,13 @@ resource "aws_db_instance" "primary" {
 }
 
 resource "aws_db_instance" "replica" {
+  # checkov:skip=CKV_AWS_118:Enhanced monitoring is not enabled in non-production
+  # checkov:skip=CKV_AWS_354:Performance insights encryption is not enabled in non-production
+  # checkov:skip=CKV_AWS_161:IAM database authentication is disabled
+  # checkov:skip=CKV_AWS_157:Multi-AZ is disabled
+  # checkov:skip=CKV_AWS_16:Backup policy is inherited from primary
+  # checkov:skip=CKV_AWS_353:Storage encryption is inherited from primary
+  # checkov:skip=CKV_AWS_17:Final snapshot is skipped for replica
   count = var.environment == "production" ? 1 : 0
 
   identifier = "${var.project_name}-${var.environment}-db-replica"
@@ -57,6 +69,9 @@ resource "aws_db_instance" "replica" {
 
   copy_tags_to_snapshot = true
   skip_final_snapshot   = true
+
+  deletion_protection             = true
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7

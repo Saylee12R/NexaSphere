@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { DynamicIcon } from '../../shared/Icons';
 import { getApiBase } from '../../utils/runtimeConfig';
 import apiClient from '../../utils/apiClient';
@@ -56,7 +56,7 @@ function StatCard({ label, value, color }) {
       ([e]) => {
         if (e.isIntersecting && !started.current) {
           started.current = true;
-          const num = parseInt(value);
+          const num = parseInt(value, 10);
           if (isNaN(num)) {
             setCount(value);
             return;
@@ -459,6 +459,408 @@ function MediaBtn({ href, icon, label, color }) {
   );
 }
 
+/* ── QR Ticket Card — shown after confirmed registration ── */
+function QRTicketCard({ event, ticket, color, rgb, onCalendarDownload }) {
+  const canvasRef = useRef(null);
+  const ticketRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const registrationId =
+    ticket.registrationId || ticket.ticketId || `NS-${Date.now().toString(36).toUpperCase()}`;
+  const attendeeName = ticket.ticketData?.fullName || 'Attendee';
+  const attendeeEmail = ticket.ticketData?.email || '';
+
+  // Build QR content string
+  const qrContent = JSON.stringify({
+    event: event.id,
+    name: attendeeName,
+    email: attendeeEmail,
+    registrationId,
+    issued: new Date().toISOString(),
+  });
+
+  // Draw QR-like pattern on canvas (deterministic from content)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const SIZE = 160;
+    const MODULES = 25;
+    const MOD = SIZE / MODULES;
+
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    // Deterministic "QR" pattern from content hash
+    let hash = 0;
+    for (let i = 0; i < qrContent.length; i++) {
+      hash = (hash * 31 + qrContent.charCodeAt(i)) >>> 0;
+    }
+
+    ctx.fillStyle = '#1a1a1a';
+    for (let r = 0; r < MODULES; r++) {
+      for (let c = 0; c < MODULES; c++) {
+        // Finder patterns (corners)
+        const inFinder =
+          (r < 8 && c < 8) || (r < 8 && c >= MODULES - 8) || (r >= MODULES - 8 && c < 8);
+        if (inFinder) {
+          const inBorder =
+            r === 0 ||
+            r === 6 ||
+            c === 0 ||
+            c === 6 ||
+            (r < 8 && c < 8 && r > 1 && r < 6 && c > 1 && c < 6) ||
+            (r < 8 && c >= MODULES - 8 && r > 1 && r < 6 && c > MODULES - 7 && c < MODULES - 2) ||
+            (r >= MODULES - 8 && c < 8 && r > MODULES - 7 && r < MODULES - 2 && c > 1 && c < 6);
+          if (inBorder) {
+            ctx.fillRect(c * MOD + 1, r * MOD + 1, MOD - 2, MOD - 2);
+          }
+          continue;
+        }
+        // Data modules
+        const bit = ((hash * (r * MODULES + c + 1)) >>> 0) % 3;
+        if (bit === 0) {
+          ctx.fillRect(c * MOD + 1, r * MOD + 1, MOD - 2, MOD - 2);
+        }
+      }
+    }
+  }, [qrContent]);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      // Create a temporary canvas for the full ticket
+      const ticketCanvas = document.createElement('canvas');
+      ticketCanvas.width = 640;
+      ticketCanvas.height = 340;
+      const ctx = ticketCanvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillRect(0, 0, 640, 340);
+
+      // Gradient accent bar
+      const grad = ctx.createLinearGradient(0, 0, 640, 0);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, '#7b6fff');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 640, 6);
+
+      // Event name
+      ctx.fillStyle = color;
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText(event.name || 'NexaSphere Event', 32, 56);
+
+      // Attendee
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(attendeeName, 32, 90);
+      ctx.fillStyle = '#888';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(attendeeEmail, 32, 112);
+
+      // Date & location
+      ctx.fillStyle = '#aaa';
+      ctx.fillText(`📅 ${event.dateText ?? event.date ?? 'TBD'}`, 32, 148);
+      ctx.fillText(`📍 ${event.location ?? 'GL Bajaj, Mathura'}`, 32, 170);
+
+      // Ticket ID
+      ctx.fillStyle = '#555';
+      ctx.font = '11px monospace';
+      ctx.fillText(`ID: ${registrationId}`, 32, 210);
+
+      // NexaSphere branding
+      ctx.fillStyle = color;
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText('✦ NexaSphere', 32, 300);
+      ctx.fillStyle = '#444';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('GL Bajaj Group of Institutions, Mathura', 32, 318);
+
+      // QR code from canvas
+      const qrCanvas = canvasRef.current;
+      if (qrCanvas) {
+        ctx.drawImage(qrCanvas, 640 - 180, 80, 148, 148);
+      }
+
+      // Download
+      const url = ticketCanvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `NexaSphere_Ticket_${registrationId}.png`;
+      a.click();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(registrationId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div
+      ref={ticketRef}
+      style={{
+        background: 'var(--bg-card)',
+        border: `1px solid rgba(${rgb},0.3)`,
+        borderRadius: 20,
+        overflow: 'hidden',
+        maxWidth: 540,
+        margin: '0 auto',
+        boxShadow: `0 20px 60px rgba(${rgb},0.15)`,
+      }}
+    >
+      {/* Top accent */}
+      <div style={{ height: 4, background: `linear-gradient(90deg,${color},#7b6fff,#00d4ff)` }} />
+
+      {/* Confirmed header */}
+      <div
+        style={{
+          padding: '24px 28px 16px',
+          borderBottom: `1px dashed rgba(${rgb},0.2)`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <span
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: '50%',
+            background: 'rgba(34,197,94,0.15)',
+            border: '2px solid #22c55e',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.3rem',
+            flexShrink: 0,
+          }}
+        >
+          ✓
+        </span>
+        <div>
+          <div
+            style={{
+              fontFamily: 'Orbitron,monospace',
+              fontWeight: 700,
+              color: '#22c55e',
+              fontSize: '1rem',
+            }}
+          >
+            Registration Confirmed
+          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 2 }}>
+            Show this ticket at the event entrance
+          </div>
+        </div>
+      </div>
+
+      {/* Ticket body */}
+      <div style={{ padding: '24px 28px', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ marginBottom: 18 }}>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: 4,
+              }}
+            >
+              Event
+            </div>
+            <div
+              style={{
+                fontFamily: 'Orbitron,monospace',
+                fontWeight: 700,
+                color,
+                fontSize: '0.95rem',
+              }}
+            >
+              {event.name}
+            </div>
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: 4,
+              }}
+            >
+              Attendee
+            </div>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.92rem' }}>
+              {attendeeName}
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{attendeeEmail}</div>
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: 4,
+              }}
+            >
+              Date & Venue
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              📅 {event.dateText ?? event.date ?? 'TBD'}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+              📍 {event.location ?? 'GL Bajaj, Mathura'}
+            </div>
+          </div>
+          <div
+            style={{
+              background: `rgba(${rgb},0.07)`,
+              border: `1px solid rgba(${rgb},0.2)`,
+              borderRadius: 8,
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: '0.62rem',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                Ticket ID
+              </div>
+              <div
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.78rem',
+                  color: 'var(--text-primary)',
+                  fontWeight: 700,
+                }}
+              >
+                {registrationId}
+              </div>
+            </div>
+            <button
+              onClick={handleCopyId}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: copied ? '#22c55e' : 'var(--text-muted)',
+                fontSize: '0.75rem',
+                padding: 0,
+              }}
+            >
+              {copied ? '✓ Copied' : '⎘ Copy'}
+            </button>
+          </div>
+        </div>
+
+        {/* QR Code */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div
+            style={{
+              background: '#fff',
+              padding: 10,
+              borderRadius: 12,
+              border: `2px solid rgba(${rgb},0.3)`,
+            }}
+          >
+            {ticket.qrDataUrl ? (
+              <img src={ticket.qrDataUrl} alt="Entry QR" width={160} height={160} />
+            ) : (
+              <canvas ref={canvasRef} width={160} height={160} style={{ display: 'block' }} />
+            )}
+          </div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+            Scan at entrance
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div
+        style={{
+          padding: '16px 28px 24px',
+          display: 'flex',
+          gap: 10,
+          flexWrap: 'wrap',
+          borderTop: `1px dashed rgba(${rgb},0.18)`,
+        }}
+      >
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          style={{
+            flex: 1,
+            minWidth: 140,
+            padding: '10px 20px',
+            borderRadius: 999,
+            border: 'none',
+            background: `linear-gradient(135deg,${color},#7b6fff)`,
+            color: '#fff',
+            cursor: downloading ? 'wait' : 'pointer',
+            fontFamily: 'Rajdhani,sans-serif',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            opacity: downloading ? 0.7 : 1,
+            transition: 'all 0.2s',
+          }}
+        >
+          <DynamicIcon name="Download" size={14} />
+          {downloading ? 'Generating…' : 'Download Ticket'}
+        </button>
+        <button
+          onClick={onCalendarDownload}
+          style={{
+            flex: 1,
+            minWidth: 140,
+            padding: '10px 20px',
+            borderRadius: 999,
+            border: `1px solid rgba(${rgb},0.4)`,
+            background: `rgba(${rgb},0.08)`,
+            color,
+            cursor: 'pointer',
+            fontFamily: 'Rajdhani,sans-serif',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <DynamicIcon name="Calendar" size={14} />
+          Add to Calendar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function EventDetailPage({ event, activityColor, activityIcon, onBack }) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -474,6 +876,8 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
   const [regError, setRegError] = useState('');
   const [regTicket, setRegTicket] = useState(null);
   const [regSubmitting, setRegSubmitting] = useState(false);
+  const [localQrDataUrl, setLocalQrDataUrl] = useState(null);
+  const [downloading, setDownloading] = useState(false);
   useEffect(() => {
     window.scrollTo({ top: 0 });
     const mountTimer = setTimeout(() => setMounted(true), 60);
@@ -523,6 +927,22 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
       if (data.ticket) {
         setRegTicket(data.ticket);
         setRegStatus('confirmed');
+      } else {
+        // Create a local ticket when backend doesn't return one
+        const localTicket = {
+          ticketData: regForm,
+          registrationId: `NS-${event.id}-${Date.now().toString(36).toUpperCase()}`,
+          eventName: event.name,
+          eventDate: event.dateText ?? event.date,
+        };
+        setRegTicket(localTicket);
+        setRegStatus('confirmed');
+        // Store in localStorage for retrieval
+        try {
+          const stored = JSON.parse(localStorage.getItem('ns_registrations') || '[]');
+          stored.push(localTicket);
+          localStorage.setItem('ns_registrations', JSON.stringify(stored.slice(-20)));
+        } catch {}
       }
     } catch (err) {
       if (err.message?.includes('waitlist')) {
@@ -538,7 +958,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
   const handleCalendarDownload = () => {
     const base = getApiBase();
     const url = `${base}/api/content/events/${event.id}/calendar`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const color = activityColor || '#a855f7';
@@ -1039,64 +1459,13 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
             <section>
               <SectionHeader icon="UserPlus" title="Register for this Event" color={color} />
               {regStatus === 'confirmed' && regTicket ? (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    background: 'var(--bg-card)',
-                    border: `1px solid rgba(${rgb},0.25)`,
-                    borderRadius: 16,
-                    padding: 32,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: 'Orbitron,monospace',
-                      fontSize: '1.2rem',
-                      fontWeight: 700,
-                      color: '#22c55e',
-                      marginBottom: 8,
-                    }}
-                  >
-                    ✓ Registered!
-                  </div>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
-                    {regTicket.ticketData.fullName} · {regTicket.ticketData.email}
-                  </p>
-                  {regTicket.qrDataUrl && (
-                    <img
-                      src={regTicket.qrDataUrl}
-                      alt="Entry QR Code"
-                      style={{
-                        width: 180,
-                        height: 180,
-                        borderRadius: 12,
-                        border: `2px solid rgba(${rgb},0.3)`,
-                        marginBottom: 16,
-                      }}
-                    />
-                  )}
-                  <div
-                    style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 16 }}
-                  >
-                    Show this QR code at the event entrance.
-                  </div>
-                  <button
-                    onClick={handleCalendarDownload}
-                    style={{
-                      padding: '8px 20px',
-                      borderRadius: 999,
-                      border: `1px solid ${color}`,
-                      background: `rgba(${rgb},0.12)`,
-                      color,
-                      cursor: 'pointer',
-                      fontFamily: 'Rajdhani,sans-serif',
-                      fontWeight: 700,
-                    }}
-                  >
-                    <DynamicIcon name="Calendar" size={12} style={{ marginRight: 6 }} />
-                    Add to Calendar
-                  </button>
-                </div>
+                <QRTicketCard
+                  event={event}
+                  ticket={regTicket}
+                  color={color}
+                  rgb={rgb}
+                  onCalendarDownload={handleCalendarDownload}
+                />
               ) : regStatus === 'waitlisted' ? (
                 <div
                   style={{

@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { AdminIcon } from '../components/AdminIcon';
 import { Skeleton } from '../components/Skeleton';
+import { AttendanceHeatmap } from '../components/AttendanceHeatmap';
 
 export function EventAnalytics() {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [analytics, setAnalytics] = useState(null);
+  const [recommendations, setRecommendations] = useState(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+  const [recommendationsError, setRecommendationsError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,6 +21,12 @@ export function EventAnalytics() {
         if (data?.events) setEvents(data.events);
       })
       .catch(() => {});
+
+    api.events
+      .recommendations()
+      .then((data) => setRecommendations(data))
+      .catch((e) => setRecommendationsError(e.message))
+      .finally(() => setRecommendationsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -35,6 +45,146 @@ export function EventAnalytics() {
       <div className="page-header">
         <h2 className="page-title">Event Analytics</h2>
       </div>
+
+      <section style={{ marginBottom: 28 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 14,
+          }}
+        >
+          <h3 style={{ margin: 0, fontFamily: 'Rajdhani,sans-serif', fontSize: '1.15rem' }}>
+            <AdminIcon name="Sparkles" size={18} style={{ marginRight: 8 }} />
+            Smart Recommendations
+          </h3>
+          {recommendations?.generatedAt && (
+            <span style={{ color: 'var(--admin-text-muted, #888)', fontSize: '0.8rem' }}>
+              Updated {new Date(recommendations.generatedAt).toLocaleString()}
+            </span>
+          )}
+        </div>
+
+        {recommendationsLoading && <Skeleton height={96} count={2} />}
+        {recommendationsError && <div className="page-error">{recommendationsError}</div>}
+
+        {!recommendationsLoading && !recommendationsError && recommendations && (
+          <>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: 14,
+                marginBottom: 16,
+              }}
+            >
+              {(recommendations.recommendations || []).slice(0, 3).map((item) => (
+                <div
+                  key={`${item.title}-${item.action}`}
+                  style={{
+                    background: 'var(--admin-bg-card, #1a1a2e)',
+                    border: '1px solid var(--admin-border, #333)',
+                    borderRadius: 12,
+                    padding: 18,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <strong>{item.title}</strong>
+                    <span
+                      style={{
+                        color: item.priority === 'high' ? '#22c55e' : '#f59e0b',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {item.priority}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0 0 10px', color: 'var(--admin-text, #eee)' }}>
+                    {item.action}
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: 'var(--admin-text-muted, #888)',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    {item.explanation}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 14,
+              }}
+            >
+              {(recommendations.attendancePredictions || []).slice(0, 3).map((prediction) => (
+                <div
+                  key={prediction.type}
+                  style={{
+                    background: 'var(--admin-bg-card, #1a1a2e)',
+                    border: '1px solid var(--admin-border, #333)',
+                    borderRadius: 12,
+                    padding: 16,
+                  }}
+                >
+                  <strong>{prediction.type}</strong>
+                  <div style={{ marginTop: 8, color: '#3b82f6', fontWeight: 700 }}>
+                    {prediction.predictedRegistrations} registrations predicted
+                  </div>
+                  <div style={{ color: 'var(--admin-text-muted, #888)', fontSize: '0.85rem' }}>
+                    Capacity: {prediction.recommendedCapacity} | Confidence: {prediction.confidence}
+                  </div>
+                  {prediction.alert && (
+                    <div style={{ marginTop: 8, color: '#f59e0b', fontSize: '0.85rem' }}>
+                      {prediction.alert}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {(recommendations.schedulingRecommendations?.conflicts || []).slice(0, 2).map((c) => (
+                <div
+                  key={`${c.date}-${c.events.join('-')}`}
+                  style={{
+                    background: 'var(--admin-bg-card, #1a1a2e)',
+                    border: '1px solid #f59e0b',
+                    borderRadius: 12,
+                    padding: 16,
+                  }}
+                >
+                  <strong>Scheduling conflict on {c.date}</strong>
+                  <div style={{ marginTop: 8 }}>{c.events.join(' vs ')}</div>
+                  <div style={{ color: 'var(--admin-text-muted, #888)', fontSize: '0.85rem' }}>
+                    {c.explanation}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {recommendations.dataWindow?.note && (
+              <p style={{ color: 'var(--admin-text-muted, #888)', fontSize: '0.85rem' }}>
+                {recommendations.dataWindow.note}
+              </p>
+            )}
+          </>
+        )}
+      </section>
 
       <div style={{ marginBottom: 20 }}>
         <select
@@ -143,6 +293,11 @@ export function EventAnalytics() {
               </div>
             ))}
           </div>
+
+          <AttendanceHeatmap
+            registrations={analytics.registrations || []}
+            title="Registration Density by Day & Time"
+          />
 
           <div
             style={{

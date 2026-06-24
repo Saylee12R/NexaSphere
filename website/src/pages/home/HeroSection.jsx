@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { BRAND_LOGO_ICON } from '../../shared/brandAssets';
 import { IconArrowRight, IconSpark, DynamicIcon } from '../../shared/Icons';
@@ -6,6 +7,15 @@ import { IconArrowRight, IconSpark, DynamicIcon } from '../../shared/Icons';
 /* â”€â”€ Ripple Button â”€â”€ */
 function RippleBtn({ cls, children, href, onClick }) {
   const ref = useRef(null);
+  const timeoutsRef = useRef([]);
+
+  useEffect(() => {
+    const current = timeoutsRef.current;
+    return () => {
+      current.forEach(clearTimeout);
+    };
+  }, []);
+
   const go = (e) => {
     const b = ref.current;
     if (!b) return;
@@ -15,7 +25,8 @@ function RippleBtn({ cls, children, href, onClick }) {
     el.style.left = e.clientX - r.left + 'px';
     el.style.top = e.clientY - r.top + 'px';
     b.appendChild(el);
-    setTimeout(() => el.remove(), 700);
+    const t = setTimeout(() => el.remove(), 700);
+    timeoutsRef.current.push(t);
     onClick && onClick(e);
   };
   if (href)
@@ -85,7 +96,7 @@ function OrbitRings({ isLight }) {
       }}
     >
       {rings.map((rg, i) => (
-        <g key={i} transform={tilts[i]}>
+        <g key={`svg-ring-${i}`} transform={tilts[i]}>
           <ellipse
             cx="250"
             cy="250"
@@ -176,11 +187,12 @@ function Logo3D({ ready, isLight }) {
 
 /* â”€â”€ Stats bar â”€â”€ */
 function StatsBar({ vis, isLight }) {
+  const { t } = useTranslation();
   const items = [
-    { v: '12', l: 'Members', i: 'Users' },
-    { v: '8', l: 'Activities', i: 'Activity' },
-    { v: '1', l: 'Events Done', i: 'Calendar' },
-    { v: '∞', l: 'Ideas', i: 'Lightbulb' },
+    { v: '12', l: t('hero.stats.members', 'Members'), i: 'Users' },
+    { v: '8', l: t('hero.stats.activities', 'Activities'), i: 'Activity' },
+    { v: '1', l: t('hero.stats.events_done', 'Events Done'), i: 'Calendar' },
+    { v: '∞', l: t('hero.stats.ideas', 'Ideas'), i: 'Lightbulb' },
   ];
   return (
     <div
@@ -200,7 +212,7 @@ function StatsBar({ vis, isLight }) {
     >
       {items.map((s, i) => (
         <div
-          key={i}
+          key={`stat-item-${i}`}
           style={{
             flex: 1,
             padding: '13px 6px',
@@ -277,7 +289,7 @@ function Atmosphere({ isLight }) {
       >
         {Array.from({ length: 9 }, (_, i) => (
           <div
-            key={i}
+            key={`circle-${i}`}
             style={{
               position: 'absolute',
               left: `${8 + i * 10}%`,
@@ -334,6 +346,7 @@ function Atmosphere({ isLight }) {
 }
 
 export default function HeroSection({ onTabChange, onApply, onJoin, theme = 'dark' }) {
+  const { t } = useTranslation();
   const [ready, setReady] = useState(false);
   const [statsVis, setStatsVis] = useState(false);
   const isLight = theme === 'light';
@@ -406,7 +419,7 @@ export default function HeroSection({ onTabChange, onApply, onJoin, theme = 'dar
             opacity: 1,
           }}
         >
-          GL Bajaj&apos;s Student-Driven Tech Ecosystem
+          {t('hero.tagline', "GL Bajaj's Student-Driven Tech Ecosystem")}
           <span
             style={{
               animation: 'blink 1s step-end infinite',
@@ -445,12 +458,12 @@ export default function HeroSection({ onTabChange, onApply, onJoin, theme = 'dar
               onClick={() => (onJoin ? onJoin() : onTabChange('Core Team'))}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                Join as Member <IconArrowRight />
+                {t('hero.join_as_member', 'Join as Member')} <IconArrowRight />
               </span>
             </RippleBtn>
             <RippleBtn cls="btn-outline" onClick={() => onTabChange('Core Team')}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                Core Team <IconArrowRight />
+                {t('hero.core_team', 'Core Team')} <IconArrowRight />
               </span>
             </RippleBtn>
           </div>
@@ -474,14 +487,14 @@ export default function HeroSection({ onTabChange, onApply, onJoin, theme = 'dar
                 lineHeight: 1.5,
               }}
             >
-              Want to be part of the NexaSphere Core Team?
+              {t('hero.want_to_be_part', 'Want to be part of the NexaSphere Core Team?')}
             </p>
             <RippleBtn
               cls="btn-join"
               onClick={() => (onApply ? onApply() : onTabChange('Core Team'))}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                Apply for Core Team <IconSpark />
+                {t('hero.apply_for_core_team', 'Apply for Core Team')} <IconSpark />
               </span>
             </RippleBtn>
           </div>
@@ -526,7 +539,7 @@ export default function HeroSection({ onTabChange, onApply, onJoin, theme = 'dar
             fontFamily: "'Space Mono',monospace",
           }}
         >
-          SCROLL
+          {t('hero.scroll', 'SCROLL')}
         </div>
         <div
           className="scroll-indicator-line"

@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../utils/apiClient';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
+import { useStudentAuth } from '../../context/StudentAuthContext';
+import { NotificationSkeleton } from '../../components/ui/skeleton/NotificationSkeleton';
+
 const TYPE_ICONS = {
   message: '💬',
   connection: '🔗',
@@ -9,7 +12,10 @@ const TYPE_ICONS = {
   system: '🔔',
 };
 
-export default function NotificationHistoryPage({ userId = 'global' }) {
+export default function NotificationHistoryPage({ userId }) {
+  const { user: authUser } = useStudentAuth();
+  const effectiveUserId = userId ?? authUser?.sub ?? authUser?.id;
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
@@ -20,11 +26,12 @@ export default function NotificationHistoryPage({ userId = 'global' }) {
 
   const fetchNotifications = useCallback(
     async (reset = false) => {
+      if (!effectiveUserId) return;
       setLoading(true);
       try {
         const currentOffset = reset ? 0 : offset;
         const data = await apiClient(
-          `/api/notifications?userId=${userId}&offset=${currentOffset}&limit=${limit}`
+          `/api/notifications?userId=${effectiveUserId}&offset=${currentOffset}&limit=${limit}`
         );
         const list = data.notifications || [];
         if (reset) {
@@ -39,13 +46,13 @@ export default function NotificationHistoryPage({ userId = 'global' }) {
       }
       setLoading(false);
     },
-    [userId, offset]
+    [effectiveUserId, offset]
   );
 
   useEffect(() => {
     setOffset(0);
     fetchNotifications(true);
-  }, [userId]);
+  }, [effectiveUserId]);
 
   const markRead = useCallback(
     async (id) => {
@@ -54,13 +61,13 @@ export default function NotificationHistoryPage({ userId = 'global' }) {
         await apiClient('/api/notifications/mark-read', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, userId }),
+          body: JSON.stringify({ id, userId: effectiveUserId }),
         });
       } catch {
         /* ignore */
       }
     },
-    [userId]
+    [effectiveUserId]
   );
 
   const markAllRead = useCallback(async () => {
@@ -69,22 +76,22 @@ export default function NotificationHistoryPage({ userId = 'global' }) {
       await apiClient('/api/notifications/mark-all-read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId: effectiveUserId }),
       });
     } catch {
       /* ignore */
     }
-  }, [userId]);
+  }, [effectiveUserId]);
 
   const clearAll = useCallback(async () => {
     setNotifications([]);
     setHasMore(false);
     try {
-      await apiClient(`/api/notifications?userId=${userId}`, { method: 'DELETE' });
+      await apiClient(`/api/notifications?userId=${effectiveUserId}`, { method: 'DELETE' });
     } catch {
       /* ignore */
     }
-  }, [userId]);
+  }, [effectiveUserId]);
 
   const filteredList = filter === 'all' ? notifications : notifications.filter((n) => !n.isRead);
 
@@ -152,54 +159,65 @@ export default function NotificationHistoryPage({ userId = 'global' }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {filteredList.map((n) => (
-          <div
-            key={n.id}
-            onClick={() => {
-              if (!n.isRead) markRead(n.id);
-              if (n.link) navigate(n.link);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '1rem',
-              padding: '1rem 1.25rem',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              background: n.isRead ? 'transparent' : 'rgba(204,17,17,0.06)',
-              border: '1px solid',
-              borderColor: n.isRead ? 'var(--border)' : 'rgba(204,17,17,0.15)',
-              transition: 'background 0.15s',
-            }}
-          >
-            <span style={{ fontSize: '1.3rem' }}>{TYPE_ICONS[n.type] || '🔔'}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: n.isRead ? 400 : 600, color: 'var(--t1)' }}>{n.title}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--t2)', marginTop: '2px' }}>
-                {n.message}
+      {loading && filteredList.length === 0 ? (
+        <NotificationSkeleton count={4} />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {filteredList.map((n) => (
+            <div
+              key={n.id}
+              onClick={() => {
+                if (!n.isRead) markRead(n.id);
+                if (n.link) navigate(n.link);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '1rem',
+                padding: '1rem 1.25rem',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                background: n.isRead ? 'transparent' : 'rgba(204,17,17,0.06)',
+                border: '1px solid',
+                borderColor: n.isRead ? 'var(--border)' : 'rgba(204,17,17,0.15)',
+                transition: 'background 0.15s',
+              }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>{TYPE_ICONS[n.type] || '🔔'}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: n.isRead ? 400 : 600, color: 'var(--t1)' }}>
+                  {n.title}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--t2)', marginTop: '2px' }}>
+                  {n.message}
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--t2)',
+                    marginTop: '4px',
+                    opacity: 0.6,
+                  }}
+                >
+                  {formatRelativeTime(n.createdAt)}
+                </div>
               </div>
-              <div
-                style={{ fontSize: '0.75rem', color: 'var(--t2)', marginTop: '4px', opacity: 0.6 }}
-              >
-                {formatRelativeTime(n.createdAt)}
-              </div>
+              {!n.isRead && (
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: 'var(--c1)',
+                    flexShrink: 0,
+                    marginTop: '6px',
+                  }}
+                />
+              )}
             </div>
-            {!n.isRead && (
-              <span
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: 'var(--c1)',
-                  flexShrink: 0,
-                  marginTop: '6px',
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {hasMore && (
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>

@@ -181,3 +181,127 @@ export const getEventCalendar = wrapAsync(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${event.name || 'event'}.ics"`);
   return res.send(ics);
 });
+
+export const getFullCalendarFeed = wrapAsync(async (req, res) => {
+  const events = await eventsRepository.list({ page: 1, limit: 100 });
+  const allEvents = events?.rows || [];
+
+  const calendarContent = allEvents
+    .map((ev) =>
+      calendarService.generateIcsEvent({
+        name: ev.name,
+        dateText: ev.date_text,
+        description: ev.description,
+        location: ev.location,
+        eventId: ev.id,
+      })
+    )
+    .join('\n');
+
+  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//NexaSphere//Events//EN\n${calendarContent}\nEND:VCALENDAR`;
+
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="nexasphere-events.ics"');
+  return res.send(ics);
+});
+
+export const cancelRegistration = wrapAsync(async (req, res) => {
+  const eventId = String(req.params.eventId || '').trim();
+  const sanitizedEmail = String(req.body.email || '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 140);
+
+  if (!eventId || !EVENT_ID_REGEX.test(eventId)) {
+    return res.status(400).json({ error: 'Invalid event ID' });
+  }
+  if (!sanitizedEmail || !EMAIL_REGEX.test(sanitizedEmail)) {
+    return res.status(400).json({ error: 'Valid email address is required' });
+  }
+
+  const event = await eventsRepository.getById(eventId);
+  if (!event) {
+    return res.status(404).json({ error: 'Event not found' });
+  }
+
+  const cancelled = await registrationsRepository.cancelConfirmedRegistration(
+    eventId,
+    sanitizedEmail
+  );
+  if (!cancelled) {
+    return res.status(404).json({ error: 'No confirmed registration found for this email' });
+  }
+
+  const promoted = await registrationsRepository.promoteFromWaitlist(eventId);
+
+  if (promoted) {
+    try {
+      emitToRole('events_admin', 'admin:waitlist-promoted', {
+        eventId,
+        userName: promoted.full_name,
+        email: promoted.email,
+        timestamp: new Date(),
+      });
+      broadcastSSEEvent('waitlist_promotion', {
+        eventId,
+        email: promoted.email,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (realtimeErr) {
+      console.error('[EventRegistration] Failed to broadcast promotion:', realtimeErr);
+    }
+  }
+
+  return res.status(200).json({
+    cancelled: true,
+    promoted: promoted ? { fullName: promoted.full_name, email: promoted.email } : null,
+  });
+});
+
+export const getWaitlistPosition = wrapAsync(async (req, res) => {
+  const eventId = String(req.params.eventId || '').trim();
+  const email = String(req.query.email || '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 140);
+
+  if (!eventId || !EVENT_ID_REGEX.test(eventId)) {
+    return res.status(400).json({ error: 'Invalid event ID' });
+  }
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ error: 'Valid email address is required' });
+  }
+
+  const [position, totalWaitlisted] = await Promise.all([
+    registrationsRepository.getPosition(eventId, email),
+    registrationsRepository.getWaitlistCount(eventId),
+  ]);
+
+  if (position === null) {
+    return res.status(404).json({ error: 'Not on the waitlist for this event' });
+  }
+
+  return res.status(200).json({ position, totalWaitlisted });
+});
+
+export const leaveWaitlist = wrapAsync(async (req, res) => {
+  const eventId = String(req.params.eventId || '').trim();
+  const sanitizedEmail = String(req.body.email || '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 140);
+
+  if (!eventId || !EVENT_ID_REGEX.test(eventId)) {
+    return res.status(400).json({ error: 'Invalid event ID' });
+  }
+  if (!sanitizedEmail || !EMAIL_REGEX.test(sanitizedEmail)) {
+    return res.status(400).json({ error: 'Valid email address is required' });
+  }
+
+  const removed = await registrationsRepository.removeFromWaitlist(eventId, sanitizedEmail);
+  if (!removed) {
+    return res.status(404).json({ error: 'No waitlist entry found for this email' });
+  }
+
+  return res.status(200).json({ removed: true });
+});

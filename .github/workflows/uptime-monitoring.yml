@@ -1,0 +1,71 @@
+name: Uptime Monitoring
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: uptime-monitoring
+  cancel-in-progress: false
+
+jobs:
+  uptime-check:
+    name: Uptime Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Ping API Health Endpoint
+        id: ping
+        run: |
+          URL="${{ secrets.APP_URL || 'https://nexasphere.app/api/health' }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 "$URL")
+          echo "status_code=$HTTP_CODE" >> "$GITHUB_OUTPUT"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "API is healthy (HTTP $HTTP_CODE)"
+            echo "healthy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "API returned HTTP $HTTP_CODE"
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log Uptime Percentage
+        run: |
+          STATUS="${{ steps.ping.outputs.healthy }}"
+          if [ "$STATUS" = "true" ]; then
+            echo "UP :: Uptime: 100% (this check)"
+          else
+            echo "DOWN :: Uptime: 0% (this check)"
+          fi
+
+      - name: Create Alert Issue on Failure
+        if: steps.ping.outputs.healthy == 'false'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const runId = context.runId;
+            const statusCode = '${{ steps.ping.outputs.status_code }}';
+            const runUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${runId}`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Uptime Alert — Health check failed (HTTP ${statusCode})`,
+              body: `## Uptime Alert
+
+            The API health check returned a **non-200** response.
+
+            | Field | Value |
+            |---|---|
+            | **Status Code** | \`${statusCode}\` |
+            | **Workflow Run** | [\`#${runId}\`](${runUrl}) |
+            | **Timestamp (UTC)** | \`${new Date().toISOString()}\` |
+            | **Trigger** | \`${{ github.event_name }}\` |
+
+            The monitoring workflow will retry automatically in 5 minutes.
+            Please investigate the service status.
+            `
+            });

@@ -48,6 +48,7 @@ async function ensureSchema(client) {
       username VARCHAR(100) PRIMARY KEY,
       passkey_hash VARCHAR(255) NOT NULL,
       theme VARCHAR(50) DEFAULT 'glassmorphic',
+      customization JSONB DEFAULT '{}'::jsonb,
       visible_sections JSONB DEFAULT '{"quests": true, "roadmaps": true, "projects": true, "analytics": false}'::jsonb,
       social_links JSONB DEFAULT '{}'::jsonb,
       custom_domain VARCHAR(255),
@@ -183,6 +184,10 @@ function mapRow(row) {
   const raw = {
     username: row.username,
     theme: row.theme,
+    customization:
+      typeof row.customization === 'string'
+        ? JSON.parse(row.customization)
+        : row.customization || {},
     visibleSections:
       typeof row.visible_sections === 'string'
         ? JSON.parse(row.visible_sections)
@@ -238,6 +243,7 @@ export const portfolioRepository = {
     return sanitizePortfolioOutput({
       username: portfolio.username,
       theme: portfolio.theme,
+      customization: portfolio.customization || {},
       visibleSections: portfolio.visibleSections || {},
       socialLinks: portfolio.socialLinks || {},
       customDomain: portfolio.customDomain || '',
@@ -270,6 +276,10 @@ export const portfolioRepository = {
   async verifyPasskey(username, passkey, { allowNew = false } = {}) {
     const isDbAvailable = await ensureReady();
     const sanitizedUsername = canonicalizeUsername(username);
+
+    if (typeof passkey !== 'string' || passkey.length > 128) {
+      return false;
+    }
 
     let isValid;
 
@@ -324,9 +334,15 @@ export const portfolioRepository = {
     // jobs, seeders, tests).
     const clean = sanitizePortfolioRecord(data);
 
-    const sanitizedUsername = clean.username || canonicalizeUsername(data.username);
-    const passkeyHash = await hashPasskey(clean.passkey || data.passkey);
+    const passkeyVal = clean.passkey || data.passkey;
+    if (typeof passkeyVal !== 'string' || passkeyVal.length > 128) {
+      throw new Error('Passkey must be between 1 and 128 characters.');
+    }
 
+    const sanitizedUsername = clean.username || canonicalizeUsername(data.username);
+    const passkeyHash = await hashPasskey(passkeyVal);
+
+    const customization = clean.customization || {};
     const theme = clean.theme || 'glassmorphic';
     const visibleSections = clean.visibleSections;
     const socialLinks = clean.socialLinks;
@@ -347,12 +363,13 @@ export const portfolioRepository = {
         return await withDb(async (client) => {
           const { rows } = await client.query(
             `INSERT INTO portfolios (
-              username, passkey_hash, theme, visible_sections, social_links,
+              username, passkey_hash, theme, customization, visible_sections, social_links,
               custom_domain, seo_metadata, skills, badges, projects, roadmaps, bio, title, avatar_url, education, work_experience, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW())
             ON CONFLICT (username) DO UPDATE SET
               passkey_hash = EXCLUDED.passkey_hash,
               theme = EXCLUDED.theme,
+              customization = EXCLUDED.customization,
               visible_sections = EXCLUDED.visible_sections,
               social_links = EXCLUDED.social_links,
               custom_domain = EXCLUDED.custom_domain,
@@ -372,6 +389,7 @@ export const portfolioRepository = {
               sanitizedUsername,
               passkeyHash,
               theme,
+              JSON.stringify(customization),
               JSON.stringify(visibleSections),
               JSON.stringify(socialLinks),
               customDomain,
@@ -407,6 +425,7 @@ export const portfolioRepository = {
         username: sanitizedUsername,
         passkeyHash,
         theme,
+        customization,
         visibleSections,
         socialLinks,
         customDomain,

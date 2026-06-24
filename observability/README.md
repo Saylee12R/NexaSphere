@@ -36,14 +36,14 @@ cd server-python
 
 ## URLs (local)
 
-| Service       | URL                    | Credentials                                        |
-| ------------- | ---------------------- | -------------------------------------------------- |
-| Grafana       | http://localhost:3000  | admin / `nexasphere` (or `GRAFANA_ADMIN_PASSWORD`) |
-| Prometheus    | http://localhost:9090  | —                                                  |
-| Alertmanager  | http://localhost:9093  | —                                                  |
-| Kibana        | http://localhost:5601  | —                                                  |
-| Jaeger        | http://localhost:16686 | —                                                  |
-| Elasticsearch | http://localhost:9200  | security disabled (dev only)                       |
+| Service       | URL                      | Credentials                                        |
+| ------------- | ------------------------ | -------------------------------------------------- |
+| Grafana       | <http://localhost:3000>  | admin / `nexasphere` (or `GRAFANA_ADMIN_PASSWORD`) |
+| Prometheus    | <http://localhost:9090>  | —                                                  |
+| Alertmanager  | <http://localhost:9093>  | —                                                  |
+| Kibana        | <http://localhost:5601>  | —                                                  |
+| Jaeger        | <http://localhost:16686> | —                                                  |
+| Elasticsearch | <http://localhost:9200>  | security disabled (dev only)                       |
 
 ## Application configuration
 
@@ -123,11 +123,11 @@ Feeds `nexasphere_page_load_seconds` histogram.
 ## Team onboarding (5-minute walkthrough)
 
 1. **Start stack** — `docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d`
-2. **Grafana** — open http://localhost:3000 → folder **NexaSphere** → **System Overview**
-3. **Prometheus** — http://localhost:9090 → query `rate(http_requests_total[5m])`
-4. **Kibana** — http://localhost:5601 → Discover → index `nexasphere-logs-*` → filter `level:error`
-5. **Jaeger** — http://localhost:16686 → search service `nexasphere-api` → find slow traces
-6. **Alerts** — http://localhost:9090/alerts and http://localhost:9093 (Alertmanager UI)
+2. **Grafana** — open <http://localhost:3000> → folder **NexaSphere** → **System Overview**
+3. **Prometheus** — <http://localhost:9090> → query `rate(http_requests_total[5m])`
+4. **Kibana** — <http://localhost:5601> → Discover → index `nexasphere-logs-*` → filter `level:error`
+5. **Jaeger** — <http://localhost:16686> → search service `nexasphere-api` → find slow traces
+6. **Alerts** — <http://localhost:9090/alerts> and <http://localhost:9093> (Alertmanager UI)
 
 For production alerting, copy `alertmanager/alertmanager.prod.yml.example` → `alertmanager.local.yml`, fill in Slack/PagerDuty keys, and mount it in compose.
 

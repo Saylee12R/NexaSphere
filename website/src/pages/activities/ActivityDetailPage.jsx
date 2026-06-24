@@ -16,7 +16,7 @@ function Counter({ value, suffix = '' }) {
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
-          const num = parseInt(value) || 0;
+          const num = parseInt(value, 10) || 0;
           const dur = 1200;
           const step = 16;
           const inc = num / (dur / step);
@@ -619,7 +619,7 @@ export default function ActivityDetailPage({ activity, onBack, onSelectEvent }) 
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {activity.upcomingEvents.map((event, i) => (
-                <div key={i} className="pop-in">
+                <div key={event.id || i} className="pop-in">
                   <UpcomingCard event={event} color={color} />
                 </div>
               ))}

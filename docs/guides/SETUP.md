@@ -26,7 +26,7 @@ Install and verify these tools before starting:
 ### Node.js & npm
 
 ```bash
-node -v   # Must be >= 20.0.0
+node -v   # Recommended: v20.x or v22.x
 npm -v    # Must be >= 10.0.0
 ```
 
@@ -68,7 +68,7 @@ git clone https://github.com/<your-username>/NexaSphere-GSSOc.git
 cd NexaSphere-GSSOc
 ```
 
-3. **Add the upstream remote** so you can sync with the original repo:
+1. **Add the upstream remote** so you can sync with the original repo:
 
 ```bash
 git remote add upstream https://github.com/Piyush025s07/NexaSphere-GSSOc.git

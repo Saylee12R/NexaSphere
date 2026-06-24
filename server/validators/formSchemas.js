@@ -1,13 +1,24 @@
 import { z } from 'zod';
 
 const WhatsAppSchema = z
-  .string()
+  .string({
+    required_error: 'WhatsApp must be exactly 10 digits',
+    invalid_type_error: 'WhatsApp must be exactly 10 digits',
+  })
   .trim()
   .regex(/^\d{10}$/, 'WhatsApp must be exactly 10 digits');
 
-const EmailSchema = z.string().trim().email('Invalid email address').max(140);
+const EmailSchema = z
+  .string({ required_error: 'Invalid email address', invalid_type_error: 'Invalid email address' })
+  .trim()
+  .email('Invalid email address')
+  .max(140);
 
-const SectionSchema = z.string().trim().min(1, 'Section is required').max(20);
+const SectionSchema = z
+  .string({ required_error: 'Section is required', invalid_type_error: 'Section is required' })
+  .trim()
+  .min(1, 'Section is required')
+  .max(20);
 
 const OptionalText = (max) =>
   z
@@ -54,7 +65,7 @@ const CommonIdentitySchema = z
 
 const RecruitmentExtrasSchema = z
   .object({
-    year: z.string({ message: 'Year is required' }).trim().min(1, 'Year is required').max(40),
+    year: z.string().trim().max(40).optional(),
     role: OptionalText(80),
     interests: TextList,
     skills: OptionalText(400),
@@ -78,11 +89,7 @@ const MembershipExtrasSchema = z
   .object({
     rollNumber: OptionalText(40),
     course: OptionalText(80),
-    semester: z
-      .string({ message: 'Semester is required' })
-      .trim()
-      .min(1, 'Semester is required')
-      .max(40),
+    semester: z.string().trim().min(1, 'Semester is required').max(40),
     groups: TextList,
     whyJoin: z.string().trim().max(1200).optional(),
   })
@@ -109,7 +116,8 @@ function normalizeBase(data) {
   };
 }
 
-const recruitmentSubmissionSchema = CommonIdentitySchema.merge(RecruitmentExtrasSchema)
+const recruitmentSubmissionSchema = CommonIdentitySchema.passthrough()
+  .merge(RecruitmentExtrasSchema.passthrough())
   .superRefine((data, ctx) => {
     if (!data.collegeEmail && !data.email) {
       ctx.addIssue({
@@ -156,7 +164,8 @@ const recruitmentSubmissionSchema = CommonIdentitySchema.merge(RecruitmentExtras
 
 const coreTeamApplicationSchema = recruitmentSubmissionSchema;
 
-const membershipSubmissionSchema = CommonIdentitySchema.merge(MembershipExtrasSchema)
+const membershipSubmissionSchema = CommonIdentitySchema.passthrough()
+  .merge(MembershipExtrasSchema.passthrough())
   .superRefine((data, ctx) => {
     if (!data.collegeEmail && !data.email) {
       ctx.addIssue({
@@ -186,16 +195,22 @@ const membershipSubmissionSchema = CommonIdentitySchema.merge(MembershipExtrasSc
     };
   });
 
-export function normalizeFormSubmission(formType, body) {
+function normalizeFormSubmission(formType, body) {
+  if (formType === 'recruitment') {
+    return recruitmentSubmissionSchema.parse(body);
+  }
+  if (formType === 'core_team') {
+    return coreTeamApplicationSchema.parse(body);
+  }
   if (formType === 'membership') {
-    return membershipSubmissionSchema.parse(body || {});
+    return membershipSubmissionSchema.parse(body);
   }
-
-  if (formType === 'recruitment' || formType === 'core_team') {
-    return coreTeamApplicationSchema.parse(body || {});
-  }
-
-  throw new Error(`Unsupported form type: ${formType}`);
+  throw new Error(`Invalid form type: ${formType}`);
 }
 
-export { coreTeamApplicationSchema, membershipSubmissionSchema, recruitmentSubmissionSchema };
+export {
+  coreTeamApplicationSchema,
+  membershipSubmissionSchema,
+  recruitmentSubmissionSchema,
+  normalizeFormSubmission,
+};

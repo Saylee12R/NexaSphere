@@ -3,6 +3,16 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { supabaseRequest, HAS_SUPABASE } from '../storage/supabaseClient.js';
+import {
+  getDashboardSummary,
+  getUserAnalytics,
+  getEngagementFunnel,
+  getCustomFunnel,
+  getFunnelStepTypes,
+  executeCustomReport,
+  saveCustomReport,
+  getCustomReports,
+} from '../controllers/analyticsController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,5 +121,19 @@ router.get('/events', async (_req, res) => {
     res.status(500).json({ error: error.message || 'Failed to generate events data' });
   }
 });
+
+// Comprehensive Analytics endpoints
+router.get('/summary', getDashboardSummary);
+router.get('/users', getUserAnalytics);
+router.get('/funnel', getEngagementFunnel);
+
+// Custom Funnel Analysis
+router.get('/funnel/steps', getFunnelStepTypes);
+router.post('/funnel/custom', getCustomFunnel);
+
+// Custom Reports
+router.get('/reports', getCustomReports);
+router.post('/reports', saveCustomReport);
+router.post('/reports/execute', executeCustomReport);
 
 export default router;

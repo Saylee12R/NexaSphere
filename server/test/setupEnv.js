@@ -1,0 +1,12 @@
+process.env.NODE_ENV = 'test';
+process.env.ADMIN_USERNAME = 'admin';
+process.env.ADMIN_PASSWORD = 'AdminStrongPass123!';
+process.env.JWT_SECRET = 'secret_super_long_secret_key_that_is_safe_and_long_enough_for_256bit';
+process.env.PORT = '0';
+process.env.DATABASE_URL = 'postgresql://localhost/dummy_test_db';
+process.env.CORS_ORIGIN = 'http://localhost:5173';
+process.env.ADMIN_EVENT_PASSWORD = 'AdminEventPass123!';
+process.env.MEMBERSHIP_SCRIPT_URL = 'https://example.com/membership';
+process.env.MEMBERSHIP_SECRET = 'membership-secret';
+process.env.SUPABASE_URL = 'https://dummy.supabase.co';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-key';

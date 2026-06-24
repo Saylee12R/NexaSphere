@@ -40,6 +40,15 @@ export const registrationsRepository = {
       const { rows } = await client.query(
         `INSERT INTO event_registrations (event_id, full_name, email, department, year, team_name, team_size, custom_fields, waitlist, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (event_id, email) DO UPDATE SET
+           full_name = EXCLUDED.full_name,
+           department = EXCLUDED.department,
+           year = EXCLUDED.year,
+           team_name = EXCLUDED.team_name,
+           team_size = EXCLUDED.team_size,
+           custom_fields = EXCLUDED.custom_fields,
+           waitlist = EXCLUDED.waitlist,
+           status = EXCLUDED.status
          RETURNING *`,
         [
           eventId,
@@ -171,6 +180,63 @@ export const registrationsRepository = {
         [eventId]
       );
       return rows;
+    });
+  },
+  async getPosition(eventId, email) {
+    if (!HAS_SUPABASE) return null;
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        `SELECT position FROM (
+           SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC) AS position
+           FROM event_registrations
+           WHERE event_id = $1 AND waitlist = true AND status = 'waitlisted'
+         ) ranked
+         WHERE id = (
+           SELECT id FROM event_registrations
+           WHERE event_id = $1 AND email = $2 AND waitlist = true AND status = 'waitlisted'
+           LIMIT 1
+         )`,
+        [eventId, email]
+      );
+      return rows[0]?.position ? Number(rows[0].position) : null;
+    });
+  },
+
+  async getWaitlistCount(eventId) {
+    if (!HAS_SUPABASE) return 0;
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        `SELECT COUNT(*) AS count FROM event_registrations
+         WHERE event_id = $1 AND waitlist = true AND status = 'waitlisted'`,
+        [eventId]
+      );
+      return Number(rows[0]?.count || 0);
+    });
+  },
+
+  async removeFromWaitlist(eventId, email) {
+    if (!HAS_SUPABASE) return null;
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        `UPDATE event_registrations SET status = 'cancelled'
+         WHERE event_id = $1 AND email = $2 AND waitlist = true AND status = 'waitlisted'
+         RETURNING *`,
+        [eventId, email]
+      );
+      return rows[0] || null;
+    });
+  },
+
+  async cancelConfirmedRegistration(eventId, email) {
+    if (!HAS_SUPABASE) return null;
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        `UPDATE event_registrations SET status = 'cancelled'
+         WHERE event_id = $1 AND email = $2 AND status = 'confirmed'
+         RETURNING *`,
+        [eventId, email]
+      );
+      return rows[0] || null;
     });
   },
 };

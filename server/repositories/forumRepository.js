@@ -239,6 +239,16 @@ export const forumRepository = {
     });
   },
 
+  async getReplyById(id) {
+    if (!process.env.DATABASE_URL) {
+      return null;
+    }
+    return withDb(async (client) => {
+      const { rows } = await client.query('select * from forum_replies where id = $1', [id]);
+      return rows.length ? mapReplyRow(rows[0]) : null;
+    });
+  },
+
   async updateReply(id, content) {
     if (!process.env.DATABASE_URL) {
       return null;

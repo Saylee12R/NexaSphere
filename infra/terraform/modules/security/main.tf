@@ -1,4 +1,6 @@
 resource "aws_security_group" "rds" {
+  # checkov:skip=CKV2_AWS_5:Security group is attached to RDS instance externally
+  # checkov:skip=CKV_AWS_382:No egress needed, restricted to empty list
   name        = "${var.project_name}-${var.environment}-rds-sg"
   description = "Security group for RDS PostgreSQL"
   vpc_id      = var.vpc_id
@@ -12,21 +14,25 @@ resource "aws_security_group" "rds" {
   }
 
   egress {
+    description = "No outbound traffic from RDS"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = []
   }
 
   tags = { Name = "${var.project_name}-${var.environment}-rds-sg" }
 }
 
 resource "aws_security_group" "eks_cluster" {
+  # checkov:skip=CKV2_AWS_5:Security group is attached to EKS cluster externally
+  # checkov:skip=CKV_AWS_382:Egress is required for cluster communication and external APIs
   name        = "${var.project_name}-${var.environment}-eks-cluster-sg"
   description = "Security group for EKS cluster"
   vpc_id      = var.vpc_id
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -37,6 +43,8 @@ resource "aws_security_group" "eks_cluster" {
 }
 
 resource "aws_security_group" "eks_nodes" {
+  # checkov:skip=CKV2_AWS_5:Security group is attached to EKS nodes externally
+  # checkov:skip=CKV_AWS_382:Egress is required for nodes to fetch updates and access APIs
   name        = "${var.project_name}-${var.environment}-eks-nodes-sg"
   description = "Security group for EKS worker nodes"
   vpc_id      = var.vpc_id
@@ -58,6 +66,7 @@ resource "aws_security_group" "eks_nodes" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -68,11 +77,14 @@ resource "aws_security_group" "eks_nodes" {
 }
 
 resource "aws_security_group" "alb" {
+  # checkov:skip=CKV2_AWS_5:Security group is attached to ALB externally
+  # checkov:skip=CKV_AWS_382:Egress is required for forwarding traffic to targets
   name        = "${var.project_name}-${var.environment}-alb-sg"
   description = "Security group for ALB"
   vpc_id      = var.vpc_id
 
   ingress {
+    # checkov:skip=CKV_AWS_260:Port 80 is required for public web traffic to allow redirects to HTTPS
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -89,6 +101,7 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

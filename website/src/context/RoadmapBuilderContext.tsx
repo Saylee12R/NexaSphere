@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 
 export interface ResourceLink {
   title: string;
@@ -49,6 +49,7 @@ export const RoadmapBuilderProvider: React.FC<{ children: ReactNode }> = ({ chil
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
+  const isHydrated = useRef(false);
 
   // Restore workspace automatically from localStorage
   useEffect(() => {
@@ -90,13 +91,14 @@ export const RoadmapBuilderProvider: React.FC<{ children: ReactNode }> = ({ chil
           (e as Error).message
         );
       }
+    } finally {
+      isHydrated.current = true;
     }
   }, []);
 
   // Autosave roadmap state using localStorage on every change
   useEffect(() => {
-    // Skip empty initial state saving to prevent overwriting
-    if (nodes.length === 0 && roadmapTitle === 'My Custom Path') return;
+    if (!isHydrated.current) return;
 
     const stateToSave = {
       title: roadmapTitle,

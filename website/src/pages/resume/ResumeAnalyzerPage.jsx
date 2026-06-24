@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ResumeUploader from '../../components/ResumeAnalyzer/ResumeUploader';
 import SkillGapChart from '../../components/ResumeAnalyzer/SkillGapChart';
 import CareerRecommendationCard from '../../components/ResumeAnalyzer/CareerRecommendationCard';
@@ -55,12 +55,20 @@ export default function ResumeAnalyzerPage({ onBack }) {
   const [step, setStep] = useState('upload');
   const [result, setResult] = useState(null);
 
-  const handleUpload = () => {
-    setStep('analyzing');
-    setTimeout(() => {
+  // Track timer across unmount scopes
+  useEffect(() => {
+    if (step !== 'analyzing') return;
+
+    const timer = setTimeout(() => {
       setResult(MOCK_RESULT);
       setStep('result');
     }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [step]);
+
+  const handleUpload = () => {
+    setStep('analyzing');
   };
 
   return (
@@ -127,7 +135,7 @@ export default function ResumeAnalyzerPage({ onBack }) {
               { label: 'Skills Detected', value: result.skills.length, color: '#f59e0b' },
               { label: 'Gaps Found', value: result.missingSkills.length, color: '#ef4444' },
             ].map((s, i) => (
-              <div key={i} className="score-card">
+              <div key={s.label} className="score-card">
                 <p className="score-card-label">{s.label}</p>
                 <p className="score-card-value" style={{ color: s.color }}>
                   {s.value}
@@ -156,7 +164,7 @@ export default function ResumeAnalyzerPage({ onBack }) {
             <h3 className="section-title">Missing / In-Demand Skills</h3>
             <div className="missing-skills">
               {result.missingSkills.map((s, i) => (
-                <span key={i} className="skill-tag missing">
+                <span key={s} className="skill-tag missing">
                   {s}
                 </span>
               ))}

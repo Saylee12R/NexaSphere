@@ -341,19 +341,33 @@ function notifyContentUpdated(key) {
 
 let isLoggingOut = false;
 
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)ns_csrf_token=([^;]*)/);
+  return match ? match[1] : '';
+}
+
+function shouldIncludeCsrf(method) {
+  return method && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+}
+
 async function fetchWithAuth(url, options = {}) {
   const isOffline = auth.isOfflineMode();
 
   if (!isOffline) {
     // --- ONLINE: real API call ---
     try {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+      if (shouldIncludeCsrf(method)) {
+        headers['X-CSRF-Token'] = getCsrfToken();
+      }
       const res = await fetch(`${API_BASE}${url}`, {
         ...options,
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       if (res.status === 401) {
@@ -466,6 +480,58 @@ async function fetchWithAuth(url, options = {}) {
           departmentBreakdown: [],
           yearBreakdown: [],
           waitlist: [],
+        });
+        return;
+      }
+
+      // /api/admin/events/recommendations
+      if (url === '/api/admin/events/recommendations') {
+        const events = getDb('events', []);
+        const completedEvents = events.filter((event) => event.status === 'completed');
+        const eventCount = completedEvents.length || events.length;
+        const topEvent = events[0];
+
+        resolve({
+          generatedAt: new Date().toISOString(),
+          dataWindow: {
+            totalEvents: events.length,
+            historicalEvents: eventCount,
+            note: 'Offline recommendations use local admin event data only.',
+          },
+          recommendations: topEvent
+            ? [
+                {
+                  title: `${topEvent.category || 'general'} events need early planning`,
+                  priority: 'medium',
+                  action: `Use ${topEvent.name} as the reference event and plan capacity around ${
+                    topEvent.capacity || 30
+                  }.`,
+                  explanation:
+                    'Offline mode cannot access live registration history, so this uses saved event metadata.',
+                },
+              ]
+            : [],
+          historicalPatterns: {
+            sampleSize: eventCount,
+            eventTypes: [],
+            bestDay: null,
+            seasonal: [],
+            demographics: [],
+          },
+          planningRecommendations: [],
+          attendancePredictions: [],
+          schedulingRecommendations: {
+            conflicts: [],
+            recommendations: [
+              'Connect to the server to analyze registration timing and conflicts.',
+            ],
+          },
+          resourceRecommendations: [],
+          topicRecommendations: {
+            trending: [],
+            gaps: [],
+            partnerPreferences: [],
+          },
         });
         return;
       }
@@ -709,27 +775,68 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/sponsors
-      else if (url.startsWith('/api/admin/sponsors')) {
-        let sponsors = getDb('sponsors', []);
-        if (method === 'GET') resolve({ sponsors });
-        if (method === 'POST') {
-          const newSponsor = { ...body, id: Date.now().toString() };
-          sponsors = [newSponsor, ...sponsors];
-          setDb('sponsors', sponsors);
-          resolve(newSponsor);
+      // /api/admin/events/:id/waiting-room
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/waiting-room/)) {
+        const eventId = url.split('/')[4];
+        const action = url.split('/')[6];
+        let queue = getDb(`waiting_${eventId}`, [
+          {
+            id: 'wr_mock_1',
+            fullName: 'Anjali Sharma',
+            email: 'anjali@example.com',
+            isPriority: false,
+            joinedAt: new Date(Date.now() - 120000).toISOString(),
+          },
+          {
+            id: 'wr_mock_2',
+            fullName: 'Rahul Verma',
+            email: 'rahul@example.com',
+            isPriority: false,
+            joinedAt: new Date(Date.now() - 90000).toISOString(),
+          },
+          {
+            id: 'wr_mock_3',
+            fullName: 'Priya Kapoor',
+            email: 'priya@example.com',
+            isPriority: true,
+            joinedAt: new Date(Date.now() - 60000).toISOString(),
+          },
+        ]);
+        if (method === 'GET') resolve({ queue, total: queue.length });
+        if (method === 'POST' && !action) {
+          const newEntry = { ...body, id: `wr_${Date.now()}`, joinedAt: new Date().toISOString() };
+          queue = [...queue, newEntry];
+          setDb(`waiting_${eventId}`, queue);
+          resolve(newEntry);
         }
-        if (method === 'PUT') {
-          const id = url.split('/').pop();
-          sponsors = sponsors.map((s) => (s.id === id ? { ...body, id } : s));
-          setDb('sponsors', sponsors);
-          resolve({ ...body, id });
+        if (method === 'POST' && action === 'admit-one') {
+          const [admitted, ...rest] = queue;
+          setDb(`waiting_${eventId}`, rest);
+          resolve({ admitted });
+        }
+        if (method === 'POST' && action === 'admit-all') {
+          const count = queue.length;
+          setDb(`waiting_${eventId}`, []);
+          resolve({ count, admitted: true });
+        }
+        if (method === 'POST' && action === 'move-front') {
+          const entryId = url.split('/')[5];
+          const idx = queue.findIndex((e) => e.id === entryId);
+          if (idx >= 0) {
+            const [entry] = queue.splice(idx, 1);
+            queue.unshift({ ...entry, isPriority: true });
+            setDb(`waiting_${eventId}`, queue);
+          }
+          resolve({ ok: true });
+        }
+        if (method === 'POST' && action === 'message') {
+          resolve({ ok: true });
         }
         if (method === 'DELETE') {
-          const id = url.split('/').pop();
-          sponsors = sponsors.filter((s) => s.id !== id);
-          setDb('sponsors', sponsors);
-          resolve({ success: true });
+          const entryId = url.split('/')[5];
+          queue = queue.filter((e) => e.id !== entryId);
+          setDb(`waiting_${eventId}`, queue);
+          resolve({ ok: true });
         }
       }
 
@@ -759,6 +866,315 @@ async function fetchWithAuth(url, options = {}) {
           const id = url.split('/').pop();
           announcements = announcements.filter((a) => a.id !== id);
           setDb('announcements', announcements);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/events/:eventId/registrations
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'GET') resolve({ registrations: regs });
+        if (method === 'POST') {
+          const newReg = {
+            ...body,
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+          };
+          regs = [newReg, ...regs];
+          regDb[eventId] = regs;
+          setDb('event_registrations', regDb);
+          resolve(newReg);
+        }
+      }
+
+      // /api/admin/events/:eventId/attendance
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'POST' && body) {
+          const idx = regs.findIndex(
+            (r) => r.email === body.email || r.ticket_token === body.token
+          );
+          if (idx >= 0) {
+            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
+            regDb[eventId] = regs;
+            setDb('event_registrations', regDb);
+            resolve({ ...regs[idx], already_attended: false });
+          } else {
+            resolve({ error: 'Registration not found' });
+          }
+        }
+      }
+
+      // /api/admin/qa/:eventId/questions
+      else if (url.match(/\/api\/admin\/qa\/[^\/]+\/questions/)) {
+        const parts = url.split('/');
+        const eventId = parts[4];
+        let qaDb = getDb('qa_questions', {});
+        let qs = qaDb[eventId] || [];
+
+        if (method === 'GET') {
+          const sortBy = new URL(url).searchParams.get('sortBy') || 'upvotes';
+          const sorted = [...qs];
+          if (sortBy === 'upvotes') sorted.sort((a, b) => b.upvotes - a.upvotes);
+          else if (sortBy === 'recent') sorted.sort((a, b) => b.createdAt - a.createdAt);
+          else if (sortBy === 'unanswered')
+            sorted.sort((a, b) => (a.status === 'answered' ? 1 : -1));
+          resolve({ questions: sorted });
+        }
+        if (method === 'PATCH' && parts[6] === 'moderate') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) {
+            if (body.action === 'feature') q.isFeatured = true;
+            else if (body.action === 'unfeature') q.isFeatured = false;
+            else if (body.action === 'answered') q.status = 'answered';
+            else if (body.action === 'duplicate') q.status = 'duplicate';
+            else if (body.action === 'remove') {
+              qs = qs.filter((qq) => qq.id !== qId);
+            }
+          }
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+        if (method === 'POST' && parts[6] === 'answer') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) {
+            q.answer = body.answer;
+            q.answeredBy = 'Speaker (Offline)';
+            q.status = 'answered';
+          }
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+        if (method === 'POST' && parts[6] === 'upvote') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) q.upvotes = (q.upvotes || 0) + 1;
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/qa/:eventId/polls
+      else if (url.match(/\/api\/admin\/qa\/[^\/]+\/polls/)) {
+        const parts = url.split('/');
+        const eventId = parts[4];
+        let pollDb = getDb('qa_polls', {});
+        let ps = pollDb[eventId] || [];
+
+        if (method === 'GET') resolve({ polls: ps });
+        if (method === 'POST' && !parts[6]) {
+          const newPoll = {
+            ...body,
+            id: Date.now().toString(),
+            options: body.options.map((opt, i) => ({
+              id: `${Date.now()}-${i}`,
+              text: opt,
+              votes: 0,
+              voters: [],
+            })),
+            totalVotes: 0,
+            status: 'active',
+            createdAt: Date.now(),
+          };
+          ps = [newPoll, ...ps];
+          pollDb[eventId] = ps;
+          setDb('qa_polls', pollDb);
+          resolve(newPoll);
+        }
+        if (method === 'POST' && parts[6] && parts[7] === 'close') {
+          const pollId = parts[6];
+          const poll = ps.find((p) => p.id === pollId);
+          if (poll) poll.status = 'closed';
+          pollDb[eventId] = ps;
+          setDb('qa_polls', pollDb);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/events/:eventId/analytics
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        const total = regs.length;
+        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
+        const attended = regs.filter((r) => r.attended).length;
+        resolve({
+          eventId,
+          stats: { total, confirmed, waitlisted: total - confirmed, attended },
+          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
+          departmentBreakdown: [],
+          yearBreakdown: [],
+          waitlist: [],
+        });
+      }
+
+      // /api/admin/reports/engagement
+      else if (url.startsWith('/api/admin/reports/engagement')) {
+        const seedUsers = Array.from({ length: 45 }, (_, i) => {
+          const eventsAttended = Math.floor(Math.random() * 15);
+          const portfolioCompletion = Math.floor(Math.random() * 101);
+          const activeDays30 = Math.floor(Math.random() * 31);
+          const activeDays90 = Math.floor(Math.random() * 91);
+          const score30 = Math.min((activeDays30 / 30) * 40, 40);
+          const scoreEvents = Math.min((eventsAttended / 10) * 30, 30);
+          const scorePortfolio = (portfolioCompletion / 100) * 30;
+          const engagementScore = Math.round(score30 + scoreEvents + scorePortfolio);
+          const isInactive = activeDays30 < 2 && eventsAttended === 0;
+
+          return {
+            id: `user-${i + 1}`,
+            name: `Community Member ${i + 1}`,
+            eventsAttended,
+            portfolioCompletion,
+            activeDays30,
+            activeDays90,
+            engagementScore,
+            status: isInactive ? 'Inactive' : 'Active',
+          };
+        });
+        seedUsers.sort((a, b) => b.engagementScore - a.engagementScore);
+        resolve({ users: seedUsers });
+      }
+
+      // /api/admin/reports/revenue
+      else if (url.startsWith('/api/admin/reports/revenue')) {
+        const today = new Date();
+        const trend = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date(today);
+          date.setDate(today.getDate() - (6 - i));
+          const dateStr = date.toISOString().split('T')[0];
+          const dailyRevs = [1200, 1800, 2400, 1500, 2100, 3100, 3300];
+          return {
+            date: dateStr,
+            revenue: dailyRevs[i],
+          };
+        });
+
+        resolve({
+          stats: {
+            totalRevenue: 15400,
+            totalRefunded: 600,
+            totalTax: 1240,
+            netRevenue: 14800,
+          },
+          revenueByEvent: [
+            { eventName: 'Web Dev Boot Camp 2026', revenue: 8000 },
+            { eventName: 'AI Summit 2026', revenue: 5000 },
+            { eventName: 'Workshop: Git & GitHub', revenue: 2400 },
+            { eventName: 'KSS #153 — Knowledge Sharing Session', revenue: 0 },
+          ],
+          paymentMethodBreakdown: [
+            { method: 'UPI', amount: 6200, percentage: 40 },
+            { method: 'CARD', amount: 5400, percentage: 35 },
+            { method: 'PAYPAL', amount: 3100, percentage: 20 },
+            { method: 'CASH', amount: 700, percentage: 5 },
+          ],
+          refunds: [
+            {
+              id: 'ref_1',
+              eventName: 'Web Dev Boot Camp 2026',
+              source: 'Ticket Refund',
+              amount: 200,
+              refundAmount: 200,
+              receivedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+            },
+            {
+              id: 'ref_2',
+              eventName: 'AI Summit 2026',
+              source: 'Ticket Refund',
+              amount: 400,
+              refundAmount: 400,
+              receivedAt: new Date(Date.now() - 86400000 * 4).toISOString(),
+            },
+          ],
+          revenueTrend: trend,
+          taxSummary: {
+            totalBeforeTax: 14160,
+            totalTax: 1240,
+            totalRevenue: 15400,
+          },
+        });
+      }
+
+      // /api/admin/backups/restore-test-history
+      else if (url.startsWith('/api/admin/backups/restore-test-history')) {
+        resolve({
+          history: [
+            {
+              id: 'rest_test_1',
+              verified_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+              backup_key: 'backup_full_2026-06-08.enc',
+              restore_type: 'full',
+              status: 'success',
+              duration_ms: 1420,
+            },
+            {
+              id: 'rest_test_2',
+              verified_at: new Date(Date.now() - 86400000 * 45).toISOString(),
+              backup_key: 'backup_full_2026-05-08.enc',
+              restore_type: 'full',
+              status: 'success',
+              duration_ms: 1390,
+            },
+          ],
+        });
+      }
+
+      // /api/admin/backups
+      else if (url.startsWith('/api/admin/backups')) {
+        if (method === 'GET') {
+          resolve({
+            stats: {
+              totalSize: 45890000,
+              totalCount: 3,
+              storageType: 'AWS S3 Redundant Bucket (eu-west-1)',
+              utilizationPercentage: 14,
+            },
+            backups: [
+              {
+                key: 'backup_full_2026-06-22.enc',
+                filename: 'backup_full_2026-06-22.enc',
+                type: 'full',
+                size: 24500000,
+                location: 's3',
+                date: new Date(Date.now() - 86400000).toISOString(),
+              },
+              {
+                key: 'backup_inc_2026-06-23.enc',
+                filename: 'backup_inc_2026-06-23.enc',
+                type: 'incremental',
+                size: 1390000,
+                location: 's3',
+                date: new Date(Date.now() - 3600000 * 4).toISOString(),
+              },
+              {
+                key: 'backup_full_2026-06-15.enc',
+                filename: 'backup_full_2026-06-15.enc',
+                type: 'full',
+                size: 20000000,
+                location: 's3',
+                date: new Date(Date.now() - 86400000 * 8).toISOString(),
+              },
+            ],
+          });
+        } else if (method === 'POST' && url.includes('/manual')) {
+          resolve({
+            key: `backup_manual_${Date.now()}.enc`,
+            filename: `backup_manual_${Date.now()}.enc`,
+          });
+        } else if (method === 'POST' && url.includes('/restore')) {
+          resolve({ result: { durationMs: 480 } });
+        } else if (method === 'DELETE') {
           resolve({ success: true });
         }
       }
@@ -831,6 +1247,7 @@ export const api = {
   },
   events: {
     getAll: () => fetchWithAuth('/api/admin/events'),
+    recommendations: () => fetchWithAuth('/api/admin/events/recommendations'),
     create: async (event) => {
       if (auth.isOfflineMode()) {
         eventEmitter.emit(EVENTS.NOTIFY, {
@@ -1176,6 +1593,23 @@ export const api = {
       notifyContentUpdated('ns_db_announcements');
     },
   },
+  alerts: {
+    getRules: () => fetchWithAuth('/api/admin/alerts/rules'),
+    updateRule: (id, body) =>
+      fetchWithAuth(`/api/admin/alerts/rules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    getEvents: () => fetchWithAuth('/api/admin/alerts/events'),
+    updateEventStatus: (id, status) =>
+      fetchWithAuth(`/api/admin/alerts/events/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      }),
+  },
+
   circuitBreaker: {
     getMetrics: () => fetchWithAuth('/api/admin/circuit-breaker/metrics'),
     reset: (name) =>
@@ -1188,63 +1622,39 @@ export const api = {
       }),
   },
 
-  sponsorships: {
-    getAll: () => fetchWithAuth('/api/admin/sponsors'),
-    create: async (sponsor) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      const result = await fetchWithAuth('/api/admin/sponsors', {
+  waitingRoom: {
+    getQueue: (eventId) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room`),
+    admitOne: (eventId) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/admit-one`, {
         method: 'POST',
-        body: JSON.stringify(sponsor),
-      });
-      eventEmitter.emit(EVENTS.SPONSOR_CREATED, result);
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor added',
-      });
-      broadcastContentUpdate('sponsors');
-      return result;
-    },
-    update: async (id, sponsor) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      const result = await fetchWithAuth(`/api/admin/sponsors/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(sponsor),
-      });
-      eventEmitter.emit(EVENTS.SPONSOR_UPDATED, result);
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor updated',
-      });
-      broadcastContentUpdate('sponsors');
-      return result;
-    },
-    delete: async (id) => {
-      if (auth.isOfflineMode()) {
-        eventEmitter.emit(EVENTS.NOTIFY, {
-          type: 'warning',
-          message: 'Offline — changes not saved to server',
-        });
-      }
-      await fetchWithAuth(`/api/admin/sponsors/${id}`, { method: 'DELETE' });
-      eventEmitter.emit(EVENTS.SPONSOR_DELETED, { id });
-      eventEmitter.emit(EVENTS.NOTIFY, {
-        type: 'success',
-        message: 'Sponsor deleted',
-      });
-      broadcastContentUpdate('sponsors');
-    },
+      }),
+    admitAll: (eventId) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/admit-all`, {
+        method: 'POST',
+      }),
+    remove: (eventId, entryId) =>
+      fetchWithAuth(
+        `/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/${encodeURIComponent(entryId)}`,
+        { method: 'DELETE' }
+      ),
+    moveToFront: (eventId, entryId) =>
+      fetchWithAuth(
+        `/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/${encodeURIComponent(entryId)}/move-front`,
+        { method: 'POST' }
+      ),
+    sendMessage: (eventId, message) =>
+      fetchWithAuth(`/api/admin/events/${encodeURIComponent(eventId)}/waiting-room/message`, {
+        method: 'POST',
+        body: JSON.stringify({ message }),
+      }),
   },
 
+  impersonate: {
+    start: (userId) => fetchWithAuth(`/api/admin/impersonate/start/${userId}`, { method: 'POST' }),
+    stop: () => fetchWithAuth('/api/admin/impersonate/stop', { method: 'POST' }),
+    status: () => fetchWithAuth('/api/admin/impersonate/status'),
+  },
   forum: {
     getAll: async (params = {}) => {
       const query = new URLSearchParams(params).toString();
@@ -1289,6 +1699,76 @@ export const api = {
       eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: `Reply ${status}` });
       return result;
     },
+  },
+
+  subscriptions: {
+    getAll: async () => {
+      if (auth.isOfflineMode()) {
+        const subs = safeJsonParse(localStorage.getItem('ns_db_subscriptions'), []);
+        return { subscriptions: subs };
+      }
+      return fetchWithAuth('/api/admin/subscriptions');
+    },
+    getStats: async () => {
+      if (auth.isOfflineMode()) {
+        const subs = safeJsonParse(localStorage.getItem('ns_db_subscriptions'), []);
+        return {
+          total: subs.length,
+          premium: subs.filter((s) => s.tier === 'premium').length,
+          pro: subs.filter((s) => s.tier === 'pro').length,
+          revenue: subs.reduce((sum, s) => sum + (s.price || 0), 0),
+        };
+      }
+      return fetchWithAuth('/api/admin/subscriptions/stats');
+    },
+    create: async (userId, tierId) => {
+      const result = await fetchWithAuth('/api/admin/subscriptions', {
+        method: 'POST',
+        body: JSON.stringify({ userId, tierId }),
+      });
+      eventEmitter.emit(EVENTS.SUBSCRIPTION_CREATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Subscription created' });
+      return result;
+    },
+    cancel: async (userId) => {
+      const result = await fetchWithAuth(`/api/admin/subscriptions/${userId}/cancel`, {
+        method: 'POST',
+      });
+      eventEmitter.emit(EVENTS.SUBSCRIPTION_CANCELLED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Subscription cancelled' });
+      return result;
+    },
+    getBillingHistory: (userId) => fetchWithAuth(`/api/admin/subscriptions/${userId}/billing`),
+  },
+
+  reports: {
+    getEngagement: () => fetchWithAuth('/api/admin/reports/engagement'),
+    getRevenue: () => fetchWithAuth('/api/admin/reports/revenue'),
+  },
+
+  backups: {
+    get: () => fetchWithAuth('/api/admin/backups'),
+    getRestoreHistory: () => fetchWithAuth('/api/admin/backups/restore-test-history'),
+    runManual: (type) =>
+      fetchWithAuth('/api/admin/backups/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      }),
+    restore: (backupKey) =>
+      fetchWithAuth('/api/admin/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backupKey }),
+      }),
+    restorePITR: (targetTime) =>
+      fetchWithAuth('/api/admin/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetTime }),
+      }),
+    delete: (key) =>
+      fetchWithAuth(`/api/admin/backups/${encodeURIComponent(key)}`, { method: 'DELETE' }),
   },
 };
 

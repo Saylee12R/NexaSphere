@@ -1,0 +1,175 @@
+:root {
+  --brand-red-primary: #e63946;
+  --brand-red-dark: #b71c1c;
+  --brand-red-light: #ff5a5f;
+  --brand-red-deep: #8b0000;
+
+  --accent-connectivity: #e63946;
+  --accent-technology: #ff6b6b;
+  --accent-global: #ffb4b4;
+  --accent-growth: #ff8787;
+
+  --gradient-logo: linear-gradient(135deg, #e63946 0%, #b71c1c 100%);
+  --gradient-hero: linear-gradient(135deg, #e63946 0%, #8b0000 50%, #000000 100%);
+  --gradient-hero-light: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 50%, #ffdcdc 100%);
+  --gradient-glow: linear-gradient(
+    135deg,
+    rgba(230, 57, 70, 0.2) 0%,
+    rgba(183, 28, 28, 0.4) 50%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+
+  --success: #4caf50;
+  --warning: #ffc107;
+  --error: #e63946;
+  --info: #2196f3;
+
+  --r1: 8px;
+  --r2: 14px;
+  --r3: 22px;
+  --r4: 32px;
+  --nh: 64px;
+  --nhm: 88px;
+
+  --trans-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --trans-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --trans-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0a0a0a;
+  --bg2: #1a1a1a;
+  --card: #1e1e1e;
+  --card2: #242424;
+  --card-hover: #282828;
+
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #242424;
+  --card-bg: #1e1e1e;
+
+  --c1: #e63946;
+  --c2: #ff5a5f;
+  --c3: #ff8787;
+  --c4: #b71c1c;
+  --c5: #4caf50;
+
+  --c1a: rgba(230, 57, 70, 0.1);
+  --c1b: rgba(230, 57, 70, 0.28);
+  --c1g: rgba(230, 57, 70, 0.36);
+  --c2a: rgba(255, 90, 95, 0.1);
+  --c2b: rgba(255, 90, 95, 0.25);
+
+  --t1: #ffffff;
+  --t2: #b0b0b0;
+  --t3: #6b6b6b;
+
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #6b6b6b;
+
+  --bdr: rgba(230, 57, 70, 0.15);
+  --bdr2: rgba(230, 57, 70, 0.28);
+  --border-color: rgba(230, 57, 70, 0.15);
+  --border-hover: rgba(230, 57, 70, 0.5);
+  --border: var(--border-color);
+
+  --hero-bg: var(--gradient-hero);
+  --page-banner-bg: linear-gradient(135deg, #e63946 0%, #b71c1c 50%, #0a0a0a 100%);
+
+  --sh1: 0 0 28px rgba(230, 57, 70, 0.25), 0 0 70px rgba(230, 57, 70, 0.06);
+  --sh2: 0 0 28px rgba(183, 28, 28, 0.22), 0 0 70px rgba(183, 28, 28, 0.05);
+  --shcard: 0 12px 48px rgba(0, 0, 0, 0.65);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 8px 24px rgba(230, 57, 70, 0.2);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg2: #f5f5f5;
+  --card: #ffffff;
+  --card2: #f9f9f9;
+  --card-hover: #f9f9f9;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e8e8e8;
+  --card-bg: #ffffff;
+
+  --c1: #e63946;
+  --c2: #ff5a5f;
+  --c3: #ff8787;
+  --c4: #b71c1c;
+  --c5: #2e7d32;
+
+  --c1a: rgba(230, 57, 70, 0.08);
+  --c1b: rgba(230, 57, 70, 0.2);
+  --c1g: rgba(230, 57, 70, 0.28);
+  --c2a: rgba(255, 90, 95, 0.08);
+  --c2b: rgba(255, 90, 95, 0.18);
+
+  --t1: #1a1a1a;
+  --t2: #4a4a4a;
+  --t3: #8a8a8a;
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --text-muted: #8a8a8a;
+
+  --bdr: rgba(230, 57, 70, 0.12);
+  --bdr2: rgba(230, 57, 70, 0.22);
+  --border-color: rgba(230, 57, 70, 0.12);
+  --border-hover: rgba(230, 57, 70, 0.4);
+  --border: var(--border-color);
+
+  --hero-bg: var(--gradient-hero-light);
+  --page-banner-bg: linear-gradient(135deg, #ffe8e8 0%, #ffd0d0 50%, #ffffff 100%);
+
+  --sh1: 0 2px 16px rgba(0, 0, 0, 0.09), 0 1px 4px rgba(0, 0, 0, 0.05);
+  --sh2: 0 4px 20px rgba(230, 57, 70, 0.14), 0 1px 4px rgba(0, 0, 0, 0.05);
+  --shcard: 0 4px 24px rgba(0, 0, 0, 0.09), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 8px 24px rgba(230, 57, 70, 0.15);
+  --overlay-bg: rgba(255, 255, 255, 0.7);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  transition:
+    background-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body,
+.ns-navbar,
+.ns-navbar-mobile,
+.activity-card,
+.team-card,
+.timeline-card,
+.about-card-inner,
+.modal-box,
+.ns-footer,
+#back-to-top {
+  transition:
+    background-color 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s ease !important;
+}
+
+canvas {
+  transition: none !important;
+}

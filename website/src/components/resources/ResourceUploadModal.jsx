@@ -1,40 +1,59 @@
 import { useState } from 'react';
-import { categories, difficultyLevels } from '../../data/resourcesData';
+import { categories, topics, difficultyLevels } from '../../data/resourcesData';
+
+const inputStyle = {
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: '8px',
+  border: '1px solid var(--border)',
+  background: 'var(--bg)',
+  color: 'var(--t1)',
+  fontSize: '0.9rem',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '0.82rem',
+  color: 'var(--t2)',
+  marginBottom: '4px',
+};
 
 export default function ResourceUploadModal({ open, onClose, onSubmit }) {
   const [form, setForm] = useState({
     title: '',
     description: '',
     category: 'other',
+    topic: '',
     tags: '',
     difficultyLevel: '',
     uploadedBy: '',
+    fileUrl: '',
+    accessLevel: 'public',
   });
 
   if (!open) return null;
 
   const handleChange = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
+    if (!form.title.trim()) return;
     const tags = form.tags
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-
-    onSubmit({
-      ...form,
-      tags,
-      createdAt: new Date().toISOString(),
-    });
-
+    onSubmit({ ...form, tags, createdAt: new Date().toISOString() });
     setForm({
       title: '',
       description: '',
       category: 'other',
+      topic: '',
       tags: '',
       difficultyLevel: '',
       uploadedBy: '',
+      fileUrl: '',
+      accessLevel: 'public',
     });
   };
 
@@ -58,13 +77,14 @@ export default function ResourceUploadModal({ open, onClose, onSubmit }) {
           borderRadius: '16px',
           padding: '32px',
           width: '90%',
-          maxWidth: '520px',
+          maxWidth: '540px',
           maxHeight: '90vh',
           overflow: 'auto',
           border: '1px solid var(--border)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -90,97 +110,44 @@ export default function ResourceUploadModal({ open, onClose, onSubmit }) {
           </button>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-        >
+        {/* Form fields */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.82rem',
-                color: 'var(--t2)',
-                marginBottom: '4px',
-              }}
-            >
-              Resource Title *
-            </label>
+            <label style={labelStyle}>Resource Title *</label>
             <input
               required
               value={form.title}
               onChange={handleChange('title')}
               placeholder="e.g. Intro to DSA Notes"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-                color: 'var(--t1)',
-                fontSize: '0.9rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.82rem',
-                color: 'var(--t2)',
-                marginBottom: '4px',
-              }}
-            >
-              Description
-            </label>
+            <label style={labelStyle}>Description</label>
             <textarea
               value={form.description}
               onChange={handleChange('description')}
-              placeholder="Brief description of the resource..."
+              placeholder="Brief description of the resource…"
               rows={3}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-                color: 'var(--t1)',
-                fontSize: '0.9rem',
-                outline: 'none',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>File / Link URL</label>
+            <input
+              value={form.fileUrl}
+              onChange={handleChange('fileUrl')}
+              placeholder="https://drive.google.com/… or GitHub link"
+              style={inputStyle}
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.82rem',
-                  color: 'var(--t2)',
-                  marginBottom: '4px',
-                }}
-              >
-                Category
-              </label>
-              <select
-                value={form.category}
-                onChange={handleChange('category')}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg)',
-                  color: 'var(--t1)',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                }}
-              >
+              <label style={labelStyle}>Category</label>
+              <select value={form.category} onChange={handleChange('category')} style={inputStyle}>
                 {categories.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
@@ -188,31 +155,26 @@ export default function ResourceUploadModal({ open, onClose, onSubmit }) {
                 ))}
               </select>
             </div>
-
             <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.82rem',
-                  color: 'var(--t2)',
-                  marginBottom: '4px',
-                }}
-              >
-                Difficulty
-              </label>
+              <label style={labelStyle}>Topic</label>
+              <select value={form.topic} onChange={handleChange('topic')} style={inputStyle}>
+                <option value="">Select topic</option>
+                {topics.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={labelStyle}>Difficulty</label>
               <select
                 value={form.difficultyLevel}
                 onChange={handleChange('difficultyLevel')}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg)',
-                  color: 'var(--t1)',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                }}
+                style={inputStyle}
               >
                 <option value="">Any</option>
                 {difficultyLevels.map((d) => (
@@ -222,71 +184,45 @@ export default function ResourceUploadModal({ open, onClose, onSubmit }) {
                 ))}
               </select>
             </div>
+            <div>
+              <label style={labelStyle}>Access Level</label>
+              <select
+                value={form.accessLevel}
+                onChange={handleChange('accessLevel')}
+                style={inputStyle}
+              >
+                <option value="public">🌐 Public</option>
+                <option value="members">🔵 Members Only</option>
+                <option value="attendees">🎟️ Attendees Only</option>
+              </select>
+            </div>
           </div>
 
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.82rem',
-                color: 'var(--t2)',
-                marginBottom: '4px',
-              }}
-            >
-              Tags (comma-separated)
-            </label>
+            <label style={labelStyle}>Tags (comma-separated)</label>
             <input
               value={form.tags}
               onChange={handleChange('tags')}
               placeholder="e.g. Python, DSA, Beginner"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-                color: 'var(--t1)',
-                fontSize: '0.9rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.82rem',
-                color: 'var(--t2)',
-                marginBottom: '4px',
-              }}
-            >
-              Your Name
-            </label>
+            <label style={labelStyle}>Your Name</label>
             <input
               value={form.uploadedBy}
               onChange={handleChange('uploadedBy')}
               placeholder="Your name or alias"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-                color: 'var(--t1)',
-                fontSize: '0.9rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              style={inputStyle}
             />
           </div>
 
+          {/* Actions */}
           <div
             style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}
           >
             <button
-              type="button"
               onClick={onClose}
               style={{
                 padding: '10px 20px',
@@ -301,22 +237,23 @@ export default function ResourceUploadModal({ open, onClose, onSubmit }) {
               Cancel
             </button>
             <button
-              type="submit"
+              onClick={handleSubmit}
+              disabled={!form.title.trim()}
               style={{
                 padding: '10px 24px',
                 borderRadius: '8px',
                 border: 'none',
-                background: '#CC1111',
+                background: form.title.trim() ? '#CC1111' : 'var(--border)',
                 color: '#fff',
-                cursor: 'pointer',
+                cursor: form.title.trim() ? 'pointer' : 'not-allowed',
                 fontSize: '0.85rem',
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
               Submit Resource
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

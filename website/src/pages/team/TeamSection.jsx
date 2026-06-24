@@ -31,15 +31,31 @@ function MemberCard({ member, idx, onClick }) {
     c.style.transform = '';
     c.style.animationPlayState = '';
   };
+  const clickTimerRef = useRef(null);
+  const animTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    };
+  }, []);
+
   const click = () => {
     const c = ref.current;
     if (c) {
       c.style.transform = 'scale(.9)';
-      setTimeout(() => {
-        c.style.transform = '';
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+      animTimerRef.current = setTimeout(() => {
+        if (c) c.style.transform = '';
+        animTimerRef.current = null;
       }, 140);
     }
-    setTimeout(() => onClick(member), 110);
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      onClick(member);
+      clickTimerRef.current = null;
+    }, 110);
   };
 
   return (
@@ -156,6 +172,20 @@ export default function TeamSection({ onApply }) {
   }, []);
 
   useEffect(() => {
+    // Tracks animationend listeners added dynamically below so they can be
+    // explicitly removed on unmount — { once: true } only cleans up after
+    // the event actually fires, but if the component unmounts mid-animation
+    // the listener is still attached and would mutate a detached DOM node's
+    // style when it eventually fires.
+    const pendingListeners = [];
+    const addRevealListener = (target) => {
+      const handler = () => {
+        target.style.opacity = '1';
+        target.style.transform = 'none';
+      };
+      target.addEventListener('animationend', handler, { once: true });
+      pendingListeners.push({ target, handler });
+    };
     const elements = document.querySelectorAll(
       '#section-team .pop-flip, #section-team .pop-in, #section-team .pop-word'
     );
@@ -164,14 +194,7 @@ export default function TeamSection({ onApply }) {
         entries.forEach((e) => {
           if (e.isIntersecting && !e.target.classList.contains('fired')) {
             e.target.classList.add('fired');
-            e.target.addEventListener(
-              'animationend',
-              () => {
-                e.target.style.opacity = '1';
-                e.target.style.transform = 'none';
-              },
-              { once: true }
-            );
+            addRevealListener(e.target);
             obs.unobserve(e.target);
           }
         });
@@ -184,20 +207,16 @@ export default function TeamSection({ onApply }) {
         const rect = el.getBoundingClientRect();
         if (rect.top < window.innerHeight + 100 && !el.classList.contains('fired')) {
           el.classList.add('fired');
-          el.addEventListener(
-            'animationend',
-            () => {
-              el.style.opacity = '1';
-              el.style.transform = 'none';
-            },
-            { once: true }
-          );
+          addRevealListener(el);
         }
       });
     }, 120);
     return () => {
       obs.disconnect();
       clearTimeout(fallback);
+      pendingListeners.forEach(({ target, handler }) => {
+        target.removeEventListener('animationend', handler);
+      });
     };
   }, []);
 

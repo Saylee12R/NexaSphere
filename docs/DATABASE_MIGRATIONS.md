@@ -15,6 +15,7 @@ NexaSphere uses a multi-stack architecture with three database backends, each wi
 | `1705945200000_create-initial-schema.js`            | Baseline schema for admin sessions, events, core team, form submissions, and recommendation engine tables |
 | `1705945201000_seed-recommendation-data.js`         | Seed data for collaborative filtering recommendation system                                               |
 | `1705945202000_canonicalize-portfolio-usernames.js` | Canonicalize portfolio username format                                                                    |
+| `1718696400000_add-ticketing-system.js`             | Comprehensive ticketing system: types, pricing tiers, seats, orders, and individual tickets               |
 
 ### Java Server (`server-java/src/main/resources/db/migration/`)
 
@@ -302,3 +303,33 @@ This validation script runs automatically as part of the Database Migrations CI 
 3. **Always write a rollback** for Node.js migrations (`exports.down`).
 4. **Test locally** before opening a PR — run your migration against a fresh DB to catch issues early.
 5. **Update this document** when adding new migration files so the CI documentation check passes.
+
+## Staging Migration Test Procedure
+
+Before any migration reaches production, it must pass the full staging cycle:
+
+### Steps
+
+1. **Push to `develop` or `staging` branch** — triggers the Staging Deployment Pipeline automatically.
+
+2. **Pre-migration validation** — `node scripts/validate-database.js --pre` runs against `STAGING_DATABASE_URL` and snapshots table existence, column types, row counts, and foreign key integrity.
+
+3. **Apply migrations** — `npm run migrate:latest` runs all pending Node.js migrations against the staging database.
+
+4. **Post-migration validation** — `node scripts/validate-database.js --post` re-runs all checks to confirm the schema is correct after migration.
+
+5. **Rollback test** — `npm run migrate:rollback` is called automatically to verify the down migration executes cleanly, then `migrate:latest` re-applies to leave staging in the final state.
+
+6. **Schema version check** — the `pgmigrations` table is queried to confirm the expected migration count and timestamps.
+
+7. **Health check** — `GET /health` on the staging API confirms the backend is responding after migration.
+
+Only after all 7 steps pass on staging should the migration be merged to `main` and promoted to production using `scripts/blue-green-migrate.sh`.
+
+### Running Locally Against Staging
+
+```bash
+export DATABASE_URL=$STAGING_DATABASE_URL
+bash scripts/blue-green-migrate.sh expand
+bash scripts/blue-green-migrate.sh validate
+```

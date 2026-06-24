@@ -261,7 +261,10 @@ export default function RoadmapsPage({ onBack }) {
                 </h4>
                 <ul className="concepts-pill-list">
                   {selectedNode.concepts.map((concept, idx) => (
-                    <li key={idx} className="concept-badge-pill">
+                    <li
+                      key={`concept-${selectedNode.id}-${concept}`}
+                      className="concept-badge-pill"
+                    >
                       {concept}
                     </li>
                   ))}
@@ -297,7 +300,7 @@ export default function RoadmapsPage({ onBack }) {
                 <div className="resources-vertical-stack">
                   {selectedNode.tutorials.map((tutorial, idx) => (
                     <a
-                      key={idx}
+                      key={`tutorial-${selectedNode.id}-${tutorial.url}`}
                       href={tutorial.url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -321,7 +324,7 @@ export default function RoadmapsPage({ onBack }) {
                 <div className="resources-vertical-stack">
                   {selectedNode.practice.map((item, idx) => (
                     <a
-                      key={idx}
+                      key={`practice-${selectedNode.id}-${item.url}`}
                       href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"

@@ -5,6 +5,7 @@
 
 import logger from '../utils/logger.js';
 import { captureMessage, addBreadcrumb } from '../utils/sentry.js';
+import { recordSlowQuery } from '../utils/queryLogger.js';
 
 /**
  * Simple time-windowed metrics tracker
@@ -17,35 +18,30 @@ class TimeWindowMetrics {
     this.lastReset = Date.now();
   }
 
+  _prune() {
+    const now = Date.now();
+    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+  }
+
   addRequest(durationMs, isError = false) {
     const now = Date.now();
-    // Reset if window has passed
     if (now - this.lastReset > this.windowSizeMs) {
       this.buckets = [];
       this.lastReset = now;
     }
-    this.buckets.push({
-      durationMs,
-      isError,
-      timestamp: now,
-    });
+    this.buckets.push({ durationMs, isError, timestamp: now });
   }
 
   getCount() {
-    const now = Date.now();
-    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+    this._prune();
     return this.buckets.length;
   }
-
   getErrorCount() {
-    const now = Date.now();
-    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+    this._prune();
     return this.buckets.filter((b) => b.isError).length;
   }
-
   getTotalTime() {
-    const now = Date.now();
-    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+    this._prune();
     return this.buckets.reduce((sum, b) => sum + b.durationMs, 0);
   }
 
@@ -57,6 +53,18 @@ class TimeWindowMetrics {
   getErrorRate() {
     const count = this.getCount();
     return count > 0 ? (this.getErrorCount() / count) * 100 : 0;
+  }
+
+  getPercentiles() {
+    this._prune();
+    const sorted = [...this.buckets].sort((a, b) => a.durationMs - b.durationMs);
+    const len = sorted.length;
+    if (len === 0) return { p50: 0, p95: 0, p99: 0 };
+    return {
+      p50: sorted[Math.floor(len * 0.5)].durationMs,
+      p95: sorted[Math.floor(len * 0.95)].durationMs,
+      p99: sorted[Math.floor(len * 0.99)].durationMs,
+    };
   }
 }
 
@@ -97,6 +105,7 @@ class EndpointMetrics {
       totalTime: metrics.getTotalTime(),
       avgTime: metrics.getAverageTime(),
       errorRate: metrics.getErrorRate(),
+      ...metrics.getPercentiles(),
     };
   }
 }
@@ -230,6 +239,8 @@ const recordDbQueryMetric = (queryText, durationMs, error = null) => {
   if (error) {
     dbQueryMetrics.queries[normalizedQuery].errors += 1;
   }
+
+  recordSlowQuery(queryText, durationMs, { error: error?.message });
 };
 
 const registrationsHistory = [];
@@ -300,11 +311,29 @@ const checkErrorRateThreshold = (threshold = 5) => {
   return false;
 };
 
+function getHealthStatus() {
+  const fiveMinErrors = Array.from(endpointMetrics.values()).reduce(
+    (sum, m) => sum + m.fiveMin.getErrorCount(),
+    0
+  );
+  const fiveMinTotal = Array.from(endpointMetrics.values()).reduce(
+    (sum, m) => sum + m.fiveMin.getCount(),
+    0
+  );
+  const errorRate = fiveMinTotal > 0 ? (fiveMinErrors / fiveMinTotal) * 100 : 0;
+
+  if (errorRate > 10) return 'critical';
+  if (errorRate > 5) return 'degraded';
+  if (errorRate > 1) return 'warning';
+  return 'healthy';
+}
+
 export {
   performanceMonitor,
   getMetrics,
   resetMetrics,
   checkErrorRateThreshold,
+  getHealthStatus,
   recordDbQueryMetric,
   trackRegistration,
   getRegistrationsPerMinute,

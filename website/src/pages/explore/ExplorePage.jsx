@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -32,6 +33,12 @@ export default function ExplorePage({ onBack, eventsData }) {
   const [activeTab, setActiveTab] = useState('discover');
 
   useEffect(() => {
+    // apiClient creates its own internal AbortController per call (for its
+    // request timeout) and does not currently accept an external signal, so
+    // in-flight requests here cannot be cancelled directly. Guard against
+    // state updates firing after unmount with an `alive` flag instead,
+    // consistent with the pattern already used in TeamPage.jsx.
+    let alive = true;
     const fetchData = async () => {
       const base = getApiBase();
       setLoading(true);
@@ -42,18 +49,23 @@ export default function ExplorePage({ onBack, eventsData }) {
           base ? apiClient(`${base}/api/content/team`).catch(() => null) : null,
         ]);
 
+        if (!alive) return;
         if (trendingRes?.trending) setTrending(trendingRes.trending);
         if (recsRes?.recommendations) setRecommendations(recsRes.recommendations);
         if (teamRes?.members) setMembers(teamRes.members);
       } catch (err) {
+        if (!alive) return;
         if (import.meta.env.DEV) {
           console.warn('[ExplorePage] Failed to fetch explore data:', err.message);
         }
         setFetchError('Failed to load content. Please try again.');
       }
-      setLoading(false);
+      if (alive) setLoading(false);
     };
     fetchData();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const filteredEvents = useMemo(() => {
@@ -424,6 +436,7 @@ function SectionBlock({ icon, title, subtitle, items, renderItem, emptyText }) {
 }
 
 function EventCard({ event, detailed }) {
+  const navigate = useNavigate();
   const title = event?.title || event?.name || event?.shortName || '';
   const desc = event?.description || '';
   const tags = event?.tags || [];
@@ -450,7 +463,7 @@ function EventCard({ event, detailed }) {
       }}
       onClick={() => {
         const url = event?.url || `/events/${event?.id || ''}`;
-        window.location.href = url;
+        navigate(url);
       }}
     >
       <div

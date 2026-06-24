@@ -45,11 +45,11 @@ Spring Boot 3 backend service providing:
 
 Before starting, ensure you have:
 
-| Tool           | Version | Download                                  |
-| -------------- | ------- | ----------------------------------------- |
-| **Java JDK**   | 17+     | https://www.oracle.com/java/technologies/ |
-| **Maven**      | 3.8+    | https://maven.apache.org/download.cgi     |
-| **PostgreSQL** | Latest  | https://www.postgresql.org/download/      |
+| Tool           | Version | Download                                    |
+| -------------- | ------- | ------------------------------------------- |
+| **Java JDK**   | 17+     | <https://www.oracle.com/java/technologies/> |
+| **Maven**      | 3.8+    | <https://maven.apache.org/download.cgi>     |
+| **PostgreSQL** | Latest  | <https://www.postgresql.org/download/>      |
 
 <br/>
 
@@ -91,7 +91,7 @@ mvn spring-boot:run
 
 <br/>
 
-**✅ Server Running on:** http://localhost:8080
+**✅ Server Running on:** <http://localhost:8080>
 
 <br/>
 
@@ -124,11 +124,11 @@ mvn spring-boot:run
 
 ### Essential Variables
 
-| Variable           | Example                      | Purpose                  |
-| ------------------ | ---------------------------- | ------------------------ |
-| **ADMIN_EMAIL**    | your-admin-email@example.com | Admin login email        |
-| **ADMIN_PASSWORD** | your-secure-password         | Admin login password     |
-| **CORS_ORIGIN**    | http://localhost:5173        | Allowed frontend origins |
+| Variable           | Example                        | Purpose                  |
+| ------------------ | ------------------------------ | ------------------------ |
+| **ADMIN_EMAIL**    | <your-admin-email@example.com> | Admin login email        |
+| **ADMIN_PASSWORD** | your-secure-password           | Admin login password     |
+| **CORS_ORIGIN**    | <http://localhost:5173>        | Allowed frontend origins |
 
 <br/>
 
@@ -559,7 +559,7 @@ server.port=9090
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? 📧 Contact <nexasphere@glbajajgroup.org>
 
 **Backend Version:** 1.0 | **Last Updated:** May 2026
 

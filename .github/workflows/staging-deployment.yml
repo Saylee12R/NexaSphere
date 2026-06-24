@@ -21,11 +21,10 @@ jobs:
     environment: staging
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Deploy to Vercel Preview
         uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25
-        uses: amondnet/vercel-action@v42
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -39,25 +38,26 @@ jobs:
     environment: staging
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Deploy to Render
         uses: johnbeynon/render-deploy-action@a0588f9aca995a15d69a72cb2bfbf37c12e5b540 # v0.0.8
-        uses: johnbeynon/render-deploy-action@v0.0.9
         with:
           service-id: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
           api-key: ${{ secrets.RENDER_API_KEY }}
 
-  validate-staging-db:
-    name: Validate Staging Database Schema
+  # ── AC #5: Test migration in staging ─────────────────────────────────────
+  run-staging-migrations:
+    name: Run & Validate Migrations on Staging DB
     runs-on: ubuntu-latest
     needs: deploy-backend
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -66,6 +66,86 @@ jobs:
       - name: Install dependencies
         working-directory: server
         run: npm ci
+
+      - name: Pre-migration validation
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Running pre-migration validation..."
+          node scripts/validate-database.js --pre
+
+      - name: Snapshot row counts
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          psql "$DATABASE_URL" -c "
+            SELECT tablename,
+              (SELECT COUNT(*) FROM information_schema.tables t2
+               WHERE t2.table_name = pg_tables.tablename) AS exists
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename;
+          " || echo "Row count snapshot skipped (psql not available)"
+
+      - name: Apply migrations on staging
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Applying pending migrations to staging database..."
+          npm run migrate:latest
+          echo "Migrations applied successfully."
+
+      - name: Post-migration validation
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Running post-migration validation..."
+          node scripts/validate-database.js --post
+
+      - name: Test rollback on staging
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Testing rollback (down migration)..."
+          npm run migrate:rollback
+          echo "Rollback successful — re-applying migrations..."
+          npm run migrate:latest
+          echo "Re-apply after rollback successful."
+
+      - name: Verify schema version
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          echo "Applied migrations in pgmigrations table:"
+          psql "$DATABASE_URL" -c "
+            SELECT name, run_on
+            FROM pgmigrations
+            ORDER BY run_on DESC
+            LIMIT 10;
+          " || echo "Schema version check skipped (psql not available)"
+
+  validate-staging-db:
+    name: Validate Staging Database Schema
+    runs-on: ubuntu-latest
+    needs: run-staging-migrations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        working-directory: server
+        run: npm install --legacy-peer-deps
 
       - name: Run Database Validation
         working-directory: server

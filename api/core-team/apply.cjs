@@ -12,7 +12,14 @@ function normalizePrivateKey(k) {
 }
 
 async function readJson(req) {
-  if (req.body && typeof req.body === 'object') return req.body;
+  // RECTIFIED: Check if the body was already consumed and processed by upstream middleware
+  if (req.body) {
+    try {
+      return typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch {
+      return {};
+    }
+  }
 
   const raw = await new Promise((resolve, reject) => {
     let data = '';
@@ -87,19 +94,21 @@ const applySchema = z
     }
   );
 
+// RECTIFIED: Pull authentication setup into global scope for serverless instance warming
+const clientEmail = requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL');
+const privateKey = normalizePrivateKey(requiredEnv('GOOGLE_PRIVATE_KEY'));
+const spreadsheetId = requiredEnv('GOOGLE_SHEET_ID');
+const sheetName = process.env.GOOGLE_SHEET_TAB_NAME || 'Responses';
+
+const authClient = new google.auth.JWT({
+  email: clientEmail,
+  key: privateKey,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+
 async function appendToSheet(payload) {
-  const clientEmail = requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL');
-  const privateKey = normalizePrivateKey(requiredEnv('GOOGLE_PRIVATE_KEY'));
-  const spreadsheetId = requiredEnv('GOOGLE_SHEET_ID');
-  const sheetName = process.env.GOOGLE_SHEET_TAB_NAME || 'Responses';
-
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-
-  const sheets = google.sheets({ version: 'v4', auth });
+  // RECTIFIED: Reusing the globally warm authentication client instance to bypass per-request handshake overhead
+  const sheets = google.sheets({ version: 'v4', auth: authClient });
 
   const now = new Date().toISOString();
   const interests = Array.isArray(payload.interests) ? payload.interests.join(', ') : '';

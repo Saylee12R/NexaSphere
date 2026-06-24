@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { BRAND_LOGO_FULL, BRAND_LOGO_ICON, GL_BAJAJ_LOGO } from './brandAssets';
 import { Mail, Heart, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const NEXASPHERE_EMAIL = 'nexasphere@glbajajgroup.org';
 
@@ -12,11 +13,8 @@ const FOOTER_LINKS = [
   { label: 'Events', path: '/events' },
   { label: 'Projects', path: '/projects' },
   { label: 'Roadmaps', path: '/roadmaps' },
-  { label: 'Portfolio', path: '/portfolio' },
-  { label: 'Collab', path: '/collab' },
   { label: 'About', path: '/about' },
   { label: 'Team', path: '/team' },
-  { label: 'Dashboard', path: '/dashboard' },
   { label: 'Analytics', path: '/analytics' },
 ];
 
@@ -28,6 +26,14 @@ const LEGAL_LINKS = [
 
 export default function Footer({ onAdmin }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const getLinkLabel = (label) => {
+    let key = label.toLowerCase().replace(/\s+/g, '_');
+    if (key === 'team') key = 'team';
+    const translated = t(`nav.${key}`);
+    return translated && !translated.startsWith('nav.') ? translated : label;
+  };
 
   const go = (path) => {
     navigate(path);
@@ -97,7 +103,7 @@ export default function Footer({ onAdmin }) {
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--c1)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--t2)')}
               >
-                {label}
+                {getLinkLabel(label)}
               </button>
             ))}
             {LEGAL_LINKS.map(({ label, path }) => (
@@ -118,14 +124,13 @@ export default function Footer({ onAdmin }) {
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--c1)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--t2)')}
               >
-                {label}
+                {getLinkLabel(label)}
               </button>
             ))}
           </nav>
 
           <p className="ns-footer-text">
-            © {new Date().getFullYear()} <span>NexaSphere</span> — GL Bajaj Group of Institutions,
-            Mathura
+            {t('footer.copyright', { year: new Date().getFullYear() })}
           </p>
           <p className="ns-footer-text">
             <Mail size={14} style={{ display: 'inline', verticalAlign: '-2px' }} />{' '}
@@ -134,33 +139,13 @@ export default function Footer({ onAdmin }) {
             </a>
           </p>
           <p className="ns-footer-text ns-footer-built">
-            Built with{' '}
+            {t('footer.built_with') || 'Built with'}{' '}
             <Heart
               size={12}
               fill="currentColor"
               style={{ display: 'inline', verticalAlign: '-1px' }}
             />{' '}
-            by the NexaSphere Core Team ·{' '}
-            <button
-              onClick={openAdmin}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--t2)',
-                cursor: 'pointer',
-                fontSize: 'inherit',
-                fontFamily: 'inherit',
-                textDecoration: 'underline',
-                padding: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '3px',
-              }}
-              aria-label="Open Admin Dashboard"
-            >
-              Admin Dashboard
-              <ExternalLink size={10} style={{ opacity: 0.6 }} />
-            </button>
+            {t('footer.by_team') || 'by the NexaSphere Core Team'}
           </p>
         </div>
       </div>

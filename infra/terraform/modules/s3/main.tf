@@ -40,6 +40,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
       days          = 90
       storage_class = "GLACIER"
     }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
@@ -93,6 +96,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "backups" {
     }
     noncurrent_version_expiration {
       noncurrent_days = 30
+    }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }

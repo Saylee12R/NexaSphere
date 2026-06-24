@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import http from 'node:http';
+import jwt from 'jsonwebtoken';
 import { setWithDbOverride } from '../repositories/db.js';
 
 process.env.NODE_ENV = 'test';
@@ -10,6 +11,7 @@ process.env.ADMIN_EVENT_PASSWORD = 'StrongEventPassword123!';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
 process.env.JWT_SECRET = 'secret_super_long_secret_key_that_is_safe_and_long_enough_for_256bit';
 process.env.PORT = '0';
+process.env.DATABASE_URL = 'postgresql://localhost/dummy_test_db';
 
 // Mock DB responses for sync testing
 let dbQueries = [];
@@ -23,6 +25,9 @@ setWithDbOverride(async (fn) => {
       dbQueries.push({ sql: sql.trim().replace(/\s+/g, ' '), params });
 
       const sqlLower = sql.toLowerCase();
+      if (sqlLower.includes('select count')) {
+        return { rows: [{ count: mockDbResult.select.length }], rowCount: 1 };
+      }
       if (sqlLower.includes('select updated_at') || sqlLower.includes('select id, name')) {
         return { rows: mockDbResult.select, rowCount: mockDbResult.select.length };
       }
@@ -38,6 +43,16 @@ test('Offline-First Sync and Compression Verification', async (t) => {
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
 
+  const { studentAuthService } = await import('../services/studentAuthService.js');
+  const mockUser = {
+    id: 'student-test-uuid',
+    provider: 'github',
+    email: 'test@glbajajgroup.org',
+    full_name: 'Test Student',
+    role: 'student',
+  };
+  const token = studentAuthService.generateToken(mockUser);
+
   const sendRequest = (method, path, body = null, headers = {}) => {
     return new Promise((resolve) => {
       const options = {
@@ -47,6 +62,7 @@ test('Offline-First Sync and Compression Verification', async (t) => {
         method: method,
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
           ...headers,
         },
       };
@@ -125,7 +141,20 @@ test('Offline-First Sync and Compression Verification', async (t) => {
         ],
       };
 
-      const res = await sendRequest('POST', '/api/sync/batch', batchPayload);
+      const testToken = jwt.sign(
+        {
+          sub: 'student-test-id',
+          email: 'student@example.com',
+          name: 'Test Student',
+          role: 'student',
+          scopes: ['events:write', 'events:read'],
+        },
+        process.env.JWT_SECRET
+      );
+
+      const res = await sendRequest('POST', '/api/sync/batch', batchPayload, {
+        Authorization: `Bearer ${testToken}`,
+      });
       assert.equal(res.status, 409); // Conflict status
       assert.equal(res.body.results[0].status, 'conflict');
       assert.ok(res.body.results[0].serverVersion);
@@ -154,7 +183,20 @@ test('Offline-First Sync and Compression Verification', async (t) => {
         ],
       };
 
-      const res = await sendRequest('POST', '/api/sync/batch', batchPayload);
+      const testToken = jwt.sign(
+        {
+          sub: 'student-test-id',
+          email: 'student@example.com',
+          name: 'Test Student',
+          role: 'student',
+          scopes: ['events:write', 'events:read'],
+        },
+        process.env.JWT_SECRET
+      );
+
+      const res = await sendRequest('POST', '/api/sync/batch', batchPayload, {
+        Authorization: `Bearer ${testToken}`,
+      });
       assert.equal(res.status, 200);
       assert.equal(res.body.results[0].status, 'success');
     });

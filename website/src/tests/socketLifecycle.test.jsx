@@ -3,7 +3,7 @@ import { render, cleanup } from '@testing-library/react';
 import React from 'react';
 import socketClient from '../utils/socketClient';
 import { SocketProvider } from '../context/SocketContext';
-import { useSocket } from '../hooks/useSocketConnection';
+import { useSocketConnection } from '../hooks/useSocketConnection';
 import { useNotifications } from '../hooks/useNotifications';
 
 // Mock components to simulate app navigation
@@ -13,7 +13,7 @@ function NotificationsMock() {
 }
 
 function PageMock() {
-  const { connected } = useSocket('http://test-server');
+  const { connected } = useSocketConnection('http://test-server');
   return <div>Page Socket: {connected ? 'yes' : 'no'}</div>;
 }
 

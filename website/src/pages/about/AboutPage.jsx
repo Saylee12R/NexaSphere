@@ -375,7 +375,7 @@ export default function AboutPage({ onBack }) {
           </h2>
           <div className="events-timeline">
             {milestones.map((m, i) => (
-              <div className="timeline-item" key={i}>
+              <div className="timeline-item" key={m.title || `milestone-${i}`}>
                 <div
                   className="timeline-dot"
                   style={

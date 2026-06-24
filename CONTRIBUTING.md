@@ -81,6 +81,7 @@ Before committing, ensure no secrets are included:
 
 3. **After a Commit** (Emergency):
    If you accidentally commit credentials:
+
    ```bash
    # 1. Rotate the exposed credential immediately
    # 2. Force push to your branch (if not merged):
@@ -164,67 +165,67 @@ graph TD
 
 ### Pull Request Workflow
 
-1.  **Fork the Repository**:
-    Click the **Fork** button at the top-right of the [NexaSphere GitHub Repository](https://github.com/Ayushh-Sharmaa/NexaSphere) to create a copy under your account.
+1. **Fork the Repository**:
+   Click the **Fork** button at the top-right of the [NexaSphere GitHub Repository](https://github.com/Ayushh-Sharmaa/NexaSphere) to create a copy under your account.
 
-2.  **Clone Your Fork**:
-    Clone your forked repository to your local system:
+2. **Clone Your Fork**:
+   Clone your forked repository to your local system:
 
-    ```bash
-    git clone https://github.com/your-username/NexaSphere.git
-    cd NexaSphere
-    ```
+   ```bash
+   git clone https://github.com/your-username/NexaSphere.git
+   cd NexaSphere
+   ```
 
-3.  **Sync with Upstream**:
-    Keep your local repository updated by adding the upstream remote:
+3. **Sync with Upstream**:
+   Keep your local repository updated by adding the upstream remote:
 
-    ```bash
-    git remote add upstream https://github.com/Ayushh-Sharmaa/NexaSphere.git
-    git fetch upstream
-    git checkout main
-    git merge upstream/main
-    ```
+   ```bash
+   git remote add upstream https://github.com/Ayushh-Sharmaa/NexaSphere.git
+   git fetch upstream
+   git checkout main
+   git merge upstream/main
+   ```
 
-4.  **Create a New Branch**:
-    Create a descriptive branch name targeting the task. Do not commit directly to the `main` branch.
+4. **Create a New Branch**:
+   Create a descriptive branch name targeting the task. Do not commit directly to the `main` branch.
 
-    ```bash
-    # For features:
-    git checkout -b feat/issue-id-short-description
-    # For bug fixes:
-    git checkout -b fix/issue-id-short-description
-    # For chores or docs:
-    git checkout -b chore/issue-id-short-description
-    ```
+   ```bash
+   # For features:
+   git checkout -b feat/issue-id-short-description
+   # For bug fixes:
+   git checkout -b fix/issue-id-short-description
+   # For chores or docs:
+   git checkout -b chore/issue-id-short-description
+   ```
 
-5.  **Make and Test Your Changes**:
-    Write code, run development servers, and execute unit/integration tests (see Section 4). Ensure your code doesn't break existing functionality.
+5. **Make and Test Your Changes**:
+   Write code, run development servers, and execute unit/integration tests (see Section 4). Ensure your code doesn't break existing functionality.
 
-6.  **Commit Your Changes**:
-    Commit your code using Semantic Commit guidelines (see Section 5). Write clear, atomic commits that focus on doing one thing well.
+6. **Commit Your Changes**:
+   Commit your code using Semantic Commit guidelines (see Section 5). Write clear, atomic commits that focus on doing one thing well.
 
-    ```bash
-    git commit -m "feat: implement real-time activity dashboard (#456)"
-    ```
+   ```bash
+   git commit -m "feat: implement real-time activity dashboard (#456)"
+   ```
 
-7.  **Push to Your Fork**:
-    Push your development branch to your GitHub fork:
+7. **Push to Your Fork**:
+   Push your development branch to your GitHub fork:
 
-    ```bash
-    git push -u origin feat/issue-id-short-description
-    ```
+   ```bash
+   git push -u origin feat/issue-id-short-description
+   ```
 
-8.  **Create a Pull Request**:
-    Navigate to the NexaSphere repository and click **Compare & pull request**. Complete the PR template, link the corresponding issue (e.g., `Fixes #123`), and submit.
+8. **Create a Pull Request**:
+   Navigate to the NexaSphere repository and click **Compare & pull request**. Complete the PR template, link the corresponding issue (e.g., `Fixes #123`), and submit.
 
 ### Local Development URLs
 
-| Service         | URL                          |
-| --------------- | ---------------------------- |
-| Website         | http://localhost:5175        |
-| Admin Dashboard | http://localhost:5001        |
-| Backend API     | http://localhost:8787        |
-| Health Check    | http://localhost:8787/health |
+| Service         | URL                            |
+| --------------- | ------------------------------ |
+| Website         | <http://localhost:5175>        |
+| Admin Dashboard | <http://localhost:5001>        |
+| Backend API     | <http://localhost:8787>        |
+| Health Check    | <http://localhost:8787/health> |
 
 ---
 
@@ -234,61 +235,61 @@ To ensure local environments closely match our staging and production servers, w
 
 ### Environment Initialization
 
-1.  **Enforce Node.js Version**:
-    This project includes a `.nvmrc` file specifying `v20`. Before installing dependencies, ensure you are running the correct Node runtime:
+1. **Enforce Node.js Version**:
+   This project includes a `.nvmrc` file specifying `v20`. Before installing dependencies, ensure you are running the correct Node runtime:
 
-    ```bash
-    # Switch to the correct Node.js version using NVM
-    nvm use
+   ```bash
+   # Switch to the correct Node.js version using NVM
+   nvm use
 
-    # Verify the version is active
-    node -v
-    ```
+   # Verify the version is active
+   node -v
+   ```
 
-    If Node v20 is not installed, install it using NVM:
+   If Node v20 is not installed, install it using NVM:
 
-    ```bash
-    nvm install 20
-    ```
+   ```bash
+   nvm install 20
+   ```
 
-2.  **Install Workspace Dependencies**:
-    NexaSphere uses npm workspaces for monorepo management. Install all packages from the absolute root:
+2. **Install Workspace Dependencies**:
+   NexaSphere uses npm workspaces for monorepo management. Install all packages from the absolute root:
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
-3.  **Configure Environment Variables**:
-    Generate `.env` files for the frontend website, admin dashboard, and backend server using the provided templates:
+3. **Configure Environment Variables**:
+   Generate `.env` files for the frontend website, admin dashboard, and backend server using the provided templates:
 
-    ```bash
-    # Copy env files
-    cp website/.env.example website/.env.local
-    cp admin-dashboard/.env.example admin-dashboard/.env.local
-    cp server/.env.example server/.env
-    ```
+   ```bash
+   # Copy env files
+   cp website/.env.example website/.env.local
+   cp admin-dashboard/.env.example admin-dashboard/.env.local
+   cp server/.env.example server/.env
+   ```
 
-    Open the newly created `.env` or `.env.local` files and populate them with the required keys for your local system.
+   Open the newly created `.env` or `.env.local` files and populate them with the required keys for your local system.
 
-4.  **Run Dev Servers**:
-    To launch all services concurrently:
+4. **Run Dev Servers**:
+   To launch all services concurrently:
 
-    ```bash
-    npm run dev:all
-    ```
+   ```bash
+   npm run dev:all
+   ```
 
-    Alternatively, launch services separately:
+   Alternatively, launch services separately:
 
-    ```bash
-    # Run the website only
-    npm run dev:website
+   ```bash
+   # Run the website only
+   npm run dev:website
 
-    # Run the admin panel only
-    npm run dev:admin
+   # Run the admin panel only
+   npm run dev:admin
 
-    # Run the backend server only
-    npm run dev:server
-    ```
+   # Run the backend server only
+   npm run dev:server
+   ```
 
 ### Running the Test Suite
 
@@ -333,6 +334,7 @@ You can format your changes manually before committing or configure your editor 
 2. **Format on Save (Recommended)**:
    We highly recommend setting up your text editor or IDE to format automatically on save:
    - **VS Code**: Install the [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) extension. Then, in your settings (`settings.json`), add:
+
      ```json
      "[javascript]": {
        "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -347,6 +349,7 @@ You can format your changes manually before committing or configure your editor 
        "editor.formatOnSave": true
      }
      ```
+
    - **WebStorm / IntelliJ**: Enable "Run on save for files" in Settings -> Languages & Frameworks -> JavaScript -> Prettier.
 
 Please ensure that you run `npm run format` before pushing your branch and opening a pull request.
@@ -440,13 +443,14 @@ We use **Prettier** for formatting and **ESLint** for code analysis.
 ## 9. Code Review Expectations
 
 All code changes must be reviewed by at least one maintainer before merging into `main`.
-| Problem | Possible Fix |
+
+| Problem                           | Possible Fix                                               |
 | --------------------------------- | ---------------------------------------------------------- |
-| Dependencies fail to install | Verify Node.js 20+ and npm 9+ are installed |
-| Environment variables not loading | Check file names and locations |
-| CORS errors during development | Verify `CORS_ORIGIN` includes frontend URLs |
-| Backend API unavailable | Ensure `npm run dev:server` is running |
-| Port already in use | Stop the conflicting process or change the configured port |
+| Dependencies fail to install      | Verify Node.js 20+ and npm 9+ are installed                |
+| Environment variables not loading | Check file names and locations                             |
+| CORS errors during development    | Verify `CORS_ORIGIN` includes frontend URLs                |
+| Backend API unavailable           | Ensure `npm run dev:server` is running                     |
+| Port already in use               | Stop the conflicting process or change the configured port |
 
 ### For Contributors
 
@@ -458,11 +462,11 @@ All code changes must be reviewed by at least one maintainer before merging into
 
 Reviews are assessed based on:
 
-1.  **Correctness**: Does the code solve the issue or implement the feature correctly?
-2.  **Performance**: Are there potential performance bottlenecks or memory leaks?
-3.  **Security**: Does the code introduce vulnerabilities (SQL injection, XSS, insecure storage)?
-4.  **Tests**: Are there unit or integration tests verifying the logic?
-5.  **Documentation**: Are relevant inline comments, JSDoc tags, or markdown documents updated?
+1. **Correctness**: Does the code solve the issue or implement the feature correctly?
+2. **Performance**: Are there potential performance bottlenecks or memory leaks?
+3. **Security**: Does the code introduce vulnerabilities (SQL injection, XSS, insecure storage)?
+4. **Tests**: Are there unit or integration tests verifying the logic?
+5. **Documentation**: Are relevant inline comments, JSDoc tags, or markdown documents updated?
 
 ---
 

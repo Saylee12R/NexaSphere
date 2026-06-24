@@ -1,8 +1,5 @@
 export function detectSuspiciousActivity(failedAttempts = 0) {
   const suspicious = failedAttempts >= 5;
-  export const calculateRiskScore = (req) => {};
-  export const detectBotActivity = (req) => {};
-  export const detectAnomalousRequests = (req) => {};
 
   return {
     suspicious,
@@ -11,3 +8,15 @@ export function detectSuspiciousActivity(failedAttempts = 0) {
     checkedAt: new Date().toISOString(),
   };
 }
+
+export const calculateRiskScore = (req) => {
+  return 0;
+};
+
+export const detectBotActivity = (req) => {
+  return false;
+};
+
+export const detectAnomalousRequests = (req) => {
+  return false;
+};

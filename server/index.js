@@ -1,11 +1,12 @@
 import 'dotenv/config';
+import { tracedFetch } from './config/appContext.js';
 import { initObservability } from './observability/index.js';
 import { setTraceIdResolver } from './utils/logContext.js';
 import { getActiveTraceId } from './observability/tracing.js';
 import helmet from 'helmet';
 import express from 'express';
 import cors from 'cors';
-import morgan from 'morgan';
+import csrf from 'csurf';
 import fs, { promises as fsp } from 'fs';
 import { body, validationResult } from 'express-validator';
 import { EventEmitter } from 'events';
@@ -16,7 +17,7 @@ import crypto from 'crypto';
 import { adminAuthMiddleware } from './middleware/adminAuthMiddleware.js';
 import analyticsRouter from './routes/analytics.js';
 import apiRouter from './routes/api.js';
-import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
+import { initializeSocketIO } from './config/socket.js';
 import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
@@ -24,12 +25,29 @@ import healthRouter from './routes/health.js';
 import coreTeamRouter from './routes/coreTeam.js';
 import formsRouter from './routes/forms.js';
 import portfolioRouter from './routes/portfolio.js';
+import healthDashboardRouter from './routes/healthDashboard.js';
+import complianceRouter from './routes/compliance.js';
+import { logEvent } from './controllers/analyticsController.js';
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { ExpressAdapter } from '@bull-board/express';
+import { eventRemindersQueue } from './services/queueService.js';
+import './workers/reminderWorker.js';
+import portfolioExportRouter from './routes/portfolioExport.js';
+import userGroupsRouter from './routes/userGroups.js';
 import notificationsRouter from './routes/notifications.js';
 import adminRouter from './routes/admin.js';
+import announcementsRouter from './routes/announcements.js';
+import bulkRouter from './routes/bulk.js';
 import { validateEnvironment } from './utils/envValidator.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
-import { tracingMiddleware } from './middleware/tracingMiddleware.js';
+import { enhancedTracingMiddleware } from './middleware/enhancedTracingMiddleware.js';
+import { apiLogger } from './middleware/apiLogger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { notificationAnalyticsRepository } from './repositories/notificationAnalyticsRepository.js';
+import { notificationPreferencesRepository } from './repositories/notificationPreferencesRepository.js';
+import notificationsService from './services/notificationsService.js';
+import { studentAuthService } from './services/studentAuthService.js';
 import { initializeSentry, addSentryErrorHandler } from './utils/sentry.js';
 import {
   apiRateLimiter,
@@ -37,6 +55,7 @@ import {
   notificationRateLimiter,
   activityAuthRateLimiter,
   portfolioRateLimiter,
+  searchRateLimiter,
   validateLimiters,
 } from './middleware/rateLimiter.js';
 import {
@@ -47,36 +66,46 @@ import {
 import { portfolioRepository } from './repositories/portfolioRepository.js';
 import { portfolioContentSchema, portfolioPutSchema } from './validators/portfolioSchemas.js';
 import { searchController } from './controllers/searchController.js';
-import { pushSubscriptionsRepository } from './repositories/pushSubscriptionsRepository.js';
 import { Mutex } from 'async-mutex';
 import { CircuitBreaker, circuitBreakerRegistry } from './utils/circuitBreaker.js';
 import { getPublicAppUrl } from './utils/publicAppUrl.js';
 import * as eventsController from './controllers/eventsController.js';
+import './workers/bulkWorker.js';
 import * as activityEventsController from './controllers/activityEventsController.js';
 import * as streamController from './controllers/streamController.js';
 import * as coreTeamController from './controllers/coreTeamController.js';
-import * as formsController from './controllers/formsController.js';
-import { eventsService } from './services/eventsService.js';
 import { coreTeamService } from './services/coreTeamService.js';
-import notificationsService from './services/notificationsService.js';
-import { notificationPreferencesRepository } from './repositories/notificationPreferencesRepository.js';
-import { HAS_SUPABASE } from './storage/supabaseClient.js';
+import { HAS_SUPABASE, SUPABASE_URL, SUPABASE_SERVICE_KEY } from './storage/supabaseClient.js';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const RedisStore = require('connect-redis').default || require('connect-redis');
+import Redis from 'ioredis';
 import passport from './config/studentOAuth.js';
 import { studentUsersRepository } from './repositories/studentUsersRepository.js';
+import { slackRepository } from './repositories/slackRepository.js';
 import * as studentAuthController from './controllers/studentAuthController.js';
 import * as forumController from './controllers/forumController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
-import { studentAuthService } from './services/studentAuthService.js';
+import { loadPersistedPushSubscriptions } from './routes/notifications.js';
 import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
+import { startWebhookRetryProcessor } from './services/webhookRetryProcessor.js';
+import { csrfProtection } from './middleware/csrfMiddleware.js';
 import compression from 'compression';
 import syncRouter from './routes/sync.js';
 import multer from 'multer';
+import learningPathRouter from './routes/learningPaths.js';
+import { learningPathService } from './services/learningPathService.js';
 import * as resourcesController from './controllers/resourcesController.js';
+import * as backupController from './controllers/backupController.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
+import financialsRouter from './routes/financials.js';
 import { schedulerService } from './services/schedulerService.js';
+import feedbackRouter from './routes/feedbackRoutes.js';
+import * as slackController from './controllers/slackController.js';
 
 validateLimiters();
 
@@ -88,33 +117,21 @@ validateEnvironment();
 
 const app = express();
 
-setTraceIdResolver(getActiveTraceId);
-initObservability(app);
-
-const useStructuredHttpLog = (process.env.LOG_FORMAT || '').toLowerCase() === 'json';
-
-// Trust the first reverse proxy hop (e.g., Vercel, Render, Nginx, Cloudflare)
-// to correctly populate req.ip and securely discard spoofed X-Forwarded-For headers
-const proxyTrust = process.env.TRUST_PROXY || 1;
-app.set(
-  'trust proxy',
-  proxyTrust === 'true'
-    ? true
-    : proxyTrust === 'false'
-      ? false
-      : !isNaN(proxyTrust)
-        ? parseInt(proxyTrust, 10)
-        : proxyTrust
-);
+// RECTIFIED: Enable 'trust proxy' to correctly extract client IPs from X-Forwarded-For headers when behind ALBs/Serverless layers
+app.set('trust proxy', 1);
 
 initializeSentry(app);
 app.use(compression());
 
-if (!process.env.CORS_ORIGIN) {
+const corsOrigin =
+  process.env.CORS_ORIGIN ||
+  (process.env.NODE_ENV === 'test' ? 'http://localhost,http://127.0.0.1' : '');
+if (!corsOrigin) {
   throw new Error('CORS_ORIGIN environment variable must be set.');
 }
 
-const allowedOrigins = process.env.CORS_ORIGIN.split(',')
+const allowedOrigins = corsOrigin
+  .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
@@ -131,8 +148,8 @@ app.use(
     // Hide X-Powered-By
     hidePoweredBy: true,
 
-    // Disable old IE XSS filter
-    xssFilter: false,
+    // Enable XSS filter (legacy IE/Edge protection)
+    xssFilter: true,
 
     // Restrict referrer leakage
     referrerPolicy: {
@@ -154,33 +171,24 @@ app.use(
       useDefaults: false,
 
       directives: {
-        // Default restriction
         defaultSrc: ["'self'"],
 
-        // Prevent inline scripts + third-party execution
         scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
 
-        // Allow styles from self only
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
 
-        // Images
         imgSrc: [
           "'self'",
           'data:',
           'blob:',
-          'https:',
           'https://api.dicebear.com',
           'https://images.unsplash.com',
         ],
 
-        // Fonts
-        fontSrc: ["'self'", 'https:', 'data:', 'https://fonts.gstatic.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
 
-        // API/WebSocket connections
         connectSrc: [
           "'self'",
-          'https:',
-          'wss:',
           'https://challenges.cloudflare.com',
           'https://*.ingest.sentry.io',
           'https://*.ingest.us.sentry.io',
@@ -188,35 +196,33 @@ app.use(
           `wss://${process.env.DOMAIN || 'localhost'}`,
         ],
 
-        // Block Flash/object/embed
         objectSrc: ["'none'"],
 
-        // Prevent <base> hijacking
         baseUri: ["'self'"],
 
-        // Prevent iframe embedding
         frameAncestors: ["'none'"],
 
-        // Restrict forms
         formAction: ["'self'"],
 
-        // Prevent mixed content
         upgradeInsecureRequests: [],
 
-        // Restrict workers
         workerSrc: ["'self'", 'blob:'],
 
-        // Restrict manifests
         manifestSrc: ["'self'"],
 
-        // Restrict media
         mediaSrc: ["'self'"],
 
-        // Restrict frames
-        frameSrc: ["'self'", 'https://challenges.cloudflare.com', 'https://maps.google.com'],
+        frameSrc: [
+          "'self'",
+          'https://challenges.cloudflare.com',
+          'https://maps.google.com',
+          'https://www.google.com',
+          'https://www.google.co.in',
+        ],
 
-        // Restrict child browsing contexts
         childSrc: ["'none'"],
+
+        reportUri: '/api/v1/csp-violation',
       },
     },
 
@@ -257,8 +263,21 @@ app.use(
       if (!origin) {
         return callback(null, true);
       }
-      if (allowedOrigins.includes(origin)) {
+      if (origin && allowedOrigins.includes(origin)) {
         return callback(null, true);
+      }
+      if (process.env.NODE_ENV === 'test') {
+        try {
+          const url = new URL(origin);
+          if (
+            url.hostname === 'localhost' ||
+            url.hostname === '127.0.0.1' ||
+            url.hostname === '[::1]' ||
+            url.hostname === '::1'
+          ) {
+            return callback(null, true);
+          }
+        } catch {}
       }
       return callback(new Error('CORS Policy: Origin not allowed.'));
     },
@@ -272,60 +291,60 @@ app.use(
 );
 app.options('*', cors());
 
-app.use(tracingMiddleware);
+app.use(enhancedTracingMiddleware);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(xssSanitizer);
-if (!useStructuredHttpLog) {
-  app.use(morgan('combined'));
-}
+app.use(apiLogger);
 app.use(performanceMonitor);
 app.use(cookieParser());
+
+// Track app activity for smart notification frequency adjustment
+app.use((req, res, next) => {
+  if (req.studentUser || req.adminSession) {
+    const userId = req.studentUser?.id || req.adminSession?.userId;
+    if (userId) notificationAnalyticsRepository.trackAppActivity(userId);
+  }
+  next();
+});
+
+// CSRF protection — double-submit cookie pattern for all state-changing endpoints
+app.use(csrfProtection);
 
 // Global API rate limiter — protects all /api routes from request flooding
 app.use('/api', apiRateLimiter);
 app.use('/api', tierRateLimiter());
 
-function requestLogger(req, res, next) {
-  const start = process.hrtime.bigint();
-  const { method, path, reqId } = req;
-
-  res.on('finish', () => {
-    const duration = Number(process.hrtime.bigint() - start) / 1e6;
-    const status = res.statusCode;
-    const prefix = reqId ? `[${reqId}] ` : '';
-    const message = `${prefix}[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
-
-    if (status >= 500) {
-      console.error(message);
-    } else if (status >= 400) {
-      console.warn(message);
-    } else {
-      console.log(message);
-    }
-  });
-
-  next();
-}
-
-if (!useStructuredHttpLog) {
-  app.use(requestLogger);
-}
-
 // Mount route modules
+app.post('/api/analytics/track', logEvent);
 app.use('/api/monitoring', monitoringRouter);
+app.use('/api/health-dashboard', healthDashboardRouter);
 app.use('/api', documentationRouter);
 app.use('/', apiRouter);
 app.use('/', healthRouter);
 app.use('/', coreTeamRouter);
+app.use('/', announcementsRouter);
 app.use('/api', formsRouter);
 app.use('/api', portfolioRouter);
+app.use('/api', userGroupsRouter);
 app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api', learningPathRouter);
 app.use('/', syncRouter);
+app.use('/api/feedback', feedbackRouter);
 
 const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
+
+// Scheduled Tasks Management
+app.use('/api/admin/scheduled-tasks', adminAuth, scheduledTasksRouter);
+
+// Database Backup & Recovery Endpoints
+app.get('/api/admin/backups', adminAuth, backupController.getBackups);
+app.post('/api/admin/backups/manual', adminAuth, backupController.runManualBackup);
+app.post('/api/admin/backups/restore', adminAuth, backupController.runRestore);
+app.get('/api/admin/backups/restore-test-history', adminAuth, backupController.getRestoreHistory);
+app.delete('/api/admin/backups', adminAuth, backupController.deleteBackup);
 
 const defaultContent = {
   events: [
@@ -382,22 +401,47 @@ const storage = multer.diskStorage({
   },
 });
 
+const MAGIC_BYTES = {
+  'application/pdf': [[0x25, 0x50, 0x44, 0x46]],
+  'image/png': [[0x89, 0x50, 0x4e, 0x47]],
+  'image/jpeg': [[0xff, 0xd8, 0xff]],
+  'image/gif': [[0x47, 0x49, 0x46]],
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]],
+  'application/zip': [
+    [0x50, 0x4b, 0x03, 0x04],
+    [0x50, 0x4b, 0x05, 0x06],
+    [0x50, 0x4b, 0x07, 0x08],
+  ],
+  'application/x-zip-compressed': [[0x50, 0x4b, 0x03, 0x04]],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
+    [0x50, 0x4b, 0x03, 0x04],
+  ],
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': [
+    [0x50, 0x4b, 0x03, 0x04],
+  ],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [[0x50, 0x4b, 0x03, 0x04]],
+  'text/plain': [],
+  'text/markdown': [],
+  'application/json': [],
+};
+
+function validateMagicBytes(filepath, mimeType) {
+  const signatures = MAGIC_BYTES[mimeType];
+  if (!signatures || signatures.length === 0) return true;
+  const fd = fs.openSync(filepath, 'r');
+  const buffer = Buffer.alloc(8);
+  fs.readSync(fd, buffer, 0, 8, 0);
+  fs.closeSync(fd);
+  return signatures.some((sig) => sig.every((byte, i) => buffer[i] === byte));
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 const fileFilter = (_req, file, cb) => {
-  const allowedMimes = [
-    'application/pdf',
-    'image/png',
-    'image/jpeg',
-    'image/gif',
-    'image/webp',
-    'application/zip',
-    'application/x-zip-compressed',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain',
-    'text/markdown',
-    'application/json',
-  ];
+  if (!file.originalname || file.originalname.includes('..') || file.originalname.includes('/')) {
+    return cb(new Error('Invalid file name'), false);
+  }
+  const allowedMimes = Object.keys(MAGIC_BYTES);
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -408,8 +452,24 @@ const fileFilter = (_req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: MAX_FILE_SIZE },
 });
+
+const uploadWithMagicCheck = (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 10MB.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    if (req.file && !validateMagicBytes(req.file.path, req.file.mimetype)) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: 'File content does not match its declared type.' });
+    }
+    next();
+  });
+};
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(UPLOADS_DIR));
@@ -459,7 +519,7 @@ const _rawSupabaseRequest = async function _rawSupabaseRequest(
   { method = 'GET', body } = {}
 ) {
   if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+  const res = await tracedFetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
     method,
     headers: {
       apikey: SUPABASE_SERVICE_KEY,
@@ -478,7 +538,7 @@ const _rawSupabaseRequest = async function _rawSupabaseRequest(
   return text ? JSON.parse(text) : [];
 };
 
-export const supabaseRequest = _rawSupabaseRequest;
+export { _rawSupabaseRequest as supabaseRequest };
 
 export const supabaseBreaker = circuitBreakerRegistry.register(
   'index-supabase',
@@ -499,7 +559,7 @@ async function supabasePaginatedRequest(pathname, page, limit) {
   const offset = (page - 1) * limit;
   const separator = pathname.includes('?') ? '&' : '?';
   const url = `${SUPABASE_URL}/rest/v1/${pathname}${separator}limit=${limit}&offset=${offset}`;
-  const res = await fetch(url, {
+  const res = await tracedFetch(url, {
     method: 'GET',
     headers: {
       apikey: SUPABASE_SERVICE_KEY,
@@ -635,8 +695,33 @@ async function listEventsStore({ page = 1, limit = 20 } = {}) {
   return { events: all.slice(start, start + limit), total };
 }
 
+const ALLOWED_EVENT_FIELDS = [
+  'id',
+  'name',
+  'description',
+  'date_text',
+  'time',
+  'location',
+  'type',
+  'mode',
+  'category',
+  'tags',
+  'image_url',
+  'registration_link',
+  'capacity',
+  'registered_count',
+  'price',
+  'created_at',
+  'updated_at',
+];
+
 function sanitizeEventRecord(event) {
-  return event;
+  if (!event || typeof event !== 'object') return event;
+  const sanitized = {};
+  for (const field of ALLOWED_EVENT_FIELDS) {
+    if (field in event) sanitized[field] = event[field];
+  }
+  return sanitized;
 }
 
 async function createEventStore(event) {
@@ -873,8 +958,27 @@ async function listCoreTeamStore() {
   return (content.coreTeam || []).map((member) => sanitizeCoreTeamMemberRecord(member));
 }
 
+const ALLOWED_TEAM_MEMBER_FIELDS = [
+  'id',
+  'name',
+  'role',
+  'position',
+  'bio',
+  'avatar_url',
+  'github_url',
+  'linkedin_url',
+  'email',
+  'joined_at',
+  'order',
+];
+
 function sanitizeCoreTeamMemberRecord(member) {
-  return member;
+  if (!member || typeof member !== 'object') return member;
+  const sanitized = {};
+  for (const field of ALLOWED_TEAM_MEMBER_FIELDS) {
+    if (field in member) sanitized[field] = member[field];
+  }
+  return sanitized;
 }
 
 async function createCoreTeamStore(member) {
@@ -1025,10 +1129,22 @@ function clearActivityAuthAttempts(ip) {
   failedActivityAuthAttempts.delete(ip);
 }
 
+// Compliance & Legal Documents (handles both public and admin routes internally)
+app.use('/api/compliance', complianceRouter);
+
 // Admin Analytics & Metrics (mounted with admin auth)
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
 app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
 app.use('/api/admin/scheduled-tasks', adminAuth, scheduledTasksRouter);
+
+// Setup Bull Board for background job monitoring
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/api/admin/queues');
+createBullBoard({
+  queues: eventRemindersQueue ? [new BullMQAdapter(eventRemindersQueue)] : [],
+  serverAdapter,
+});
+app.use('/api/admin/queues', adminAuth, serverAdapter.getRouter());
 
 // OAuth / SSO Student Auth Endpoints
 app.get('/api/auth/google', studentAuthController.googleAuth);
@@ -1036,7 +1152,21 @@ app.get('/api/auth/google/callback', studentAuthController.googleCallback);
 app.get('/api/auth/github', studentAuthController.githubAuth);
 app.get('/api/auth/github/callback', studentAuthController.githubCallback);
 app.get('/api/auth/me', requireStudentAuth, studentAuthController.getMe);
+app.post('/api/auth/theme', requireStudentAuth, studentAuthController.updateTheme);
 app.post('/api/auth/logout', studentAuthController.logout);
+
+// Slack Integration Endpoints
+app.post('/api/auth/slack-settings', requireStudentAuth, studentAuthController.updateSlackSettings);
+app.get('/api/slack/auth', slackController.startSlackAuth);
+app.get('/api/slack/auth/callback', slackController.slackAuthCallback);
+app.post(
+  '/api/slack/commands',
+  express.urlencoded({ extended: true }),
+  slackController.handleSlackCommand
+);
+app.get('/api/admin/slack/config', adminAuth, slackController.getSlackConfig);
+app.post('/api/admin/slack/config', adminAuth, slackController.updateSlackConfig);
+app.delete('/api/admin/slack/disconnect', adminAuth, slackController.disconnectSlack);
 
 // ── Event Admin Management ──
 app.get('/api/admin/events', adminAuth, eventsController.adminListEvents);
@@ -1052,14 +1182,25 @@ app.post('/api/streams', adminAuth, streamController.createStream);
 app.put('/api/streams/:id', adminAuth, streamController.updateStream);
 app.patch('/api/streams/:id/status', adminAuth, streamController.setStreamStatus);
 app.delete('/api/streams/:id', adminAuth, streamController.deleteStream);
-app.post('/api/streams/:id/chat', streamController.addChatMessage);
+app.post('/api/streams/:id/chat', apiRateLimiter, streamController.addChatMessage);
 app.get('/api/streams/:id/chat', streamController.listChatMessages);
-app.post('/api/streams/:id/polls', streamController.createPoll);
+app.post('/api/streams/:id/ban', adminAuth, streamController.banUser);
+app.post('/api/streams/:id/polls', adminAuth, streamController.createPoll);
 app.get('/api/streams/:id/polls', streamController.listPolls);
 app.post('/api/streams/polls/:pollId/vote', streamController.votePoll);
 app.patch('/api/streams/polls/:pollId/close', adminAuth, streamController.closePoll);
 app.patch('/api/streams/chat/:messageId/moderate', adminAuth, streamController.moderateChatMessage);
 app.get('/api/admin/streams', adminAuth, streamController.adminListAll);
+app.post('/api/streams/:id/mod-chat', adminAuth, streamController.addModChatMessage);
+app.get('/api/streams/:id/mod-chat', adminAuth, streamController.listModChatMessages);
+app.get('/api/streams/:id/analytics', adminAuth, streamController.getStreamAnalytics);
+
+// Streaming Engagement: Q&A and Reactions
+app.post('/api/streams/:id/questions', streamController.addQuestion);
+app.get('/api/streams/:id/questions', streamController.listQuestions);
+app.patch('/api/streams/questions/:qId/answer', adminAuth, streamController.answerQuestion);
+app.post('/api/streams/:id/reactions', streamController.addReaction);
+app.get('/api/streams/:id/reactions', streamController.getReactions);
 
 // Public listings
 app.get('/api/content/team', async (req, res) => {
@@ -1104,67 +1245,6 @@ app.delete(
   coreTeamController.adminDeleteCoreTeamMember
 );
 
-// Dynamic forms
-app.post('/api/forms/membership', formRateLimiter, formsController.makeHandleForm('membership'));
-app.post('/api/forms/recruitment', formRateLimiter, formsController.makeHandleForm('recruitment'));
-app.post('/api/core-team/apply', formRateLimiter, formsController.makeHandleForm('core_team'));
-
-app.post(
-  '/api/submissions/membership',
-  formRateLimiter,
-  formsController.makeHandleForm('membership')
-);
-app.post(
-  '/api/submissions/recruitment',
-  formRateLimiter,
-  formsController.makeHandleForm('recruitment')
-);
-
-// Admin membership responses
-async function _rawMembershipFetch(scriptUrl, secret) {
-  const response = await fetch(scriptUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'getResponses', token: secret }),
-  });
-  if (!response.ok) {
-    throw new Error(`Google Apps Script returned ${response.status}`);
-  }
-  return response.json();
-}
-
-const membershipBreaker = circuitBreakerRegistry.register(
-  'membership-gas',
-  new CircuitBreaker(_rawMembershipFetch, {
-    name: 'membership-gas',
-    failureThreshold: 3,
-    successThreshold: 2,
-    coolDownPeriod: 15000,
-    maxCoolDownPeriod: 120000,
-  })
-);
-
-app.get('/api/admin/membership', adminAuth, async (req, res) => {
-  try {
-    const scriptUrl = process.env.MEMBERSHIP_SCRIPT_URL;
-    const secret = process.env.MEMBERSHIP_SECRET;
-
-    if (!scriptUrl || !secret) {
-      return res.json({ responses: [] });
-    }
-
-    const data = await membershipBreaker.execute(scriptUrl, secret);
-    return res.json({ responses: data.responses || [] });
-  } catch (err) {
-    if (err.code === 'CIRCUIT_OPEN') {
-      console.warn('[Membership] Circuit breaker is OPEN, returning empty responses');
-      return res.json({ responses: [] });
-    }
-    console.error('[Membership] Failed to fetch responses:', err.message);
-    return res.status(500).json({ error: 'Failed to fetch membership responses' });
-  }
-});
-
 // Circuit Breaker Admin API
 app.get('/api/admin/circuit-breaker/metrics', adminAuth, async (req, res) => {
   const metrics = circuitBreakerRegistry.getAllMetrics();
@@ -1191,272 +1271,6 @@ app.post('/api/admin/circuit-breaker/retry/:name', adminAuth, async (req, res) =
     return res.json({ ok: true, state: breaker.state, result });
   } catch (err) {
     return res.json({ ok: false, error: err.message });
-  }
-});
-
-app.get('/api/admin/me', adminAuth, (req, res) => {
-  return res.json({ username: req.adminSession.username });
-});
-
-// Real-time Push Subscriber channels.
-// The in-memory Set is a fast local mirror. When a PostgreSQL database is
-// configured (DATABASE_URL present), subscriptions are also persisted to the
-// push_subscriptions table so they survive server restarts, deploys, and
-// crashes. When no database is configured the store degrades to memory-only,
-// preserving the previous behavior for local development.
-const pushSubscriptions = new Set();
-
-const PUSH_PERSISTENCE_ENABLED = Boolean(process.env.DATABASE_URL);
-
-// Load any previously persisted subscriptions into the in-memory mirror at
-// startup so a restart does not silently drop registered subscribers.
-async function loadPersistedPushSubscriptions() {
-  if (!PUSH_PERSISTENCE_ENABLED) return;
-  try {
-    const rows = await pushSubscriptionsRepository.list({ limit: 10000 });
-    for (const sub of rows) {
-      pushSubscriptions.add(JSON.stringify(sub));
-    }
-    console.log(`Loaded ${rows.length} persisted push subscription(s).`);
-  } catch (err) {
-    console.error('Failed to load persisted push subscriptions:', err.message);
-  }
-}
-
-async function persistPushSubscription(subscription) {
-  if (!PUSH_PERSISTENCE_ENABLED) return;
-  try {
-    await pushSubscriptionsRepository.add(subscription);
-  } catch (err) {
-    console.error('Failed to persist push subscription:', err.message);
-  }
-}
-
-async function removePersistedPushSubscription(subscription) {
-  if (!PUSH_PERSISTENCE_ENABLED) return;
-  try {
-    await pushSubscriptionsRepository.remove(subscription.endpoint);
-  } catch (err) {
-    console.error('Failed to remove persisted push subscription:', err.message);
-  }
-}
-
-const validatePushSubscription = [
-  body('subscription').isObject().withMessage('subscription must be an object'),
-  body('subscription.endpoint')
-    .isURL()
-    .withMessage('endpoint must be a valid URL')
-    .isLength({ max: 2048 }),
-  body('subscription.keys').isObject().withMessage('keys must be an object'),
-  body('subscription.keys.p256dh')
-    .isString()
-    .isLength({ max: 256 })
-    .withMessage('p256dh must be a string up to 256 chars'),
-  body('subscription.keys.auth')
-    .isString()
-    .isLength({ max: 128 })
-    .withMessage('auth must be a string up to 128 chars'),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid subscription payload', details: errors.array() });
-    }
-
-    // Strict sanitization: reconstruct object to drop malicious properties and limit memory size
-    const {
-      endpoint,
-      keys: { p256dh, auth },
-    } = req.body.subscription;
-    req.body.subscription = { endpoint, keys: { p256dh, auth } };
-
-    next();
-  },
-];
-
-app.post(
-  '/api/notifications/subscribe',
-  notificationRateLimiter,
-  validatePushSubscription,
-  async (req, res) => {
-    try {
-      const { subscription } = req.body;
-      if (subscription) {
-        pushSubscriptions.add(JSON.stringify(subscription));
-        if (pushSubscriptions.size > 10000) {
-          const oldest = pushSubscriptions.values().next().value;
-          pushSubscriptions.delete(oldest);
-        }
-        await persistPushSubscription(subscription);
-      }
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.post(
-  '/api/notifications/unsubscribe',
-  notificationRateLimiter,
-  validatePushSubscription,
-  async (req, res) => {
-    try {
-      const { subscription } = req.body;
-      if (subscription) {
-        pushSubscriptions.delete(JSON.stringify(subscription));
-        await removePersistedPushSubscription(subscription);
-      }
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-function requireNotificationAuth(req, res, next) {
-  adminAuthMiddleware.requireAdmin(req, res, (err) => {
-    if (!err && req.adminSession) {
-      return next();
-    }
-    requireStudentAuth(req, res, (err2) => {
-      if (!err2 && req.studentUser) {
-        return next();
-      }
-      return res.status(401).json({ error: 'Unauthorized: Authentication required' });
-    });
-  });
-}
-
-app.post(
-  '/api/notifications/mark-read',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      const { id, userId } = req.body || {};
-      if (!id) return res.status(400).json({ error: 'id required' });
-      let uid = userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (userId && userId !== studentId) {
-          return res
-            .status(403)
-            .json({ error: 'Forbidden: Cannot modify other users notifications' });
-        }
-        uid = studentId;
-      }
-      const ok = await notificationsService.markAsRead(uid, id);
-      return res.json({ success: ok });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.post(
-  '/api/notifications/mark-all-read',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      const { userId } = req.body || {};
-      let uid = userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (userId && userId !== studentId) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-        uid = studentId;
-      }
-      await notificationsService.markAllAsRead(uid);
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.delete(
-  '/api/notifications/:id',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      const id = req.params.id;
-      let uid = req.query.userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (req.query.userId && req.query.userId !== studentId) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-        uid = studentId;
-      }
-      const removed = await notificationsService.removeNotification(uid, id);
-      if (!removed) return res.status(404).json({ error: 'Notification not found' });
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.delete(
-  '/api/notifications',
-  requireNotificationAuth,
-  notificationRateLimiter,
-  async (req, res) => {
-    try {
-      let uid = req.query.userId || 'global';
-      if (req.studentUser) {
-        const studentId = req.studentUser.sub || req.studentUser.id;
-        if (req.query.userId && req.query.userId !== studentId) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-        uid = studentId;
-      }
-      await notificationsService.clearAll(uid);
-      return res.json({ success: true });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-app.post('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
-  try {
-    const { userId, title, message, type, link } = req.body || {};
-    if (!title || !message) {
-      return res.status(400).json({ error: 'title and message are required' });
-    }
-    const note = await notificationsService.addNotification(userId || 'global', {
-      title,
-      message,
-      type,
-      link,
-    });
-    return res.json({ success: true, notification: note });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// Portfolio routing support
-app.get('/api/portfolio/:username', async (req, res) => {
-  try {
-    const username = String(req.params.username || '').trim();
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
-    }
-    const portfolio = await portfolioRepository.getByUsername(username);
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found' });
-    }
-    return res.json(portfolio);
-  } catch (err) {
-    console.error('Error fetching portfolio:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -1618,8 +1432,29 @@ app.get('/api/notifications', async (req, res) => {
   }
 });
 
+function requireNotificationPrefAuth(req, res, next) {
+  adminAuthMiddleware.requireAdmin(req, res, (err) => {
+    if (!err && req.adminSession) {
+      return next();
+    }
+    requireStudentAuth(req, res, (err2) => {
+      if (err2 || !req.studentUser) {
+        return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+      }
+      const userId =
+        req.method === 'GET' ? req.query.userId || 'global' : req.body.userId || 'global';
+      if (req.studentUser.sub === userId || req.studentUser.id === userId) {
+        return next();
+      }
+      return res
+        .status(403)
+        .json({ error: "Forbidden: You cannot access or modify other users' preferences" });
+    });
+  });
+}
+
 // Notification Preferences
-app.get('/api/notifications/preferences', async (req, res) => {
+app.get('/api/notifications/preferences', requireNotificationPrefAuth, async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
     const prefs = await notificationPreferencesRepository.list(userId);
@@ -1629,15 +1464,20 @@ app.get('/api/notifications/preferences', async (req, res) => {
   }
 });
 
-app.put('/api/notifications/preferences', async (req, res) => {
+app.put('/api/notifications/preferences', requireNotificationPrefAuth, async (req, res) => {
   try {
     const userId = req.body.userId || 'global';
-    const { category, email, push, in_app } = req.body;
+    const { category, email, push, in_app, sms, frequency, quiet_start, quiet_end, dnd } = req.body;
     if (!category) return res.status(400).json({ error: 'category is required' });
     const pref = await notificationPreferencesRepository.set(userId, category, {
       email,
       push,
       in_app,
+      sms,
+      frequency,
+      quiet_start,
+      quiet_end,
+      dnd,
     });
     return res.json({ preference: pref });
   } catch (err) {
@@ -1645,7 +1485,7 @@ app.put('/api/notifications/preferences', async (req, res) => {
   }
 });
 
-app.put('/api/notifications/preferences/bulk', async (req, res) => {
+app.put('/api/notifications/preferences/bulk', requireNotificationPrefAuth, async (req, res) => {
   try {
     const userId = req.body.userId || 'global';
     const { preferences } = req.body;
@@ -1659,48 +1499,149 @@ app.put('/api/notifications/preferences/bulk', async (req, res) => {
   }
 });
 
+// Notification analytics (lightweight collector)
+app.post('/api/notifications/analytics', async (req, res) => {
+  try {
+    const event = req.body || {};
+    // Minimal validation — in future route can forward to analytics pipeline
+    console.log('[notification-analytics]', event.type || 'unknown', event);
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+
+    // 1. Validate credentials up front.  Anything below this point
+    //    trusts the username + passkey pair.
+    const credentials = portfolioPutSchema.safeParse({
+      username: body.username,
+      passkey: body.passkey,
+    });
+    if (!credentials.success) {
+      const firstIssue = credentials.error.issues[0];
+      return res.status(400).json({ error: firstIssue?.message || 'Invalid request body' });
+    }
+    const { username, passkey } = credentials.data;
+
+    // 2. Validate the content body.  This rejects XSS payloads such
+    //    as javascript: URLs and unknown protocol schemes before
+    //    the data ever reaches the repository.  The repository
+    //    re-sanitizes as defense-in-depth.
+    const content = portfolioContentSchema.safeParse(body);
+    if (!content.success) {
+      const firstIssue = content.error.issues[0];
+      return res.status(400).json({
+        error:
+          `Invalid portfolio content: ${firstIssue?.path?.join('.') || ''} ${firstIssue?.message || ''}`.trim(),
+      });
+    }
+
+    const existingPortfolio = await portfolioRepository.getByUsername(username);
+    const isNewRegistration = !existingPortfolio;
+
+    const lockout = checkPasskeyLockout(username, ip);
+    if (lockout) {
+      return res.status(429).json({
+        error: 'Too many failed passkey attempts. Please try again later.',
+      });
+    }
+
+    const isAuthorized = await portfolioRepository.verifyPasskey(username, passkey, {
+      allowNew: isNewRegistration,
+    });
+    if (!isAuthorized) {
+      recordFailedPasskeyAttempt(username, ip);
+      return res.status(401).json({ error: 'Incorrect passkey for this username' });
+    }
+
+    clearPasskeyAttempts(username, ip);
+
+    const saved = await portfolioRepository.createOrUpdate({
+      ...content.data,
+      username,
+      passkey,
+    });
+    return res.json({ ok: true, portfolio: saved });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res
+        .status(409)
+        .json({ error: 'Username already exists. Another request may have just created it.' });
+    }
+    console.error('Error saving portfolio:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 // ── Forum / Q&A ──
 app.get('/api/forum/categories', forumController.listCategories);
 app.get('/api/forum/threads', forumController.listThreads);
 app.get('/api/forum/threads/:id', forumController.getThread);
-app.post('/api/forum/threads', forumController.createThread);
-app.put('/api/forum/threads/:id', forumController.updateThread);
-app.delete('/api/forum/threads/:id', forumController.deleteThread);
+app.post('/api/forum/threads', requireStudentAuth, forumController.createThread);
+app.put('/api/forum/threads/:id', requireStudentAuth, forumController.updateThread);
+app.delete('/api/forum/threads/:id', requireStudentAuth, forumController.deleteThread);
 app.get('/api/forum/threads/:id/replies', forumController.listReplies);
-app.post('/api/forum/threads/:id/replies', forumController.createReply);
-app.put('/api/forum/replies/:replyId', forumController.updateReply);
-app.delete('/api/forum/replies/:replyId', forumController.deleteReply);
-app.post('/api/forum/threads/:id/vote', forumController.voteThread);
-app.post('/api/forum/replies/:replyId/vote', forumController.voteReply);
-app.post('/api/forum/threads/:id/accept/:replyId', forumController.acceptReply);
+app.post('/api/forum/threads/:id/replies', requireStudentAuth, forumController.createReply);
+app.put('/api/forum/replies/:replyId', requireStudentAuth, forumController.updateReply);
+app.delete('/api/forum/replies/:replyId', requireStudentAuth, forumController.deleteReply);
+app.post('/api/forum/threads/:id/vote', requireStudentAuth, forumController.voteThread);
+app.post('/api/forum/replies/:replyId/vote', requireStudentAuth, forumController.voteReply);
+app.post('/api/forum/threads/:id/accept/:replyId', requireStudentAuth, forumController.acceptReply);
 app.patch('/api/admin/forum/threads/:id/moderate', adminAuth, forumController.moderateThread);
 app.patch('/api/admin/forum/replies/:replyId/moderate', adminAuth, forumController.moderateReply);
 app.get('/api/admin/forum/threads', adminAuth, forumController.adminListThreads);
 
+function requireMentorshipAuth(req, res, next) {
+  adminAuthMiddleware.requireAdmin(req, res, (err) => {
+    if (!err && req.adminSession) {
+      return next();
+    }
+    requireStudentAuth(req, res, (err2) => {
+      if (!err2 && req.studentUser) {
+        return next();
+      }
+      return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+    });
+  });
+}
+
 // ── Mentorship & Buddy System ──
 app.get('/api/mentorship/mentors', mentorshipController.listMentors);
 app.get('/api/mentorship/mentors/:id', mentorshipController.getMentor);
-app.post('/api/mentorship/mentors', mentorshipController.registerMentor);
-app.put('/api/mentorship/mentors/:id', adminAuth, mentorshipController.updateMentor);
-app.post('/api/mentorship/requests', mentorshipController.requestMentorship);
-app.get('/api/mentorship/requests', mentorshipController.listMentorships);
-app.get('/api/mentorship/requests/:id', mentorshipController.getMentorship);
+app.post('/api/mentorship/mentors', requireStudentAuth, mentorshipController.registerMentor);
+app.put('/api/mentorship/mentors/:id', requireMentorshipAuth, mentorshipController.updateMentor);
+app.post('/api/mentorship/requests', requireStudentAuth, mentorshipController.requestMentorship);
+app.get('/api/mentorship/requests', requireMentorshipAuth, mentorshipController.listMentorships);
+app.get('/api/mentorship/requests/:id', requireMentorshipAuth, mentorshipController.getMentorship);
 app.put(
   '/api/mentorship/requests/:id/status',
-  adminAuth,
+  requireMentorshipAuth,
   mentorshipController.updateMentorshipStatus
 );
-app.post('/api/mentorship/requests/:id/sessions', mentorshipController.logSession);
-app.get('/api/mentorship/requests/:id/sessions', mentorshipController.listSessions);
-app.post('/api/mentorship/buddy-pairs', mentorshipController.createBuddyPair);
-app.get('/api/mentorship/buddy-pairs', mentorshipController.listBuddyPairs);
+app.post(
+  '/api/mentorship/requests/:id/sessions',
+  requireStudentAuth,
+  mentorshipController.logSession
+);
+app.get(
+  '/api/mentorship/requests/:id/sessions',
+  requireStudentAuth,
+  mentorshipController.listSessions
+);
+app.post('/api/mentorship/buddy-pairs', requireStudentAuth, mentorshipController.createBuddyPair);
+app.get('/api/mentorship/buddy-pairs', requireStudentAuth, mentorshipController.listBuddyPairs);
 app.get('/api/admin/mentorships', adminAuth, mentorshipController.adminListAll);
 app.get('/api/admin/mentors', adminAuth, mentorshipController.adminListMentors);
 
 // ── Search, Discovery & Recommendation Engine ──
-app.get('/api/search', searchController.search);
-app.get('/api/search/trending', searchController.trending);
-app.get('/api/recommendations', searchController.recommendations);
+app.get('/api/search', searchRateLimiter, searchController.search);
+app.get('/api/search/trending', searchRateLimiter, searchController.trending);
+app.get('/api/recommendations', searchRateLimiter, searchController.recommendations);
 // ── Resource Library Routes ──
 // Public resource endpoints
 app.get('/api/resources', resourcesController.listResources);
@@ -1714,7 +1655,7 @@ app.post('/api/resources/:id/download-track', resourcesController.downloadResour
 app.post(
   '/api/resources/upload',
   requireStudentAuth,
-  upload.single('file'),
+  uploadWithMagicCheck,
   resourcesController.uploadFile
 );
 
@@ -1747,19 +1688,30 @@ let server;
 
 if (process.env.NODE_ENV !== 'test') {
   if (!process.env.VERCEL) {
-    const boot = HAS_SUPABASE ? studentUsersRepository.ensureSchema() : ensureContentFile();
+    const boot = HAS_SUPABASE
+      ? Promise.all([studentUsersRepository.ensureSchema(), slackRepository.ensureSchema()])
+      : ensureContentFile();
     boot.then(() => {
       loadPersistedPushSubscriptions();
+      slackIntegrationService.init();
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
         schedulerService.init();
+
+        // Register Learning Path Nudges (Runs daily)
+        schedulerService.schedule('0 10 * * *', async () => {
+          await learningPathService.runNudgeJob();
+        });
       });
+      initializeSocketIO(server);
     });
   } else {
     loadPersistedPushSubscriptions();
+    slackIntegrationService.init();
     server = app.listen(port, () => {
       console.log(`NexaSphere server listening on http://localhost:${port}`);
       schedulerService.init();
+      startWebhookRetryProcessor();
     });
     initializeSocketIO(server);
   }

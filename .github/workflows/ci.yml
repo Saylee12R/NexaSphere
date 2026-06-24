@@ -1,5 +1,5 @@
 # CI/CD Build and Test Workflow
-name: CI — Build & Test
+name: CI – Build & Test
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
         run: npm run format:check
 
   website:
-    name: Website — Build
+    name: Website – Build
     runs-on: ubuntu-latest
 
     steps:
@@ -53,6 +53,9 @@ jobs:
           NODE_ENV: production
           VITE_API_BASE: ''
 
+      - name: Create .nojekyll
+        run: touch website/dist/.nojekyll
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -60,9 +63,9 @@ jobs:
           path: website/dist/
           retention-days: 3
 
-  # ── Admin Dashboard ───────────────────────────────────────────────────────
+  # ── Admin Dashboard ──────────────────────────────────────────────────────
   admin-dashboard:
-    name: Admin Dashboard — Build & Test
+    name: Admin Dashboard – Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -89,9 +92,9 @@ jobs:
         env:
           NODE_ENV: production
 
-  # ── Server (Express API) install & smoke test ─────────────────────────────
+  # ── Server (Express API) install & smoke test ──────────────────────────
   server:
-    name: Server — Install & Unit Tests
+    name: Server – Install & Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -122,11 +125,12 @@ jobs:
         run: npm test
         env:
           NODE_ENV: test
-          # Provide stub env vars so server startup helpers don't crash
           ADMIN_USERNAME: test-admin
-          ADMIN_PASSWORD: TestPass123!ABC
-          ADMIN_EVENT_PASSWORD: EventPass123!XYZ
+          ADMIN_PASSWORD: 'Ci_test_password_stub1!'
+          ADMIN_EVENT_PASSWORD: 'Ci_test_event_password_stub1!'
           PORT: 8787
+          CORS_ORIGIN: 'http://localhost,http://127.0.0.1'
+
   report:
     name: CI Summary Report
     runs-on: ubuntu-latest
@@ -138,29 +142,45 @@ jobs:
       - server
 
     if: always() && github.event_name == 'pull_request'
-    
+
     permissions:
       pull-requests: write
 
     steps:
       - name: Post PR Summary
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         with:
           script: |
-            const body = `
-            ## CI Pipeline Results
+            const results = {
+              lint:           '${{ needs.lint.result }}',
+              website:        '${{ needs.website.result }}',
+              adminDashboard: '${{ needs.admin-dashboard.result }}',
+              server:         '${{ needs.server.result }}',
+            };
 
-            ✅ Lint passed
-            ✅ Website build passed
-            ✅ Admin dashboard tests passed
-            ✅ Server tests passed
+            const icon = (r) =>
+              r === 'success' ? '✅' :
+              r === 'skipped' ? '⏭️' : '❌';
 
-            CI pipeline completed successfully.
-            `;
+            const rows = [
+              `| Job | Result |`,
+              `|-----|--------|`,
+              `| Lint & Format | ${icon(results.lint)} ${results.lint} |`,
+              `| Website Build | ${icon(results.website)} ${results.website} |`,
+              `| Admin Dashboard | ${icon(results.adminDashboard)} ${results.adminDashboard} |`,
+              `| Server Tests | ${icon(results.server)} ${results.server} |`,
+            ].join('\n');
+
+            const allPassed = Object.values(results).every(r => r === 'success');
+            const summary = allPassed
+              ? '✅ All checks passed!'
+              : '❌ One or more jobs failed. Please review the logs.';
+
+            const body = `## CI Summary\n\n${rows}\n\n${summary}`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: context.repo.repo,
+              repo:  context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body
+              body,
             });

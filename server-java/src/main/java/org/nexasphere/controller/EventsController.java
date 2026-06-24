@@ -37,6 +37,19 @@ public class EventsController {
     public ResponseEntity<EventEntity> create(@Valid @RequestBody EventEntity event) {
         event.setId(null);
         event.setName(sanitizer.clean(event.getName()));
+        event.setShortName(sanitizer.clean(event.getShortName()));
+        event.setDateText(sanitizer.clean(event.getDateText()));
+        event.setDescription(sanitizer.clean(event.getDescription()));
+        event.setStatus(sanitizer.clean(event.getStatus()));
+        event.setIcon(sanitizer.clean(event.getIcon()));
+        event.setCategory(sanitizer.clean(event.getCategory()));
+        event.setLocation(sanitizer.clean(event.getLocation()));
+        if (event.getTags() != null) {
+            event.setTags(event.getTags().stream().map(sanitizer::clean).toList());
+        }
+        if (event.getGradientColors() != null) {
+            event.setGradientColors(event.getGradientColors().stream().map(sanitizer::clean).toList());
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(event));
     }
 
@@ -52,20 +65,24 @@ public class EventsController {
                 existing.setName(sanitizer.clean(event.getName()));
             }
 
+            if (event.getShortName() != null) {
+                existing.setShortName(sanitizer.clean(event.getShortName()));
+            }
+
             if (event.getDescription() != null) {
-                existing.setDescription(event.getDescription());
+                existing.setDescription(sanitizer.clean(event.getDescription()));
             }
 
             if (event.getDateText() != null) {
-                existing.setDateText(event.getDateText());
+                existing.setDateText(sanitizer.clean(event.getDateText()));
             }
 
             if (event.getStatus() != null) {
-                existing.setStatus(event.getStatus());
+                existing.setStatus(sanitizer.clean(event.getStatus()));
             }
 
             if (event.getIcon() != null) {
-                existing.setIcon(event.getIcon());
+                existing.setIcon(sanitizer.clean(event.getIcon()));
             }
 
             existing.setHasDetailPage(event.isHasDetailPage());
@@ -79,11 +96,11 @@ public class EventsController {
             }
 
             if (event.getCategory() != null) {
-                existing.setCategory(event.getCategory());
+                existing.setCategory(sanitizer.clean(event.getCategory()));
             }
 
             if (event.getLocation() != null) {
-                existing.setLocation(event.getLocation());
+                existing.setLocation(sanitizer.clean(event.getLocation()));
             }
 
             if (event.getCapacity() != null) {
@@ -91,11 +108,11 @@ public class EventsController {
             }
 
             if (event.getTags() != null && !event.getTags().isEmpty()) {
-                existing.setTags(event.getTags());
+                existing.setTags(event.getTags().stream().map(sanitizer::clean).toList());
             }
 
             if (event.getGradientColors() != null) {
-                existing.setGradientColors(event.getGradientColors());
+                existing.setGradientColors(event.getGradientColors().stream().map(sanitizer::clean).toList());
             }
 
             // save merged entity

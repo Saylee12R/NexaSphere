@@ -48,6 +48,9 @@ const emailBreaker = circuitBreakerRegistry.register(
 );
 
 async function renderTemplate(templateName, data) {
+  if (typeof templateName !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(templateName)) {
+    throw new Error('Invalid email template name');
+  }
   const templatePath = path.join(__dirname, 'templates', `${templateName}.ejs`);
   const templateStr = await fs.readFile(templatePath, 'utf-8');
   return ejs.render(templateStr, data);
@@ -108,5 +111,41 @@ export async function sendRSVPConfirmationEmail(to, name, eventDetails) {
     subject: `RSVP Confirmed: ${eventDetails.eventName}`,
     templateName: 'rsvp-confirmation',
     data: { name, ...eventDetails },
+  });
+}
+
+export async function sendAttendanceConfirmationEmail(to, data) {
+  return sendEmail({
+    to,
+    subject: `Attendance Confirmed: ${data.eventName}`,
+    templateName: 'attendance-confirmation',
+    data: { name: data.name, ...data },
+  });
+}
+
+export async function sendRegistrationConfirmationEmail(to, data) {
+  return sendEmail({
+    to,
+    subject: `Registration Confirmed: ${data.eventName}`,
+    templateName: 'registration-confirmation',
+    data: { name: data.name, ...data },
+  });
+}
+
+export async function sendWaitlistPromotionEmail(to, data) {
+  return sendEmail({
+    to,
+    subject: `You've been promoted: ${data.eventName}`,
+    templateName: 'waitlist-promotion',
+    data: { name: data.name, ...data },
+  });
+}
+
+export async function sendEventReminderEmail(to, data) {
+  return sendEmail({
+    to,
+    subject: `Reminder: ${data.eventName} is starting soon`,
+    templateName: 'event-reminder',
+    data: { name: data.name, ...data },
   });
 }

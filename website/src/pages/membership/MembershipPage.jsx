@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '../../utils/apiClient.js';
 import useFormValidation from '../../hooks/useFormValidation';
+import { useFormMemory } from '../../hooks/useFormMemory';
 import {
   DynamicIcon,
   IconArrowLeft,
@@ -248,18 +249,38 @@ export default function MembershipPage({ onBack }) {
   const [submittedEmail, setSubmittedEmail] = useState('');
   const topRef = useRef(null);
 
+  const {
+    values: savedValues,
+    setValue: saveField,
+    wasAutofilled,
+    undo: undoField,
+    redo: redoField,
+    canUndo,
+    canRedo,
+    clearMemory,
+  } = useFormMemory('membership', [
+    'fullName',
+    'collegeEmail',
+    'rollNumber',
+    'course',
+    'branch',
+    'section',
+    'semester',
+    'whatsapp',
+  ]);
+
   const [form, setForm] = useState({
-    fullName: '',
-    collegeEmail: '',
-    rollNumber: '',
-    course: '',
+    fullName: savedValues.fullName || '',
+    collegeEmail: savedValues.collegeEmail || '',
+    rollNumber: savedValues.rollNumber || '',
+    course: savedValues.course || '',
     courseOther: '',
-    branch: '',
+    branch: savedValues.branch || '',
     branchOther: '',
-    section: '',
+    section: savedValues.section || '',
     sectionOther: '',
-    semester: '',
-    whatsapp: '',
+    semester: savedValues.semester || '',
+    whatsapp: savedValues.whatsapp || '',
 
     groups: [],
     whyJoin: '',
@@ -267,6 +288,18 @@ export default function MembershipPage({ onBack }) {
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
+    // Persist to memory for eligible fields
+    const memorizedFields = [
+      'fullName',
+      'collegeEmail',
+      'rollNumber',
+      'course',
+      'branch',
+      'section',
+      'semester',
+      'whatsapp',
+    ];
+    if (memorizedFields.includes(key)) saveField(key, val);
   }
 
   const missingRequired = useMemo(() => {
@@ -866,6 +899,83 @@ export default function MembershipPage({ onBack }) {
         <div className="member-shell pop-scale">
           <div className="corner-tl" />
           <div className="corner-br" />
+
+          {/* Autofill Banner */}
+          {wasAutofilled && step === 1 && (
+            <div
+              style={{
+                background: 'rgba(16,185,129,0.08)',
+                borderBottom: '1px solid rgba(16,185,129,0.25)',
+                padding: '10px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.82rem',
+                  color: '#10B981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                ✨ Fields autofilled from your previous session
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={undoField}
+                  disabled={!canUndo}
+                  title="Undo last change"
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--bdr)',
+                    borderRadius: 6,
+                    padding: '2px 10px',
+                    fontSize: '0.75rem',
+                    color: canUndo ? 'var(--t1)' : 'var(--t3)',
+                    cursor: canUndo ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  ↩ Undo
+                </button>
+                <button
+                  onClick={redoField}
+                  disabled={!canRedo}
+                  title="Redo"
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--bdr)',
+                    borderRadius: 6,
+                    padding: '2px 10px',
+                    fontSize: '0.75rem',
+                    color: canRedo ? 'var(--t1)' : 'var(--t3)',
+                    cursor: canRedo ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  ↪ Redo
+                </button>
+                <button
+                  onClick={clearMemory}
+                  title="Clear autofill data"
+                  style={{
+                    background: 'none',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 6,
+                    padding: '2px 10px',
+                    fontSize: '0.75rem',
+                    color: '#ef4444',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✕ Clear
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="member-topbar">
             <div

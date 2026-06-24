@@ -36,6 +36,11 @@ public class ActivityEventsController {
         event.setId(null);
         event.setActivityKey(activityKey);
         event.setName(sanitizer.clean(event.getName()));
+        event.setDate(sanitizer.clean(event.getDate()));
+        event.setDescription(sanitizer.clean(event.getDescription()));
+        event.setParticipants(sanitizer.clean(event.getParticipants()));
+        event.setResult(sanitizer.clean(event.getResult()));
+        
         ActivityEventEntity saved = Objects.requireNonNull(
                 repo.save(event), "saved entity must not be null");
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);

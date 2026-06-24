@@ -93,11 +93,11 @@ NexaSphere/
 
 ## Node Version Management & Environment Setup
 
-Consistent development environments are crucial for the stability, performance, and scaling of NexaSphere. To prevent compatibility issues among contributors, this project strictly enforces Node.js version **v20** (specifically the LTS "Iron" release stream).
+Consistent development environments are crucial for the stability, performance, and scaling of NexaSphere. To prevent compatibility issues among contributors, this project supports Node.js versions **v20.x (LTS)** or **v22.x (LTS)**.
 
-### Why Node.js v20 (LTS)?
+### Why Node.js v20/v22 (LTS)?
 
-- **LTS (Long Term Support) Stability**: Node.js 20 provides long-term security updates and bug fixes, ensuring that the NexaSphere platform is built on a rock-solid foundation.
+- **LTS (Long Term Support) Stability**: Using LTS versions ensures the NexaSphere platform is built on a rock-solid foundation with long-term security updates.
 - **Modern Runtime Features**: Node.js 20 includes native features such as the stable `fetch` API, a built-in test runner, and refined ESM (ECMAScript Modules) support, which are heavily utilized across our backend services.
 - **Dependency Compatibility**: Our modern toolchain (including React 18, Vite 5, Express 4, and ESLint) is optimized and tested against Node.js 20. Running older or newer versions might result in unexpected compilation or runtime errors.
 - **Production Alignment**: Since our backend is deployed on Render and Docker containers configured for Node 20, using the exact same version locally prevents environment-specific bugs.
@@ -110,50 +110,52 @@ We recommend using **NVM (Node Version Manager)** to manage Node versions. NVM a
 
 #### A. macOS and Linux
 
-1.  **Install NVM**:
-    Run the installation script in your terminal using either `curl` or `wget`:
+1. **Install NVM**:
+   Run the installation script in your terminal using either `curl` or `wget`:
 
-    ```bash
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    ```
+   ```bash
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+   ```
 
-    _OR_
+   _OR_
 
-    ```bash
-    wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    ```
+   ```bash
+   wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+   ```
 
-2.  **Load NVM into the Shell**:
-    The installer script should automatically append the loading code to your profile file (such as `~/.zshrc`, `~/.bashrc`, or `~/.bash_profile`). If it doesn't, manually append the following block:
+2. **Load NVM into the Shell**:
+   The installer script should automatically append the loading code to your profile file (such as `~/.zshrc`, `~/.bashrc`, or `~/.bash_profile`). If it doesn't, manually append the following block:
 
-    ```bash
-    export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && echo "$HOME/.nvm" || echo "$XDG_CONFIG_HOME/nvm")"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-    ```
+   ```bash
+   export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && echo "$HOME/.nvm" || echo "$XDG_CONFIG_HOME/nvm")"
+   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+   ```
 
-3.  **Reload your Profile**:
-    Apply the changes by running:
-    ```bash
-    source ~/.zshrc
-    # Or for bash
-    source ~/.bashrc
-    ```
+3. **Reload your Profile**:
+   Apply the changes by running:
+
+   ```bash
+   source ~/.zshrc
+   # Or for bash
+   source ~/.bashrc
+   ```
 
 #### B. Windows
 
 Windows does not natively support the UNIX `nvm` script. Instead, use **nvm-windows**:
 
-1.  **Download the Installer**:
-    Go to the [nvm-windows releases page](https://github.com/coreybutler/nvm-windows/releases) and download the latest `nvm-setup.exe` installer.
+1. **Download the Installer**:
+   Go to the [nvm-windows releases page](https://github.com/coreybutler/nvm-windows/releases) and download the latest `nvm-setup.exe` installer.
 
-2.  **Run the Installer**:
-    Follow the wizard to complete the installation. Ensure that the installation paths do not contain spaces to prevent issues with Node binaries.
+2. **Run the Installer**:
+   Follow the wizard to complete the installation. Ensure that the installation paths do not contain spaces to prevent issues with Node binaries.
 
-3.  **Verify Installation**:
-    Open a new command prompt or PowerShell window and run:
-    ```cmd
-    nvm version
-    ```
+3. **Verify Installation**:
+   Open a new command prompt or PowerShell window and run:
+
+   ```cmd
+   nvm version
+   ```
 
 ---
 
@@ -206,6 +208,7 @@ You can configure your shell to automatically call `nvm use` whenever you change
 
 - **Bash (~/.bashrc)**:
   Append the following block to your `~/.bashrc`:
+
   ```bash
   cdnvm() {
     cd "$@" || return
@@ -222,17 +225,19 @@ You can configure your shell to automatically call `nvm use` whenever you change
 
 If you find NVM slow during shell startup, you can use **FNM**, a fast, Rust-based alternative:
 
-1.  **Installation**:
-    - macOS (via Homebrew): `brew install fnm`
-    - Linux/macOS (via Curl): `curl -fsSL https://fnm.vercel.app/install | bash`
-    - Windows (via Scoop): `scoop install fnm`
+1. **Installation**:
+   - macOS (via Homebrew): `brew install fnm`
+   - Linux/macOS (via Curl): `curl -fsSL https://fnm.vercel.app/install | bash`
+   - Windows (via Scoop): `scoop install fnm`
 
-2.  **Shell Integration**:
-    Add the following to your shell profile configuration (`~/.zshrc`, `~/.bashrc`, or PowerShell profile):
-    ```bash
-    eval "$(fnm env --use-on-cd)"
-    ```
-    This automatically checks for the `.nvmrc` file and switches the version seamlessly whenever you navigate into the project directory.
+2. **Shell Integration**:
+   Add the following to your shell profile configuration (`~/.zshrc`, `~/.bashrc`, or PowerShell profile):
+
+   ```bash
+   eval "$(fnm env --use-on-cd)"
+   ```
+
+   This automatically checks for the `.nvmrc` file and switches the version seamlessly whenever you navigate into the project directory.
 
 ---
 
@@ -255,6 +260,7 @@ This happens if you run `nvm use` but haven't installed Node v20 locally.
 In PowerShell, running NVM or executing global node scripts may fail due to restricted execution policies.
 
 - **Fix**: Run PowerShell as an Administrator and execute:
+
   ```powershell
   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
   ```
@@ -314,12 +320,12 @@ npm run dev:all     # Start website + admin + API together
 
 Or start services individually:
 
-| Command               | Service          | URL                          |
-| --------------------- | ---------------- | ---------------------------- |
-| `npm run dev:website` | Website          | http://localhost:5175        |
-| `npm run dev:admin`   | Admin Dashboard  | http://localhost:5001        |
-| `npm run dev:server`  | Backend API      | http://localhost:8787        |
-| —                     | API Health Check | http://localhost:8787/health |
+| Command               | Service          | URL                            |
+| --------------------- | ---------------- | ------------------------------ |
+| `npm run dev:website` | Website          | <http://localhost:5175>        |
+| `npm run dev:admin`   | Admin Dashboard  | <http://localhost:5001>        |
+| `npm run dev:server`  | Backend API      | <http://localhost:8787>        |
+| —                     | API Health Check | <http://localhost:8787/health> |
 
 > **Tip:** The website works in **offline mode** when `VITE_API_BASE` is empty.
 > All data comes from localStorage / static JSON files — no backend needed.

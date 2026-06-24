@@ -5,24 +5,33 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
-  // Aliases for next/image and next/dynamic shims used in the website source
   resolve: {
     alias: {
+      '@': '/src',
+      '@components': '/src/components',
+      '@hooks': '/src/hooks',
+      '@pages': '/src/pages',
+      '@services': '/src/services',
+      '@utils': '/src/utils',
+      '@styles': '/src/styles',
+      '@data': '/src/data',
       'next/image': '/src/shared/next-image.jsx',
       'next/dynamic': '/src/shared/next-dynamic.jsx',
     },
   },
-  // Supports Vercel (/) and GitHub Pages (/NexaSphere/) via env var
+
   base: process.env.VITE_CDN_URL || process.env.VITE_BASE_PATH || '/',
+
   plugins: [
     react(),
+
     sentryVitePlugin({
       org: process.env.SENTRY_ORG || 'nexasphere',
       project: process.env.SENTRY_PROJECT || 'javascript-react',
       authToken: process.env.SENTRY_AUTH_TOKEN,
-      // Don't fail build if Sentry token is not set
       silent: true,
     }),
+
     process.env.ANALYZE === 'true' &&
       visualizer({
         filename: 'bundle-report.html',
@@ -30,10 +39,22 @@ export default defineConfig({
         gzipSize: true,
         brotliSize: true,
       }),
+
     VitePWA({
       disable: process.env.DISABLE_PWA === 'true',
-      registerType: 'autoUpdate',
+
+      // ── Use injectManifest so Workbox injects __WB_MANIFEST into our
+      // custom sw-nexasphere.js, which defines all caching strategies.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw-nexasphere.js',
+
+      // 'prompt' = new SW waits; UpdatePrompt asks user before activating.
+      // This prevents the app from reloading mid-session unexpectedly.
+      registerType: 'prompt',
+
       includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png'],
+
       manifest: {
         name: 'NexaSphere — Connecting GL Bajaj Tech Ecosystem',
         short_name: 'NexaSphere',
@@ -49,66 +70,62 @@ export default defineConfig({
         ],
         shortcuts: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
-      workbox: {
-        inlineWorkboxRuntime: true,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg}'],
-        // Increase limit to 4MB to accommodate TensorFlow.js and other large vendor chunks
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+
+      injectManifest: {
+        // 2 MB limit — TensorFlow.js has been removed; FullCalendar is the largest remaining vendor chunk
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,webp,woff2}'],
+        // Exclude source maps from precache manifest
+        globIgnores: ['**/*.map'],
+      },
+
+      devOptions: {
+        // Enable in dev by setting SW_DEV=true to test caching strategies locally
+        enabled: process.env.SW_DEV === 'true',
+        type: 'module',
       },
     }),
   ],
+
   optimizeDeps: {
     include: ['idb-keyval', 'dompurify'],
   },
+
   build: {
     chunkSizeWarningLimit: 400,
     rollupOptions: {
-      // Ensure all deps are bundled (not externalized)
       external: [],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (
-              id.includes('react') ||
-              id.includes('react-dom') ||
-              id.includes('react-router-dom')
-            ) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom'))
               return 'vendor-react';
-            }
-            if (id.includes('framer-motion')) {
-              return 'vendor-framer';
-            }
-            if (id.includes('recharts')) {
-              return 'vendor-recharts';
-            }
-            if (id.includes('@tensorflow/tfjs')) {
-              return 'vendor-tensorflow';
-            }
-            if (id.includes('@fullcalendar')) {
-              return 'vendor-fullcalendar';
-            }
-            if (id.includes('@sentry')) {
-              return 'vendor-sentry';
-            }
-            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify')) {
+            if (id.includes('framer-motion')) return 'vendor-framer';
+            if (id.includes('recharts')) return 'vendor-recharts';
+            if (id.includes('@fullcalendar')) return 'vendor-fullcalendar';
+            if (id.includes('@sentry')) return 'vendor-sentry';
+            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify'))
               return 'vendor-pdf';
-            }
             if (
               id.includes('i18next') ||
               id.includes('react-i18next') ||
-              id.includes('i18next-browser-languagedetector')
-            ) {
+              id.includes('i18next-browser')
+            )
               return 'vendor-i18n';
-            }
           }
+          // Heavy route chunks — loaded only when that route is visited
+          if (id.includes('mentorship')) return 'page-mentorship';
+          if (id.includes('portfolio')) return 'page-portfolio';
+          if (id.includes('gamification')) return 'page-gamification';
+          if (id.includes('analytics')) return 'page-analytics';
         },
       },
     },
   },
+
   server: {
     port: 5175,
     proxy: {

@@ -88,11 +88,14 @@ export const EVENTS = {
 
   ANNOUNCEMENT_DELETED: 'announcement:deleted',
 
-  SPONSOR_CREATED: 'sponsor:created',
+  WAITING_ROOM_UPDATED: 'waiting-room:updated',
 
-  SPONSOR_UPDATED: 'sponsor:updated',
-
-  SPONSOR_DELETED: 'sponsor:deleted',
+  // RBAC events
+  ROLE_CREATED: 'role:created',
+  ROLE_UPDATED: 'role:updated',
+  ROLE_DELETED: 'role:deleted',
+  ROLE_ASSIGNED: 'role:assigned',
+  ROLE_REVOKED: 'role:revoked',
 
   // Offline / reconnect events
   CACHE_STALE: 'cache:stale',
@@ -100,4 +103,7 @@ export const EVENTS = {
   OFFLINE_MODE: 'offline:enabled',
 
   ONLINE_RECONNECTED: 'online:reconnected',
+
+  QA_UPDATED: 'qa:updated',
+  POLL_UPDATED: 'poll:updated',
 };

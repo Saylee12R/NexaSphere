@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import apiClient from '../utils/apiClient';
+import { useTheme } from '../hooks/useTheme';
 
 export const StudentAuthContext = createContext(null);
 
@@ -43,8 +44,7 @@ export function StudentAuthProvider({ children }) {
         (params.toString() ? '?' + params.toString() : '') +
         window.location.hash;
       window.history.replaceState({}, '', cleanUrl);
-      fetchMe(urlToken);
-      setLoading(false);
+      fetchMe(urlToken).finally(() => setLoading(false));
       return;
     }
 
@@ -70,6 +70,14 @@ export function StudentAuthProvider({ children }) {
     localStorage.removeItem('ns_user');
     setUser(null);
   }, []);
+
+  const { setTheme } = useTheme();
+
+  useEffect(() => {
+    if (user && user.theme) {
+      setTheme(user.theme);
+    }
+  }, [user, setTheme]);
 
   const value = { user, loading, login, logout, isAuthenticated: !!user };
 

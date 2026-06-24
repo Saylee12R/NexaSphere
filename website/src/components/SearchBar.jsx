@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowRight, Calendar, Zap, Users, BookOpen } from 'lucide-react';
-import { useSearch } from '../hooks/useSearch';
+import { useEventSearch } from '../hooks/useEventSearch';
 
 function Highlight({ text, query }) {
   if (!query || !text) return <>{text}</>;
@@ -53,10 +54,11 @@ const TYPE_CONFIG = {
 };
 
 export default function SearchBar({ open, onClose, activities, events, onNavigate, onEventClick }) {
+  const navigate = useNavigate();
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const [focusIdx, setFocusIdx] = useState(-1);
-  const { query, setQuery, filter, setFilter, results, loading, clearSearch } = useSearch(
+  const { query, setQuery, filter, setFilter, results, loading, clearSearch } = useEventSearch(
     activities,
     events
   );
@@ -79,11 +81,11 @@ export default function SearchBar({ open, onClose, activities, events, onNavigat
       if (result.type === 'activity') onNavigate('activity', result.key || result.id);
       else if (result.type === 'event')
         onEventClick(result.event || { id: result.id, name: result.title });
-      else if (result.type === 'member') window.location.href = result.url || '/team';
+      else if (result.type === 'member') navigate(result.url || '/team');
       onClose();
       clearSearch();
     },
-    [onNavigate, onEventClick, onClose, clearSearch]
+    [onNavigate, onEventClick, onClose, clearSearch, navigate]
   );
 
   useEffect(() => {

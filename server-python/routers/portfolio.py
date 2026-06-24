@@ -1,9 +1,10 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -16,6 +17,9 @@ from services.portfolio_service import PortfolioSyncService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/content/portfolios", tags=["portfolios"])
+
+# Track background tasks for graceful shutdown
+_background_tasks: Set[asyncio.Task] = set()
 
 # ──────────────────────────────────────────────
 # Pydantic output schemas
@@ -124,10 +128,9 @@ async def list_portfolios(db: Session = Depends(get_db)):
 @router.post("/{portfolio_id}/refresh", response_model=PortfolioResponse)
 async def refresh_portfolio_stats(
     portfolio_id: UUID,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """Trigger an async refresh of cached platform stats using BackgroundTasks."""
+    """Trigger an async refresh of cached platform stats using asyncio.create_task."""
     if not _db_available():
         raise HTTPException(
             status_code=503,
@@ -141,10 +144,11 @@ async def refresh_portfolio_stats(
     service = PortfolioSyncService()
 
     async def _refresh(p: MemberPortfolio):
-        gh = await service.fetch_github_metrics(p.github_username) if p.github_username else {}
-        lc = await service.fetch_leetcode_metrics(p.leetcode_username) if p.leetcode_username else {}
+        session = SessionLocal()
+        try:
+            gh = await service.fetch_github_metrics(p.github_username) if p.github_username else {}
+            lc = await service.fetch_leetcode_metrics(p.leetcode_username) if p.leetcode_username else {}
 
-        with SessionLocal() as session:
             obj = session.query(MemberPortfolio).filter(MemberPortfolio.id == p.id).first()
             if not obj:
                 return
@@ -155,7 +159,14 @@ async def refresh_portfolio_stats(
             obj.last_synced_at = datetime.now(timezone.utc)
             obj.is_cached = bool(gh or lc)
             session.commit()
+        except Exception:
+            logger.exception("Portfolio refresh failed for %s", p.id)
+            session.rollback()
+        finally:
+            session.close()
 
-    background_tasks.add_task(_refresh, record)
+    task = asyncio.create_task(_refresh(record))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return PortfolioResponse.model_validate(record)

@@ -10,21 +10,17 @@ import { formRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
-router.post('/api/forms/membership', formRateLimiter, formsController.makeHandleForm('membership'));
-router.post(
-  '/api/forms/recruitment',
-  formRateLimiter,
-  formsController.makeHandleForm('recruitment')
-);
-router.post('/api/core-team/apply', formRateLimiter, formsController.makeHandleForm('core_team'));
+router.post('/forms/membership', formRateLimiter, formsController.makeHandleForm('membership'));
+router.post('/forms/recruitment', formRateLimiter, formsController.makeHandleForm('recruitment'));
+router.post('/core-team/apply', formRateLimiter, formsController.makeHandleForm('core_team'));
 
 router.post(
-  '/api/submissions/membership',
+  '/submissions/membership',
   formRateLimiter,
   formsController.makeHandleForm('membership')
 );
 router.post(
-  '/api/submissions/recruitment',
+  '/submissions/recruitment',
   formRateLimiter,
   formsController.makeHandleForm('recruitment')
 );

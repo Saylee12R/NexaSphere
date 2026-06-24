@@ -3,48 +3,24 @@ import InterestSelector from '../../components/dashboard/InterestSelector';
 import QuestTracker from '../../components/dashboard/QuestTracker';
 import Leaderboard from '../../components/dashboard/Leaderboard';
 import AiMentor from '../../components/dashboard/AiMentor';
+import SlackSettings from '../../components/dashboard/SlackSettings';
+import { DashboardCardSkeleton } from '../../components/ui/skeleton/DashboardCardSkeleton';
 import { buildUrl, getAiApiBase, getApiBase } from '../../utils/runtimeConfig';
-
-function DashboardCardSkeleton({ count = 3 }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={`skeleton-${i}`}
-          style={{
-            padding: '12px',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            animation: 'pulse 1.5s infinite ease-in-out',
-          }}
-        >
-          <div
-            style={{
-              height: '16px',
-              width: '60%',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '4px',
-              marginBottom: '8px',
-            }}
-          />
-          <div
-            style={{
-              height: '12px',
-              width: '40%',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '4px',
-            }}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
+import { useTheme } from '../../hooks/useTheme';
+import { useStudentAuth } from '../../context/StudentAuthContext';
+import { STORAGE_KEYS } from '../../utils/storageKeys';
 
 export default function DashboardPage({ onBack }) {
-  // Mock current user for demonstration
-  const [currentUser] = useState({ id: 'user_123', name: 'Explorer' });
+  const { user: authUser } = useStudentAuth();
+  const { theme: currentTheme, setTheme } = useTheme();
+  const currentUser = authUser
+    ? {
+        id: authUser.sub || authUser.id,
+        name: authUser.name || 'Explorer',
+        email: authUser.email || '',
+        role: authUser.role || 'student',
+      }
+    : { id: 'user_123', name: 'Explorer', email: '', role: 'student' };
   const [interests, setInterests] = useState([]);
   const [quests, setQuests] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -97,7 +73,7 @@ export default function DashboardPage({ onBack }) {
           xp: 320,
           level: 2,
         },
-      ].sort((a, b) => b.xp - a.xp)
+      ].sort((a, b) => b.xp - a.xp || a.username.localeCompare(b.username))
     );
   }, [currentUser]);
 
@@ -220,6 +196,107 @@ export default function DashboardPage({ onBack }) {
               border: '1px solid var(--b2)',
             }}
           >
+            <h3
+              style={{
+                marginBottom: '12px',
+                color: 'var(--t1)',
+                fontFamily: 'Orbitron, sans-serif',
+              }}
+            >
+              Theme Settings
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--t2)' }}>
+                Choose your appearance preference:
+              </span>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <button
+                  onClick={() => setTheme('light')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: currentTheme === 'light' ? 'var(--c1)' : 'rgba(255,255,255,0.04)',
+                    color: currentTheme === 'light' ? '#fff' : 'var(--t1)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: currentTheme === 'light' ? '700' : '500',
+                  }}
+                  onMouseOver={(e) => {
+                    if (currentTheme !== 'light')
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  }}
+                  onMouseOut={(e) => {
+                    if (currentTheme !== 'light')
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  }}
+                >
+                  Light
+                </button>
+                <button
+                  onClick={() => setTheme('dark')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: currentTheme === 'dark' ? 'var(--c1)' : 'rgba(255,255,255,0.04)',
+                    color: currentTheme === 'dark' ? '#fff' : 'var(--t1)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: currentTheme === 'dark' ? '700' : '500',
+                  }}
+                  onMouseOver={(e) => {
+                    if (currentTheme !== 'dark')
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  }}
+                  onMouseOut={(e) => {
+                    if (currentTheme !== 'dark')
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  }}
+                >
+                  Dark
+                </button>
+                <button
+                  onClick={() => setTheme('system')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: currentTheme === 'system' ? 'var(--c1)' : 'rgba(255,255,255,0.04)',
+                    color: currentTheme === 'system' ? '#fff' : 'var(--t1)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: currentTheme === 'system' ? '700' : '500',
+                  }}
+                  onMouseOver={(e) => {
+                    if (currentTheme !== 'system')
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  }}
+                  onMouseOut={(e) => {
+                    if (currentTheme !== 'system')
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  }}
+                >
+                  System
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: 'var(--bg-glass)',
+              padding: '24px',
+              borderRadius: '16px',
+              border: '1px solid var(--b2)',
+            }}
+          >
             <h3 style={{ marginBottom: '16px', color: 'var(--t1)' }}>
               Personalized Recommendations
             </h3>
@@ -278,6 +355,8 @@ export default function DashboardPage({ onBack }) {
           <AiMentor />
         </div>
       </div>
+
+      <SlackSettings currentUser={currentUser} authUser={authUser} />
     </div>
   );
 }

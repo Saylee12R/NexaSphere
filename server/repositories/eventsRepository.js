@@ -10,24 +10,54 @@ function mapRow(row) {
     status: row.status,
     icon: row.icon,
     tags: Array.isArray(row.tags) ? row.tags : (row.tags ?? []),
+    restrictedGroups:
+      typeof row.restricted_groups === 'string'
+        ? JSON.parse(row.restricted_groups)
+        : (row.restricted_groups ?? []),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 export const eventsRepository = {
-  async list({ page = 1, limit = 20 } = {}) {
+  async list({ page = 1, limit = 20, studentGroups = undefined } = {}) {
     return withDb(async (client) => {
       await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ');
 
       try {
         const offset = (page - 1) * limit;
 
-        const { rows } = await client.query(
-          'select * from events order by created_at desc limit $1 offset $2',
-          [limit, offset]
-        );
+        let query = 'select * from events ';
+        const params = [];
+        let conditions = [];
 
-        const countResult = await client.query('select count(*)::int as total from events');
+        if (studentGroups === undefined) {
+          // If no groups provided, only show public events
+          conditions.push(
+            `(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb)`
+          );
+        } else {
+          // Show public events OR events where restricted_groups overlaps with studentGroups
+          const groupArray = studentGroups.length
+            ? studentGroups.map((id) => `'${id}'`).join(',')
+            : "'-1'"; // -1 to match nothing
+          conditions.push(
+            `(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(restricted_groups) AS g WHERE g IN (${groupArray})))`
+          );
+        }
+
+        if (conditions.length > 0) {
+          query += ' where ' + conditions.join(' and ');
+        }
+
+        query += ` order by created_at desc limit $1 offset $2`;
+        params.push(limit, offset);
+
+        const { rows } = await client.query(query, params);
+
+        const countQuery =
+          'select count(*)::int as total from events ' +
+          (conditions.length > 0 ? ' where ' + conditions.join(' and ') : '');
+        const countResult = await client.query(countQuery);
 
         const total = countResult.rows[0]?.total ?? 0;
 
@@ -55,8 +85,8 @@ export const eventsRepository = {
   async create(event) {
     return withDb(async (client) => {
       const { rows } = await client.query(
-        `insert into events (id, name, short_name, date_text, description, status, icon, tags)
-         values ($1,$2,$3,$4,$5,$6,$7,$8)
+        `insert into events (id, name, short_name, date_text, description, status, icon, tags, restricted_groups)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          on conflict (id) do update set
            name=excluded.name,
            short_name=excluded.short_name,
@@ -65,6 +95,7 @@ export const eventsRepository = {
            status=excluded.status,
            icon=excluded.icon,
            tags=excluded.tags,
+           restricted_groups=excluded.restricted_groups,
            updated_at=now()
          returning *`,
         [
@@ -76,6 +107,7 @@ export const eventsRepository = {
           event.status,
           event.icon,
           event.tags,
+          JSON.stringify(event.restrictedGroups || []),
         ]
       );
       return mapRow(rows[0]);
@@ -93,6 +125,7 @@ export const eventsRepository = {
            status = coalesce($6, status),
            icon = coalesce($7, icon),
            tags = coalesce($8, tags),
+           restricted_groups = coalesce($9, restricted_groups),
            updated_at = now()
          where id = $1
          returning *`,
@@ -105,6 +138,7 @@ export const eventsRepository = {
           patch.status ?? null,
           patch.icon ?? null,
           patch.tags ?? null,
+          patch.restrictedGroups ? JSON.stringify(patch.restrictedGroups) : null,
         ]
       );
       if (!rows.length) return null;

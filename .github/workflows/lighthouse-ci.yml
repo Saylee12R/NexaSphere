@@ -26,7 +26,7 @@ jobs:
         run: npm install -g npm@11
 
       - name: Install monorepo dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Build the website
         run: npm run build --workspace=website

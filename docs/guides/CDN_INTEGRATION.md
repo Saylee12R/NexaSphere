@@ -93,9 +93,11 @@ To ensure immediate propagation of code changes on deploy:
 
 1. When assets are deployed, a CloudFront cache invalidation is triggered.
 2. In the deployment script `scripts/deploy-cdn.sh`, we run:
+
    ```bash
    aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
    ```
+
 3. This invalidates the cached entrypoint files at all edge locations, forcing them to re-verify files on the origin (S3) next time they are requested.
 
 ---

@@ -29,9 +29,14 @@ export function OfflineBanner() {
       </span>
       <span>
         {isEnvOffline ? (
-          <><strong>Offline Mode</strong> — Changes are saved locally and will not sync to the server.</>
+          <>
+            <strong>Offline Mode</strong> — Changes are saved locally and will not sync to the
+            server.
+          </>
         ) : (
-          <><strong>No Connection</strong> — Changes cannot be saved until connectivity is restored.</>
+          <>
+            <strong>No Connection</strong> — Changes cannot be saved until connectivity is restored.
+          </>
         )}
       </span>
     </div>

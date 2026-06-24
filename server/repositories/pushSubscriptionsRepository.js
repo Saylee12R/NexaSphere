@@ -14,7 +14,7 @@ export const pushSubscriptionsRepository = {
   async list({ limit = 10000 } = {}) {
     return withDb(async (client) => {
       const { rows } = await client.query(
-        'select endpoint, p256dh, auth from push_subscriptions order by created_at desc limit $1',
+        'select endpoint, p256dh, auth from push_subscriptions order by created_at asc limit $1',
         [limit]
       );
       return rows.map(mapRow);
@@ -43,6 +43,21 @@ export const pushSubscriptionsRepository = {
   async remove(endpoint) {
     return withDb(async (client) => {
       await client.query('delete from push_subscriptions where endpoint = $1', [endpoint]);
+    });
+  },
+
+  async listByUser(userId) {
+    return withDb(async (client) => {
+      try {
+        const { rows } = await client.query(
+          'select endpoint, p256dh, auth from push_subscriptions where user_id = $1 order by created_at asc',
+          [userId]
+        );
+        return rows.map(mapRow);
+      } catch (err) {
+        // Fallback if user_id column does not exist
+        return [];
+      }
     });
   },
 };

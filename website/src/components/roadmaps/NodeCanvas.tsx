@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRoadmapBuilder } from '../../hooks/useRoadmapBuilder';
 import { RoadmapNode } from '../../context/RoadmapBuilderContext';
@@ -14,6 +14,26 @@ export const NodeCanvas: React.FC<NodeCanvasProps> = ({ theme }) => {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  // Tracks the currently-attached window-level drag listeners so they can
+  // be force-removed if the component unmounts mid-drag — handlePointerDown
+  // attaches these outside any useEffect, so without this ref a drag that's
+  // still in progress when the user navigates away would leave pointermove/
+  // pointerup listeners attached to window indefinitely, holding a stale
+  // closure over state setters from the unmounted component.
+  const activeDragListenersRef = useRef<{
+    move: (e: PointerEvent) => void;
+    up: () => void;
+  } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (activeDragListenersRef.current) {
+        window.removeEventListener('pointermove', activeDragListenersRef.current.move);
+        window.removeEventListener('pointerup', activeDragListenersRef.current.up);
+        activeDragListenersRef.current = null;
+      }
+    };
+  }, []);
 
   // Connection mode (visual clicking to connect nodes)
   const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
@@ -57,10 +77,12 @@ export const NodeCanvas: React.FC<NodeCanvasProps> = ({ theme }) => {
       setDraggedNodeId(null);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      activeDragListenersRef.current = null;
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    activeDragListenersRef.current = { move: handlePointerMove, up: handlePointerUp };
   };
 
   const getStatusColor = (status: string) => {

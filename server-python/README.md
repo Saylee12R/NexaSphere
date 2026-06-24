@@ -152,14 +152,14 @@ uvicorn main:app --reload --port 8000
 
 <br/>
 
-**✅ Server Running on:** http://localhost:8000
+**✅ Server Running on:** <http://localhost:8000>
 
 <br/>
 
 **📚 Interactive Documentation:**
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: <http://localhost:8000/docs>
+- ReDoc: <http://localhost:8000/redoc>
 
 <br/>
 
@@ -687,7 +687,7 @@ CORS_ORIGIN=https://nexasphere-glbajaj.vercel.app
 
 <div align="center">
 
-### Questions? 📧 Contact nexasphere@glbajajgroup.org
+### Questions? 📧 Contact <nexasphere@glbajajgroup.org>
 
 **Backend Version:** 1.0 | **Last Updated:** May 2026
 

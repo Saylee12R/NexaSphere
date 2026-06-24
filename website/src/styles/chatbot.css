@@ -2,7 +2,7 @@
   position: fixed !important;
   bottom: 30px !important;
   right: 30px !important;
-  z-index: 9999 !important; /* Stays below custom cursor (10000) */
+  z-index: 9998 !important; /* Stays below custom cursor (10000) */
   font-family: 'Rajdhani', sans-serif;
   max-width: 100vw;
   max-height: 100vh;

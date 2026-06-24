@@ -9,8 +9,11 @@
 
 import { EventEmitter } from 'events';
 import logger from '../utils/logger.js';
+import notificationsService from './notificationsService.js';
 import { withDb } from '../repositories/db.js';
 import { HAS_SUPABASE } from '../storage/supabaseClient.js';
+import { backupService } from './backupService.js';
+import { sendEmail } from './emailService.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -105,16 +108,57 @@ const TASK_DEFINITIONS = [
   },
   {
     id: 'database-backup',
-    name: 'Database Backup',
-    description: 'Creates and uploads a compressed database backup to S3',
+    name: 'Database Backup (Full)',
+    description: 'Creates and uploads a full compressed database backup to S3',
     cron: '0 2 * * *', // Daily at 02:00
     category: 'system',
     enabled: true,
   },
   {
-    id: 'report-generation',
-    name: 'Report Generation',
-    description: 'Generates weekly activity and membership reports',
+    id: 'database-backup-incremental',
+    name: 'Database Backup (Incremental)',
+    description:
+      'Creates and uploads an incremental database backup (changes since last backup) to S3',
+    cron: '0 */6 * * *', // Every 6 hours
+    category: 'system',
+    enabled: true,
+  },
+  {
+    id: 'database-backup-trlog',
+    name: 'Database Backup (Transaction Log)',
+    description: 'Creates and uploads a transaction log backup to S3',
+    cron: '*/15 * * * *', // Every 15 minutes
+    category: 'system',
+    enabled: true,
+  },
+  {
+    id: 'file-storage-backup',
+    name: 'File Storage Backup',
+    description: 'Syncs /uploads directory to S3 storage bucket',
+    cron: '0 3 * * *', // Daily at 3 AM UTC
+    category: 'system',
+    enabled: true,
+  },
+  {
+    id: 'automated-recovery-testing',
+    name: 'Automated Recovery Testing',
+    description: 'Performs monthly automated restore test to verify backup integrity',
+    cron: '0 4 1 * *', // Monthly on the 1st at 4 AM UTC
+    category: 'system',
+    enabled: true,
+  },
+  {
+    id: 'daily-attendance-report',
+    name: 'Daily Attendance Report',
+    description: 'Generates daily attendance reports',
+    cron: '0 18 * * *', // Daily at 18:00
+    category: 'reports',
+    enabled: true,
+  },
+  {
+    id: 'weekly-analytics-report',
+    name: 'Weekly Analytics Report',
+    description: 'Generates weekly activity and membership analytics reports',
     cron: '0 9 * * 1', // Mondays at 09:00
     category: 'reports',
     enabled: true,
@@ -149,6 +193,22 @@ const TASK_DEFINITIONS = [
     description: 'Scans Kanban boards for overdue tasks and notifies assignees',
     cron: '0 10 * * *', // Every day at 10:00 AM
     category: 'collaboration',
+    enabled: true,
+  },
+  {
+    id: 'announcement-publisher',
+    name: 'Scheduled Announcement Publisher',
+    description: 'Publishes scheduled announcements when their scheduled time has arrived',
+    cron: '*/1 * * * *', // Run every minute
+    category: 'system',
+    enabled: true,
+  },
+  {
+    id: 'email-queue-processor',
+    name: 'Email Queue Processor',
+    description: 'Processes queued email campaigns in batches',
+    cron: '*/5 * * * *', // Every 5 minutes
+    category: 'email',
     enabled: true,
   },
 ];
@@ -255,8 +315,23 @@ class SchedulerService extends EventEmitter {
       case 'database-backup':
         await this._backupDatabase();
         break;
-      case 'report-generation':
-        await this._generateReports();
+      case 'database-backup-incremental':
+        await backupService.runIncrementalBackup();
+        break;
+      case 'database-backup-trlog':
+        await backupService.runTransactionLogBackup();
+        break;
+      case 'file-storage-backup':
+        await backupService.runFileStorageBackup();
+        break;
+      case 'automated-recovery-testing':
+        await backupService.runAutomatedRecoveryTest();
+        break;
+      case 'daily-attendance-report':
+        await this._generateDailyAttendanceReport();
+        break;
+      case 'weekly-analytics-report':
+        await this._generateWeeklyAnalyticsReport();
         break;
       case 'inactive-user-check':
         await this._flagInactiveUsers();
@@ -270,6 +345,12 @@ class SchedulerService extends EventEmitter {
       case 'overdue-task-reminder':
         console.log('[SchedulerService] Processing overdue task notifications...');
         // logic to fetch tasks with dueDate < now and status != 'Done' and notify assignees
+        break;
+      case 'announcement-publisher':
+        await this._publishScheduledAnnouncements();
+        break;
+      case 'email-queue-processor':
+        await this._processEmailQueue();
         break;
       default:
         throw new Error(`No implementation for task "${task.id}"`);
@@ -289,7 +370,9 @@ class SchedulerService extends EventEmitter {
       const { rows: users } = await client.query(
         `SELECT id, email, full_name FROM student_users WHERE last_login_at > NOW() - INTERVAL '7 days'`
       );
-      logger.info(`[Scheduler] Email digest: ${events.length} recent events, ${users.length} active users`);
+      logger.info(
+        `[Scheduler] Email digest: ${events.length} recent events, ${users.length} active users`
+      );
     });
   }
 
@@ -334,42 +417,110 @@ class SchedulerService extends EventEmitter {
   }
 
   async _backupDatabase() {
-    logger.info('[Scheduler] Starting database backup');
-    if (!HAS_SUPABASE) {
-      logger.info('[Scheduler] No database configured, skipping backup');
-      return;
-    }
-    const tables = ['events', 'student_users', 'core_team_members', 'resources', 'push_subscriptions'];
-    let totalRows = 0;
-    await withDb(async (client) => {
-      for (const table of tables) {
-        try {
-          const { rows } = await client.query(`SELECT COUNT(*) as count FROM ${table}`);
-          totalRows += parseInt(rows[0]?.count || '0', 10);
-        } catch {
-          logger.warn(`[Scheduler] Backup: table ${table} not found, skipping`);
-        }
-      }
-    });
-    logger.info(`[Scheduler] Backup summary: ${tables.length} tables, ${totalRows} total rows`);
+    logger.info('[Scheduler] Starting database full backup');
+    await backupService.runDailyBackup();
   }
 
-  async _generateReports() {
-    logger.info('[Scheduler] Starting weekly report generation');
+  async _generateDailyAttendanceReport() {
+    logger.info('[Scheduler] Starting daily attendance report generation');
     if (!HAS_SUPABASE) {
       logger.info('[Scheduler] No database configured, skipping report generation');
       return;
     }
     await withDb(async (client) => {
+      // Ensure table exists for archiving
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS scheduled_reports (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          report_type VARCHAR(100) NOT NULL,
+          content JSONB NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+
+      // Mock attendance data query (replace with actual logic if attendance tables exist)
+      const { rows: attendance } = await client.query(
+        `SELECT COUNT(*) as count FROM events WHERE created_at > NOW() - INTERVAL '1 day'`
+      );
+
+      const reportData = {
+        date: new Date().toISOString(),
+        total_events_today: attendance[0]?.count || 0,
+      };
+
+      // Archive report
+      await client.query(`INSERT INTO scheduled_reports (report_type, content) VALUES ($1, $2)`, [
+        'daily-attendance-report',
+        JSON.stringify(reportData),
+      ]);
+
+      // Email report to admins
+      try {
+        await sendEmail({
+          to: 'admin@nexasphere.com',
+          subject: 'Daily Attendance Report',
+          templateName: 'generic',
+          data: {
+            name: 'Administrator',
+            message: `Daily Attendance Report is ready. Total events today: ${reportData.total_events_today}.`,
+          },
+        });
+      } catch (err) {
+        logger.error('[Scheduler] Failed to email daily attendance report:', err.message);
+      }
+    });
+  }
+
+  async _generateWeeklyAnalyticsReport() {
+    logger.info('[Scheduler] Starting weekly analytics report generation');
+    if (!HAS_SUPABASE) {
+      logger.info('[Scheduler] No database configured, skipping report generation');
+      return;
+    }
+    await withDb(async (client) => {
+      // Ensure table exists for archiving
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS scheduled_reports (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          report_type VARCHAR(100) NOT NULL,
+          content JSONB NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+
       const { rows: newUsers } = await client.query(
         `SELECT COUNT(*) as count FROM student_users WHERE created_at > NOW() - INTERVAL '7 days'`
       );
       const { rows: newEvents } = await client.query(
         `SELECT COUNT(*) as count FROM events WHERE created_at > NOW() - INTERVAL '7 days'`
       );
-      logger.info(
-        `[Scheduler] Weekly report: ${newUsers[0]?.count || 0} new users, ${newEvents[0]?.count || 0} new events`
-      );
+
+      const reportData = {
+        date: new Date().toISOString(),
+        new_users: newUsers[0]?.count || 0,
+        new_events: newEvents[0]?.count || 0,
+      };
+
+      // Archive report
+      await client.query(`INSERT INTO scheduled_reports (report_type, content) VALUES ($1, $2)`, [
+        'weekly-analytics-report',
+        JSON.stringify(reportData),
+      ]);
+
+      // Email report to admins
+      try {
+        await sendEmail({
+          to: 'admin@nexasphere.com',
+          subject: 'Weekly Analytics Report',
+          templateName: 'generic',
+          data: {
+            name: 'Administrator',
+            message: `Weekly Analytics Report is ready. New users: ${reportData.new_users}, New events: ${reportData.new_events}.`,
+          },
+        });
+      } catch (err) {
+        logger.error('[Scheduler] Failed to email weekly analytics report:', err.message);
+      }
     });
   }
 
@@ -415,13 +566,55 @@ class SchedulerService extends EventEmitter {
       const { rows: totalUsers } = await client.query(
         'SELECT COUNT(*) as count FROM student_users'
       );
-      const { rows: totalEvents } = await client.query(
-        'SELECT COUNT(*) as count FROM events'
-      );
+      const { rows: totalEvents } = await client.query('SELECT COUNT(*) as count FROM events');
       logger.info(
         `[Scheduler] Analytics snapshot: ${totalUsers[0]?.count || 0} users, ${totalEvents[0]?.count || 0} events`
       );
     });
+  }
+
+  async _publishScheduledAnnouncements() {
+    logger.info('[Scheduler] Checking for scheduled announcements to publish...');
+    if (!HAS_SUPABASE) {
+      logger.info('[Scheduler] No database configured, skipping scheduled announcement publishing');
+      return;
+    }
+    try {
+      const { announcementsRepository } =
+        await import('../repositories/announcementsRepository.js');
+      const { default: eventManager } = await import('./eventEmitterService.js');
+      const published = await announcementsRepository.publishScheduled();
+      if (published && published.length > 0) {
+        logger.info(`[Scheduler] Published ${published.length} scheduled announcements.`);
+        for (const ann of published) {
+          eventManager.emit('admin-announcement', {
+            title: ann.title,
+            message: ann.content,
+            link: ann.ctaUrl,
+          });
+        }
+      }
+    } catch (err) {
+      logger.error('[Scheduler] Error publishing scheduled announcements:', err.message);
+    }
+  }
+
+  async _processEmailQueue() {
+    logger.info('[Scheduler] Starting email queue processing');
+    if (!HAS_SUPABASE) {
+      logger.info('[Scheduler] No database configured, skipping email queue processing');
+      return;
+    }
+    try {
+      const { emailCampaignService } = await import('./emailCampaignService.js');
+      const result = await emailCampaignService.processEmailQueue();
+      logger.info(
+        `[Scheduler] Email queue processed: ${result.sent} sent, ${result.failed} failed out of ${result.processed} processed.`
+      );
+    } catch (err) {
+      logger.error('[Scheduler] Error processing email queue:', err.message);
+      throw err;
+    }
   }
 
   // ── Public API ───────────────────────────────────────────────────────────────
@@ -513,6 +706,18 @@ class SchedulerService extends EventEmitter {
       successRate: totalRuns ? (((totalRuns - totalFails) / totalRuns) * 100).toFixed(1) : '100.0',
       avgDurationMs: avgDuration,
     };
+  }
+
+  // ── Public API ───────────────────────────────────────────────────────────────
+
+  /** Shutdown scheduler and clear all active timers. */
+  shutdown() {
+    for (const handle of this._timers.values()) {
+      clearTimeout(handle);
+    }
+    this._timers.clear();
+    this._tasks.clear();
+    this._initialized = false;
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

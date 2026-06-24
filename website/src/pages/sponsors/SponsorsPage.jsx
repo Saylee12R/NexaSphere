@@ -27,7 +27,7 @@ export default function SponsorsPage() {
     const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
     if (!base) {
       setSponsors([]);
-      setLoading(false);
+      setLoading((l) => (l ? false : l));
       return;
     }
     apiClient(`${base}/api/content/sponsors`)

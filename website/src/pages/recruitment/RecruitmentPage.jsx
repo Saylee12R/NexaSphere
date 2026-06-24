@@ -89,7 +89,10 @@ function RolesGuideModal({ onClose }) {
       )}
       <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
         {items.map((it, i) => (
-          <li key={i} style={{ fontSize: '.86rem', color: 'var(--t2)', lineHeight: 1.55 }}>
+          <li
+            key={`role-item-${i}-${it.slice(0, 16)}`}
+            style={{ fontSize: '.86rem', color: 'var(--t2)', lineHeight: 1.55 }}
+          >
             {it}
           </li>
         ))}

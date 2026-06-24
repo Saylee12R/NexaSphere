@@ -1,107 +1,57 @@
 import { streamRepository } from '../repositories/streamRepository.js';
-import { emitToRoom, getIO } from '../config/socket.js';
 
+/**
+ * Service to handle business logic for live streaming,
+ * including integration with providers and content moderation.
+ */
 export const streamService = {
-  async listStreams(params) {
-    return streamRepository.listStreams(params);
+  /**
+   * Simple profanity filter for chat messages
+   */
+  filterContent(text) {
+    const bannedWords = (process.env.BANNED_WORDS || 'spam,offensive').split(',');
+    let filtered = text;
+    bannedWords.forEach((word) => {
+      const reg = new RegExp(word.trim(), 'gi');
+      filtered = filtered.replace(reg, '***');
+    });
+    return filtered;
   },
 
-  async getStream(id) {
-    return streamRepository.getStreamById(id);
+  /**
+   * Logic to interface with a provider like Mux or AWS Elemental.
+   * In a real implementation, this would call external APIs to create
+   * RTMP ingest endpoints and HLS playback URLs.
+   */
+  async provisionLiveStream(title) {
+    // Mocking Mux integration
+    const isProd = process.env.NODE_ENV === 'production';
+
+    return {
+      streamKey: `sk_${Math.random().toString(36).substring(7)}`,
+      serverUrl: 'rtmp://live.nexasphere.com/app',
+      playbackUrl: isProd
+        ? `https://stream.nexasphere.com/v1/play/${Math.random().toString(36).substring(7)}.m3u8`
+        : 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', // Sample HLS
+    };
   },
 
-  async getStreamByEventId(eventId) {
-    return streamRepository.getStreamByEventId(eventId);
+  async updateViewerMetrics(streamId) {
+    const currentCount = await streamRepository.incrementViewerCount(streamId);
+    // Here you could also push to an analytics dashboard or Prometheus
+    return currentCount;
   },
 
-  async createStream(input) {
-    return streamRepository.createStream(input);
-  },
-
-  async updateStream(id, input) {
-    return streamRepository.updateStream(id, input);
-  },
-
-  async setStreamStatus(id, status) {
-    const stream = await streamRepository.setStreamStatus(id, status);
-    if (stream) {
-      const io = getIO();
-      if (io) {
-        io.to('events-room').emit('stream:status-change', {
-          streamId: id,
-          status,
-          eventId: stream.eventId,
-        });
-      }
-    }
-    return stream;
-  },
-
-  async incrementViewerCount(id) {
-    return streamRepository.incrementViewerCount(id);
-  },
-
-  async deleteStream(id) {
-    return streamRepository.deleteStream(id);
-  },
-
-  async addChatMessage(streamId, input) {
-    const message = await streamRepository.addChatMessage(streamId, input);
-    if (message) {
-      const io = getIO();
-      if (io) {
-        io.to('events-room').emit('stream:chat-message', message);
-      }
-    }
-    return message;
-  },
-
-  async listChatMessages(streamId, params) {
-    return streamRepository.listChatMessages(streamId, params);
-  },
-
-  async moderateChatMessage(messageId) {
-    return streamRepository.moderateChatMessage(messageId);
-  },
-
-  async createPoll(streamId, input) {
-    const poll = await streamRepository.createPoll(streamId, input);
-    if (poll) {
-      const io = getIO();
-      if (io) {
-        io.to('events-room').emit('stream:poll-created', poll);
-      }
-    }
-    return poll;
-  },
-
-  async listPolls(streamId) {
-    return streamRepository.listPolls(streamId);
-  },
-
-  async votePoll(pollId, optionIndex) {
-    const poll = await streamRepository.votePoll(pollId, optionIndex);
-    if (poll) {
-      const io = getIO();
-      if (io) {
-        io.to('events-room').emit('stream:poll-updated', poll);
-      }
-    }
-    return poll;
-  },
-
-  async closePoll(pollId) {
-    const poll = await streamRepository.closePoll(pollId);
-    if (poll) {
-      const io = getIO();
-      if (io) {
-        io.to('events-room').emit('stream:poll-closed', poll);
-      }
-    }
-    return poll;
-  },
-
-  async adminListAll(params) {
-    return streamRepository.adminListAll(params);
+  /**
+   * Handles processing of recording webhooks from the video provider.
+   */
+  async handleRecordingReady(streamId, recordingUrl) {
+    return await streamRepository.updateStream(streamId, {
+      status: 'archived',
+      recordingUrl: recordingUrl,
+      endedAt: new Date().toISOString(),
+    });
   },
 };
+
+export default streamService;

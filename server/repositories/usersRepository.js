@@ -70,8 +70,8 @@ export const usersRepository = {
       }
       if (fields.length === 0) return null;
       values.push(id);
-      const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = $${i} RETURNING id, username, display_name, email, admin_roles, created_at as joined_at`;
-      const { rows } = await client.query(sql, values);
+      const queryText = `UPDATE users SET ${fields.join(', ')} WHERE id = $${i} RETURNING id, username, display_name, email, admin_roles, created_at as joined_at`;
+      const { rows } = await client.query(queryText, values);
       return rows[0] || null;
     });
   },

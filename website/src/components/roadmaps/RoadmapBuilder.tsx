@@ -52,8 +52,19 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
 
   // Track if we are editing title/description inline
   const [isEditingMeta, setIsEditingMeta] = useState(false);
+  // Replaces window.confirm() — stores the pending domain key when an import
+  // would overwrite existing nodes, then shows an inline confirmation dialog.
+  const [pendingImportKey, setPendingImportKey] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState(roadmapTitle);
   const [metaDesc, setMetaDesc] = useState(roadmapDescription);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Auto-clear notice after 5 seconds
+  React.useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 5000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   // Sync theme changes
   React.useEffect(() => {
@@ -85,20 +96,21 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
   };
 
   // Import static NexaSphere Roadmaps
+  // handleImportStatic replaces window.confirm() — if nodes exist it stores
+  // the pending key and shows an inline confirmation dialog instead of
+  // blocking the UI thread with a native browser dialog.
   const handleImportStatic = (domainKey: string) => {
     if (!domainKey) return;
-    const staticData = (roadmapData as RoadmapDataMap)[domainKey];
-    if (!staticData) return;
-
-    if (
-      nodes.length > 0 &&
-      !confirm(
-        'Loading this base template will overwrite your active workspace. Do you wish to continue?'
-      )
-    ) {
+    if (nodes.length > 0) {
+      setPendingImportKey(domainKey);
       return;
     }
+    applyImport(domainKey);
+  };
 
+  const applyImport = (domainKey: string) => {
+    const staticData = (roadmapData as any)[domainKey];
+    if (!staticData) return;
     const { title, description, nodes: parsedNodes } = parseStaticRoadmap(domainKey, staticData);
     loadRoadmap(title, description, parsedNodes);
     setMetaTitle(title);
@@ -122,9 +134,17 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
         loadRoadmap(validated.title, validated.description, validated.nodes);
         setMetaTitle(validated.title);
         setMetaDesc(validated.description);
-        alert('Roadmap imported and restored successfully!');
+        setNotice('Roadmap imported and restored successfully.');
       } catch (err: any) {
-        alert(err.message || 'Malformed JSON Schema: could not load roadmap.');
+        let errorMessage = 'Malformed JSON Schema: could not load roadmap.';
+        if (err instanceof Error && err.message) {
+          errorMessage = `Validation Error: ${err.message}`;
+        } else if (typeof err === 'string') {
+          errorMessage = `Validation Error: ${err}`;
+        } else if (err && typeof err === 'object' && err.error) {
+          errorMessage = `Validation Error: ${err.error}`;
+        }
+        setNotice(errorMessage);
       }
     };
     reader.readAsText(file);
@@ -395,6 +415,58 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
 
       {/* Accessible Attribute Editor Modal */}
       <NodeModal theme={activeTheme} />
+
+      {/* Inline confirmation dialog — replaces blocking window.confirm() */}
+      {pendingImportKey && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-import-title"
+          aria-describedby="confirm-import-desc"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        >
+          <div className="glass-panel rounded-2xl p-6 max-w-sm w-full mx-4 flex flex-col gap-4">
+            <h2 id="confirm-import-title" className="text-base font-bold text-t1">
+              Overwrite Workspace?
+            </h2>
+            <p id="confirm-import-desc" className="text-sm text-t2">
+              Loading this base template will overwrite your active workspace. Do you wish to
+              continue?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button className="btn btn-sm btn-outline" onClick={() => setPendingImportKey(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-sm btn-primary"
+                autoFocus
+                onClick={() => {
+                  applyImport(pendingImportKey);
+                  setPendingImportKey(null);
+                }}
+              >
+                Overwrite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {notice && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 bg-[#111] border border-border-color text-t1 px-4 py-3 rounded-xl flex items-center gap-2 shadow-2xl pop-in"
+          style={{ maxWidth: '320px' }}
+        >
+          <span className="text-brand-red">✦</span>
+          <span className="text-xs">{notice}</span>
+          <button
+            onClick={() => setNotice(null)}
+            className="ml-auto text-t3 hover:text-t1 text-sm focus:outline-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 };

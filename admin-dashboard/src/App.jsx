@@ -1,3 +1,4 @@
+import AuditLogViewer from './pages/dashboard/AuditLogViewer';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { Sidebar } from './components/Sidebar';
@@ -11,6 +12,8 @@ import { MentorshipManager } from './pages/MentorshipManager';
 import { DashboardHome } from './pages/DashboardHome';
 import { EventsManager } from './pages/EventsManager';
 import { ActivityEventsManager } from './pages/ActivityEventsManager';
+import { ScheduledTasksManager } from './pages/ScheduledTasksManager';
+import UserGroups from './pages/UserGroups';
 import { CoreTeamManager } from './pages/CoreTeamManager';
 import { MembershipResponsesManager } from './pages/MembershipResponsesManager';
 import { RecruitmentResponsesManager } from './pages/RecruitmentResponsesManager';
@@ -19,7 +22,15 @@ import { AnnouncementsManager } from './pages/AnnouncementsManager';
 import { PortfolioManager } from './pages/PortfolioManager';
 import { StreamManager } from './pages/StreamManager';
 import { CircuitBreakerManager } from './pages/CircuitBreakerManager';
+import { WaitingRoomManager } from './pages/WaitingRoomManager';
+import { ComprehensiveAnalytics } from './pages/ComprehensiveAnalytics';
+import { FunnelAnalysis } from './pages/FunnelAnalysis';
+import { BackupsManager } from './pages/BackupsManager';
+import { ImpersonationBanner } from './components/ImpersonationBanner';
+import { ResourcesManager } from './pages/ResourcesManager';
+import { ComplianceManager } from './pages/ComplianceManager';
 import { SponsorshipsManager } from './pages/SponsorshipsManager';
+import { UserEngagementReport } from './pages/UserEngagementReport';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -43,6 +54,7 @@ function DashboardLayout() {
   return (
     <div className="app-layout">
       <OfflineBanner />
+      <ImpersonationBanner />
       <Sidebar />
       <main className="main-content" id="main-content">
         <ErrorBoundary>
@@ -63,6 +75,8 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardHome />} />
+            <Route path="/dashboard/analytics" element={<ComprehensiveAnalytics />} />
+            <Route path="/dashboard/analytics/funnel" element={<FunnelAnalysis />} />
             <Route path="/dashboard/events" element={<EventsManager />} />
             <Route path="/dashboard/activity-events" element={<ActivityEventsManager />} />
             <Route path="/dashboard/core-team" element={<CoreTeamManager />} />
@@ -75,7 +89,13 @@ export default function App() {
             <Route path="/dashboard/mentorship" element={<MentorshipManager />} />
             <Route path="/dashboard/streams" element={<StreamManager />} />
             <Route path="/dashboard/circuit-breaker" element={<CircuitBreakerManager />} />
+            <Route path="/dashboard/waiting-room" element={<WaitingRoomManager />} />
+            <Route path="/dashboard/groups" element={<UserGroups />} />
+            <Route path="/dashboard/tasks" element={<ScheduledTasksManager />} />
+            <Route path="/dashboard/backups" element={<BackupsManager />} />
             <Route path="/dashboard/sponsorships" element={<SponsorshipsManager />} />
+            <Route path="/dashboard/audit-logs" element={<AuditLogViewer />} />
+            <Route path="/dashboard/reports" element={<UserEngagementReport />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

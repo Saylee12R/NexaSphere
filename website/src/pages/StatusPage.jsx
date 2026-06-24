@@ -169,7 +169,10 @@ export default function StatusPage() {
                   </div>
                   <div className="space-y-2 mt-2">
                     {incident.updates.map((update, idx) => (
-                      <div key={idx} className="text-sm text-gray-400">
+                      <div
+                        key={`${incident.id}-update-${update.timestamp}`}
+                        className="text-sm text-gray-400"
+                      >
                         <span className="text-xs text-gray-600 block">
                           {new Date(update.timestamp).toLocaleTimeString()}
                         </span>

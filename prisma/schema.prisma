@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../server/node_modules/.prisma/client"
 }
 
 model User {
@@ -17,41 +18,43 @@ model User {
   workspaceMembers WorkspaceMember[]
   posts            Post[]
   logs             Log[]
+  feedbacks        EventFeedback[]
+  actionItems      ActionItem[]
 }
 
 model Workspace {
-  id          String            @id @default(uuid())
-  name        String
-  slug        String            @unique
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  members     WorkspaceMember[]
-  roles       Role[]
-  posts       Post[]
-  logs        Log[]
+  id        String            @id @default(uuid())
+  name      String
+  slug      String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  members   WorkspaceMember[]
+  roles     Role[]
+  posts     Post[]
+  logs      Log[]
 }
 
 model WorkspaceMember {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   workspaceId String
   userId      String
   roleId      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role        Role      @relation(fields: [roleId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id])
 
   @@unique([workspaceId, userId])
 }
 
 model Role {
-  id          String            @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   workspaceId String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   workspace   Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   permissions Permission[]      @relation("RolePermissions")
@@ -67,33 +70,33 @@ model Permission {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  roles       Role[]   @relation("RolePermissions")
+  roles Role[] @relation("RolePermissions")
 }
 
 model Post {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   content     String?
-  published   Boolean   @default(false)
+  published   Boolean  @default(false)
   authorId    String
   workspaceId String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model Log {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   action      String
   details     String?
   userId      String?
   workspaceId String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 enum AuditAction {
@@ -110,6 +113,38 @@ model AuditLog {
   entityId  String
   oldValues Json?
   newValues Json?
+
   timestamp DateTime    @default(now())
 }
 
+model EventFeedback {
+  id               String   @id @default(uuid())
+  eventId          String
+  userId           String?
+  ratingOverall    Int
+  wouldAttendAgain Boolean?
+  recommendFriend  Boolean?
+  ratingVenue      Int?
+  ratingContent    Int?
+  ratingSpeaker    Int?
+  ratingPace       Int?
+  suggestions      String?
+  bestParts        String?
+  sentiment        String?  @default("neutral")
+  createdAt        DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model ActionItem {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("pending")
+  assigneeId  String?
+  eventId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignee User? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+}

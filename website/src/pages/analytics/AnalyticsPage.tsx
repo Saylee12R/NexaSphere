@@ -4,6 +4,7 @@ import { useAnalyticsData } from '../../hooks/analytics/useAnalyticsData';
 import { TrendChart } from '../../features/analytics/TrendChart';
 import { DistributionChart } from '../../features/analytics/DistributionChart';
 import { ActivityComparisonChart } from '../../features/analytics/ActivityComparisonChart';
+import { ChartSkeleton } from '../../components/ui/skeleton/ChartSkeleton';
 import { formatNumber } from '../../utils/chartDataFormatters';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -261,8 +262,18 @@ const AnalyticsDashboardContent: React.FC<AnalyticsPageProps> = ({ onBack }) => 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      let pageNum = 0;
+      let yOffset = 0;
+      while (yOffset < pdfHeight) {
+        if (pageNum > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -yOffset, pdfWidth, pdfHeight);
+        yOffset += pdfPageHeight;
+        pageNum++;
+      }
+
       pdf.save(`NexaSphere_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
       console.error('Export failed:', err);
@@ -367,15 +378,23 @@ const AnalyticsDashboardContent: React.FC<AnalyticsPageProps> = ({ onBack }) => 
           {/* Trend + Distribution */}
           <div style={S.grid3}>
             <div style={{ gridColumn: 'span 2' }}>
-              <TrendChart data={trendData} loading={loading} />
+              {loading ? <ChartSkeleton /> : <TrendChart data={trendData} loading={loading} />}
             </div>
             <div>
-              <DistributionChart data={distributionData} loading={loading} />
+              {loading ? (
+                <ChartSkeleton />
+              ) : (
+                <DistributionChart data={distributionData} loading={loading} />
+              )}
             </div>
           </div>
 
           {/* Activity comparison */}
-          <ActivityComparisonChart data={comparisonData} loading={loading} />
+          {loading ? (
+            <ChartSkeleton />
+          ) : (
+            <ActivityComparisonChart data={comparisonData} loading={loading} />
+          )}
         </div>
       </div>
     </div>

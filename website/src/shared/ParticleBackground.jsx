@@ -9,6 +9,9 @@ import { useEffect, useRef } from 'react';
 export default function ParticleBackground({ theme = 'dark' }) {
   const canvasRef = useRef(null);
   const themeRef = useRef(theme);
+  // Disable animation loop when user prefers reduced motion
+  const prefersReducedMotion =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
     themeRef.current = theme;
@@ -186,6 +189,10 @@ export default function ParticleBackground({ theme = 'dark' }) {
 
     draw();
 
+    // Only start animation loop on devices without reduced-motion preference
+    if (!prefersReducedMotion) {
+      raf = requestAnimationFrame(draw);
+    }
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
@@ -198,6 +205,8 @@ export default function ParticleBackground({ theme = 'dark' }) {
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
+      role="presentation"
       style={{
         position: 'fixed',
         top: 0,
@@ -206,7 +215,6 @@ export default function ParticleBackground({ theme = 'dark' }) {
         height: '100%',
         zIndex: 0,
         pointerEvents: 'none',
-
         opacity: theme === 'light' ? 1.0 : 0.55,
         transition: 'opacity 1.2s ease',
       }}

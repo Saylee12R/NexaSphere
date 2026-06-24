@@ -14,44 +14,19 @@ class SecretsManager {
   loadSecrets() {
     const env = process.env.NODE_ENV || 'development';
 
-    // Default fallback secrets if vault-secrets.json doesn't exist
     if (!fs.existsSync(VAULT_SECRETS_PATH)) {
-      console.warn(
-        `Vault file not found at ${VAULT_SECRETS_PATH}. Initializing with defaults for ${env}...`
-      );
-      const defaultSecrets = {
-        development: {
-          JWT_SECRET: 'nexasphere-jwt-dev-secret-change-in-production',
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/nexasphere_dev',
-          CORS_ORIGIN: 'http://localhost:5175',
-          MONITORING_API_TOKEN: 'dev-monitoring-token-12345',
-        },
-        production: {
-          JWT_SECRET: 'super-secret-jwt-key-for-prod',
-          DATABASE_URL: 'postgresql://admin:prod-pass@prod-db:5432/nexasphere_prod',
-          CORS_ORIGIN: 'https://nexasphere.example.com',
-          MONITORING_API_TOKEN: 'prod-monitoring-token-98765',
-        },
-      };
-
-      const meta = {};
-      const now = new Date().toISOString();
-      const currentEnvSecrets = defaultSecrets[env] || defaultSecrets.development;
-
-      for (const key of Object.keys(currentEnvSecrets)) {
-        meta[key] = {
-          lastRotated: now,
-          version: 1,
-        };
+      if (env === 'production') {
+        throw new Error(
+          `FATAL: Vault file not found at ${VAULT_SECRETS_PATH}. Production requires a properly configured vault-secrets.json file.`
+        );
       }
-
-      const fileData = {
-        environment: env,
-        secrets: currentEnvSecrets,
-        metadata: meta,
-      };
-
-      fs.writeFileSync(VAULT_SECRETS_PATH, JSON.stringify(fileData, null, 2));
+      console.warn(
+        `Vault file not found at ${VAULT_SECRETS_PATH}. Secrets will be read from environment variables only.`
+      );
+      this.secrets = {};
+      this.rotationMetadata = {};
+      this.environment = env;
+      return;
     }
 
     try {

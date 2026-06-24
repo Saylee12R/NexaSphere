@@ -17,11 +17,15 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, loading }) => {
       height={350}
     >
       <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="var(--border-color, rgba(255,255,255,0.08))"
+          vertical={false}
+        />
         <XAxis
           dataKey="name"
-          stroke="#888"
-          tick={{ fill: '#888', fontSize: 11 }}
+          stroke="var(--text-muted, #888)"
+          tick={{ fill: 'var(--text-secondary, #888)', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           angle={-45}
@@ -30,16 +34,16 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, loading }) => {
         />
         <YAxis
           yAxisId="left"
-          stroke="#888"
-          tick={{ fill: '#888' }}
+          stroke="var(--text-muted, #888)"
+          tick={{ fill: 'var(--text-secondary, #888)' }}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
           yAxisId="right"
           orientation="right"
-          stroke="#888"
-          tick={{ fill: '#888' }}
+          stroke="var(--text-muted, #888)"
+          tick={{ fill: 'var(--text-secondary, #888)' }}
           tickLine={false}
           axisLine={false}
         />

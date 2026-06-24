@@ -1,9 +1,7 @@
 // src/services/moderationService.js
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
-
+// NOTE: AI moderation is performed server-side only.
+// The Gemini API key is NEVER exposed in client-side code (VITE_ vars are
+// embedded in the JS bundle). All AI calls go through /api/moderation/ai-check.
 // Content categories for moderation
 export const MODERATION_CATEGORIES = {
   SPAM: 'spam',
@@ -63,18 +61,14 @@ class ModerationService {
       result.severity = SEVERITY.MEDIUM;
     }
 
-    // Run NLP detection using Gemini
-    if (import.meta.env.VITE_GEMINI_API_KEY) {
-      const aiResult = await this.detectWithAI(content);
-      if (aiResult.flags.length > 0) {
-        result.isAppropriate = false;
-        result.flags.push(...aiResult.flags);
-        result.severity = this.getHighestSeverity(aiResult.flags);
-      }
-      result.confidence = aiResult.confidence;
-    } else {
-      console.warn('Gemini API key not configured. Using basic detection only.');
+    // Run AI detection — proxied through backend to keep the Gemini key server-side
+    const aiResult = await this.detectWithAI(content);
+    if (aiResult.flags.length > 0) {
+      result.isAppropriate = false;
+      result.flags.push(...aiResult.flags);
+      result.severity = this.getHighestSeverity(aiResult.flags);
     }
+    result.confidence = aiResult.confidence;
 
     // Determine action based on user reputation
     const userRep = this.getUserReputation(userId);
@@ -127,31 +121,23 @@ class ModerationService {
     };
   }
 
-  // AI-based content detection
+  // AI-based content detection — proxied to backend to keep the API key secret.
+  // Backend endpoint: POST /api/moderation/ai-check { content: string }
+  // Returns: { flags: Array<{type, confidence}>, confidence: number, explanation: string }
   async detectWithAI(content) {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const response = await fetch('/api/moderation/ai-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
 
-      const prompt = `
-        Analyze the following content for toxicity, hate speech, harassment, and inappropriate material.
-        Content: "${content}"
-        
-        Return a JSON object with:
-        - isAppropriate: boolean
-        - categories: array of detected issues (spam, hate_speech, harassment, toxic, violence, self_harm, sexual)
-        - severity: low/medium/high/critical
-        - confidence: number between 0-1
-        - explanation: brief reason
-        
-        Only return valid JSON, no other text.
-      `;
+      if (!response.ok) {
+        // Backend unavailable — fall back to local detection only
+        return { flags: [], confidence: 0 };
+      }
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      // Parse JSON response
-      const parsed = JSON.parse(text);
+      const parsed = await response.json();
 
       return {
         flags:
@@ -160,7 +146,13 @@ class ModerationService {
         explanation: parsed.explanation,
       };
     } catch (error) {
-      console.error('AI moderation failed:', error);
+      // Network failure — degrade gracefully to local detection
+      if (import.meta.env.DEV) {
+        console.warn(
+          '[ModerationService] AI check unavailable, using local detection only:',
+          error.message
+        );
+      }
       return { flags: [], confidence: 0 };
     }
   }

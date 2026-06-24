@@ -21,6 +21,7 @@
  */
 
 import { getQueue, removeFromQueue, updateRetryCount } from './offlineQueue.js';
+import { STORAGE_KEYS } from './storageKeys.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -63,10 +64,11 @@ function emit(name, detail = {}) {
 async function replayRequest(entry) {
   const { id, url, method, body, headers } = entry;
 
-  // Re-attach auth token from current session (not from stored headers)
+  // Re-attach auth token from current session (localStorage only —
+  // auth tokens must never be stored in sessionStorage due to tab isolation issues).
   const authHeaders = {};
   try {
-    const token = sessionStorage.getItem('ns-auth-token') || localStorage.getItem('ns-auth-token');
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (token) {
       authHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -85,6 +87,32 @@ async function replayRequest(entry) {
 
   if (body && method !== 'GET' && method !== 'HEAD') {
     fetchOptions.body = body; // already JSON-serialized string
+  }
+
+  // Validate URL to prevent Client-Side SSRF / Malicious redirect injections
+  try {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const parsedUrl = new URL(url);
+      const allowedHost = window.location.host;
+      // Restrict targeting to identical hosts / loopback protections
+      if (
+        parsedUrl.host !== allowedHost &&
+        !parsedUrl.hostname.endsWith('.api.nexasphere.internal')
+      ) {
+        const isLocalIp =
+          /(^127\.)|(^192\.168\.)|(^10\.)|(^172\.(1[6-9]|2[0-9]|3[0-1])\.)|(^::1$)|(^169\.254\.)/.test(
+            parsedUrl.hostname
+          );
+        if (isLocalIp || parsedUrl.hostname === 'localhost') {
+          console.error('Blocked potential SSRF target payload:', parsedUrl.hostname);
+          return { success: false, shouldRetry: false };
+        }
+      }
+    } else if (url.startsWith('//')) {
+      return { success: false, shouldRetry: false };
+    }
+  } catch (e) {
+    return { success: false, shouldRetry: false };
   }
 
   const response = await fetch(url, fetchOptions);

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocketContext } from '../context/SocketContext';
-import { useSocket } from './useSocket';
+import { useSocketEvent } from './useSocketEvent';
 import { useWorkspaceStore } from '../store/workspaceStore';
 
 import type { UserInfo } from '../store/workspaceStore';
@@ -49,37 +49,37 @@ export function useSocketSync(roomId: string, user: UserInfo) {
     };
   }, [isConnected, roomId, socket, setStatus, user]);
 
-  useSocket('connect_error', () => {
+  useSocketEvent('connect_error', () => {
     setStatus('Reconnecting...');
   });
 
   // Sync events
-  useSocket<[DocumentChangePayload]>('document_change', (payload) => {
+  useSocketEvent<[DocumentChangePayload]>('document_change', (payload) => {
     setDocumentContent(payload.content);
   });
 
-  useSocket<[UserJoinedPayload]>('user_joined', (payload) => {
+  useSocketEvent<[UserJoinedPayload]>('user_joined', (payload) => {
     addUser(payload.socketId, payload.user);
   });
 
-  useSocket<[UserLeftPayload]>('user_left', (payload) => {
+  useSocketEvent<[UserLeftPayload]>('user_left', (payload) => {
     removeUser(payload.socketId);
   });
 
-  useSocket<[CursorMovedPayload]>('cursor_moved', (payload) => {
+  useSocketEvent<[CursorMovedPayload]>('cursor_moved', (payload) => {
     updateUserCursor(payload.socketId, payload.cursor);
   });
 
-  useSocket<[TypingPayload]>('typing_start', (payload) => {
+  useSocketEvent<[TypingPayload]>('typing_start', (payload) => {
     updateUserTyping(payload.socketId, true);
   });
 
-  useSocket<[TypingPayload]>('typing_stop', (payload) => {
+  useSocketEvent<[TypingPayload]>('typing_stop', (payload) => {
     updateUserTyping(payload.socketId, false);
   });
 
   // Debounced/Throttled emitters
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastCursorEmitRef = useRef<number>(0);
 
   const emitDocumentChange = (content: string) => {

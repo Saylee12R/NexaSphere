@@ -123,12 +123,8 @@ export async function withDb(fn) {
     const handleStats = (err) => {
       const duration = Date.now() - start;
       const sqlText = typeof config === 'string' ? config : config?.text || 'unknown';
-      Promise.all([
-        import('../middleware/performanceMonitor.js'),
-        import('../config/appContext.js'),
-      ])
-        .then(([{ recordDbQueryMetric }, { appContext }]) => {
-          recordDbQueryMetric(config, duration, err);
+      import('../config/appContext.js')
+        .then(({ appContext }) => {
           const store = appContext.getStore();
           if (store?.traceEntry) {
             store.traceEntry.queries.push({

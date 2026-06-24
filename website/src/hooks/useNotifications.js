@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useContext } from 'react';
 import socketClient from '../utils/socketClient';
 import { buildUrl, getApiBase, getSocketServerUrl } from '../utils/runtimeConfig';
 import { StudentAuthContext } from '../context/StudentAuthContext';
+import prefsService from '../services/notifications/preferences';
+import analytics from './analytics/useNotificationAnalytics';
 
 function getAuthHeaders() {
   // Wrapped in try-catch — localStorage.getItem throws SecurityError
@@ -30,6 +32,20 @@ export function useNotifications() {
   // Initialize socket and listen to real-time events
   useEffect(() => {
     let isMounted = true;
+    let prefMap = {};
+
+    async function loadPrefs() {
+      try {
+        const list = await prefsService.fetchPreferences(userId || 'global');
+        const map = {};
+        for (const p of list || []) map[p.category] = p;
+        prefMap = map;
+      } catch (e) {
+        prefMap = {};
+      }
+    }
+
+    loadPrefs();
 
     // Fetch persisted notifications from server (if available)
     (async () => {
@@ -106,69 +122,104 @@ export function useNotifications() {
 
     // Setup real-time event handlers mapping to the notification feed
     const handleRegistration = (data) => {
-      setNotifications((prev) => {
-        // Prevent duplicate by checking if we recently added a similar notification
-        // Note: data.id would be better if server provides it
-        return [
-          {
-            id: `reg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            type: 'connection',
-            title: 'Registration Confirmed! 🎉',
-            message: data.eventName
-              ? `You are registered for "${data.eventName}"`
-              : 'Your registration has been successfully confirmed.',
-            isRead: false,
-            createdAt: new Date().toISOString(),
-          },
-          ...prev,
-        ];
-      });
+      // Build notification object
+      const note = {
+        id: `reg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'registration_confirmations',
+        title: 'Registration Confirmed! 🎉',
+        message: data.eventName
+          ? `You are registered for "${data.eventName}"`
+          : 'Your registration has been successfully confirmed.',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Check preferences: if push is disabled or quiet hours/DND active, suppress locally
+      (async () => {
+        try {
+          const prefs = prefMap[note.type] || prefMap['global'] || {};
+          const channelEnabled = prefs.push !== false;
+          const dnd = (prefMap['global'] && prefMap['global'].dnd) || false;
+          const withinQuiet = (() => {
+            const qs =
+              prefs.quiet_start || (prefMap['global'] && prefMap['global'].quiet_start) || null;
+            const qe =
+              prefs.quiet_end || (prefMap['global'] && prefMap['global'].quiet_end) || null;
+            if (!qs || !qe) return false;
+            const toMin = (t) => {
+              const s = String(t).split(':');
+              return parseInt(s[0], 10) * 60 + parseInt(s[1], 10);
+            };
+            const now = new Date();
+            const m = now.getHours() * 60 + now.getMinutes();
+            const sMin = toMin(qs);
+            const eMin = toMin(qe);
+            return sMin <= eMin ? m >= sMin && m < eMin : m >= sMin || m < eMin;
+          })();
+
+          if (!channelEnabled || dnd || withinQuiet) {
+            // Do not show immediately; keep in queue for digest or ignore
+            // Simple local queue in localStorage
+            try {
+              const key = 'ns_notification_digest_queue';
+              const raw = localStorage.getItem(key);
+              const arr = raw ? JSON.parse(raw) : [];
+              arr.push({
+                ...note,
+                suppressedAt: new Date().toISOString(),
+                suppressedReason: !channelEnabled ? 'channel' : dnd ? 'dnd' : 'quiet',
+              });
+              localStorage.setItem(key, JSON.stringify(arr));
+            } catch (e) {}
+            return;
+          }
+
+          // Otherwise add to feed
+          setNotifications((prev) => [note, ...prev]);
+        } catch (e) {
+          setNotifications((prev) => [note, ...prev]);
+        }
+      })();
     };
 
     const handleWaitlist = (data) => {
-      setNotifications((prev) => [
-        {
-          id: `waitlist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          type: 'mention',
-          title: 'Waitlist Promotion! 🚀',
-          message: data.eventName
-            ? `Great news! You have been promoted for "${data.eventName}"`
-            : 'You have been promoted from the waitlist.',
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const note = {
+        id: `waitlist-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'announcements',
+        title: 'Waitlist Promotion! 🚀',
+        message: data.eventName
+          ? `Great news! You have been promoted for "${data.eventName}"`
+          : 'You have been promoted from the waitlist.',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [note, ...prev]);
     };
 
     const handleReminder = (data) => {
-      setNotifications((prev) => [
-        {
-          id: `reminder-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          type: 'system',
-          title: 'Upcoming Event Reminder ⏰',
-          message: data.eventName
-            ? `"${data.eventName}" is starting soon! Don't miss it.`
-            : 'An event is starting shortly.',
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const note = {
+        id: `reminder-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'event_reminders',
+        title: 'Upcoming Event Reminder ⏰',
+        message: data.eventName
+          ? `"${data.eventName}" is starting soon! Don't miss it.`
+          : 'An event is starting shortly.',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [note, ...prev]);
     };
 
     const handleAttendance = (data) => {
-      setNotifications((prev) => [
-        {
-          id: `attendance-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          type: 'system',
-          title: 'Attendance Confirmed! Check-in ✅',
-          message: `Your check-in is complete! You earned ${data.points || 50} points.`,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const note = {
+        id: `attendance-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        type: 'messages',
+        title: 'Attendance Confirmed! Check-in ✅',
+        message: `Your check-in is complete! You earned ${data.points || 50} points.`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [note, ...prev]);
     };
 
     // Note: The backend seems to emit 'registration-confirmed' but previously it mapped to 'registrationConfirmed'
@@ -213,8 +264,13 @@ export function useNotifications() {
           headers: getAuthHeaders(),
           body: JSON.stringify({ id }),
         });
+        analytics.trackNotificationOpened({ id });
       } catch (e) {}
     })();
+  }, []);
+
+  const trackAction = useCallback((id, action) => {
+    analytics.trackNotificationAction({ id, action });
   }, []);
 
   const markAllAsRead = useCallback(() => {
@@ -258,5 +314,6 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     clearAll,
+    trackAction,
   };
 }
