@@ -104,6 +104,11 @@ const links = [
     icon: 'Database',
     requiredScope: 'settings:admin',
   },
+  {
+    to: '/dashboard/reports',
+    label: 'Reports',
+    icon: 'Target',
+  },
 ];
 
 export function Sidebar() {

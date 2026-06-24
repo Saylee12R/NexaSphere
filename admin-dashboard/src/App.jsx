@@ -27,6 +27,10 @@ import { ComprehensiveAnalytics } from './pages/ComprehensiveAnalytics';
 import { FunnelAnalysis } from './pages/FunnelAnalysis';
 import { BackupsManager } from './pages/BackupsManager';
 import { ImpersonationBanner } from './components/ImpersonationBanner';
+import { ResourcesManager } from './pages/ResourcesManager';
+import { ComplianceManager } from './pages/ComplianceManager';
+import { SponsorshipsManager } from './pages/SponsorshipsManager';
+import { UserEngagementReport } from './pages/UserEngagementReport';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -91,6 +95,7 @@ export default function App() {
             <Route path="/dashboard/backups" element={<BackupsManager />} />
             <Route path="/dashboard/sponsorships" element={<SponsorshipsManager />} />
             <Route path="/dashboard/audit-logs" element={<AuditLogViewer />} />
+            <Route path="/dashboard/reports" element={<UserEngagementReport />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
