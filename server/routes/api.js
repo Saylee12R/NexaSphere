@@ -1,3 +1,5 @@
+import { throttleMiddleware } from '../middleware/throttleMiddleware.js';
+import rateLimitAdminRoutes from './rateLimitAdminRoutes.js';
 import { auditLogController } from '../controllers/auditLogController.js';
 import * as eventsController from '../controllers/eventsController.js';
 import * as activityEventsController from '../controllers/activityEventsController.js';
@@ -24,6 +26,9 @@ import { auditLogRepository } from '../repositories/auditLogRepository.js';
 import * as recommendationsController from '../controllers/recommendationsController.js';
 import * as gamificationController from '../controllers/gamificationController.js';
 import multer from 'multer';
+
+router.use(rateLimitAdminRoutes);
+router.use(throttleMiddleware);
 
 const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
