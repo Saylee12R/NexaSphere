@@ -29,6 +29,8 @@ export const listEvents = wrapAsync(async (req, res) => {
   const { page, limit } = parsePagination(req.query);
   const status = ALLOWED_EVENT_STATUSES.includes(req.query.status) ? req.query.status : undefined;
 
+  const { startDate, endDate, category, location, search } = req.query;
+
   let studentGroups = undefined;
   const authHeader = req.headers.authorization;
   let token =
@@ -46,13 +48,34 @@ export const listEvents = wrapAsync(async (req, res) => {
     }
   }
 
-  const { rows, total } = await eventsService.listEvents({ page, limit, status, studentGroups });
+  const { rows, total } = await eventsService.listEvents({
+    page,
+    limit,
+    status,
+    studentGroups,
+    startDate,
+    endDate,
+    category,
+    location,
+    search,
+  });
   return res.json({ events: rows, pagination: buildPaginationMeta(page, limit, total) });
 });
 
 export const adminListEvents = wrapAsync(async (req, res) => {
   const { page, limit } = parsePagination(req.query);
-  const { rows, total } = await eventsService.adminListEvents({ page, limit });
+  const { startDate, endDate, category, location, search, status } = req.query;
+
+  const { rows, total } = await eventsService.adminListEvents({
+    page,
+    limit,
+    status,
+    startDate,
+    endDate,
+    category,
+    location,
+    search,
+  });
   return res.json({ events: rows, pagination: buildPaginationMeta(page, limit, total) });
 });
 
