@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFormDraft } from '../../hooks/useFormDraft';
 import {
   DynamicIcon,
   IconArrowLeft,
@@ -512,6 +513,40 @@ const BRANCH_OPTIONS = [
   'Other',
 ];
 
+const INITIAL_FORM = {
+  fullName: '',
+  collegeEmail: '',
+  whatsapp: '',
+  year: '',
+  branch: '',
+  branchOther: '',
+  section: '',
+  sectionOther: '',
+
+  role: '',
+  interests: [],
+
+  skills: '',
+  comms: '',
+  campusExp: '',
+  campusExpDetails: '',
+  links: '',
+
+  commitHours: '',
+  attendCampus: '',
+  assessmentOk: '',
+
+  whyJoin: '',
+  anythingElse: '',
+
+  declarations: {
+    truth: false,
+    time: false,
+    participate: false,
+    disagree: false,
+  },
+};
+
 export default function RecruitmentPage({ onBack }) {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -521,39 +556,16 @@ export default function RecruitmentPage({ onBack }) {
   const [showRoles, setShowRoles] = useState(false);
   const topRef = useRef(null);
 
-  const [form, setForm] = useState({
-    fullName: '',
-    collegeEmail: '',
-    whatsapp: '',
-    year: '',
-    branch: '',
-    branchOther: '',
-    section: '',
-    sectionOther: '',
+  const [form, setForm] = useState(INITIAL_FORM);
 
-    role: '',
-    interests: [],
-
-    skills: '',
-    comms: '',
-    campusExp: '',
-    campusExpDetails: '',
-    links: '',
-
-    commitHours: '',
-    attendCampus: '',
-    assessmentOk: '',
-
-    whyJoin: '',
-    anythingElse: '',
-
-    declarations: {
-      truth: false,
-      time: false,
-      participate: false,
-      disagree: false,
-    },
-  });
+  const { draftRestored, clearDraft, startOver, continueDraft } = useFormDraft(
+    'ns_recruitment_draft',
+    form,
+    step,
+    setForm,
+    setStep,
+    INITIAL_FORM
+  );
 
   const steps = useMemo(
     () => [
@@ -1246,6 +1258,7 @@ export default function RecruitmentPage({ onBack }) {
       }
 
       setSubmittedEmail(payload.collegeEmail);
+      clearDraft();
       setDone(true);
       scrollTop();
     } catch (e) {
@@ -1503,6 +1516,28 @@ export default function RecruitmentPage({ onBack }) {
           </div>
 
           <div className="apply-body">
+            {draftRestored && !done && (
+              <div style={{
+                background: 'rgba(0,212,255,.1)',
+                border: '1px solid var(--c1)',
+                borderRadius: 'var(--r2)',
+                padding: '12px 16px',
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}>
+                <div style={{ fontSize: '.9rem', color: 'var(--t1)' }}>
+                  We restored your unsaved progress from earlier.
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={continueDraft} className="btn btn-primary btn-sm">Continue</button>
+                  <button onClick={startOver} className="btn btn-outline btn-sm">Start Over</button>
+                </div>
+              </div>
+            )}
             {done ? (
               <div style={{ display: 'grid', gap: 18 }}>
                 {/* ── Confirmation banner ── */}
