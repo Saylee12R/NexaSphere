@@ -98,6 +98,7 @@ import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
 import { loadPersistedPushSubscriptions } from './routes/notifications.js';
 import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
+import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
 import { startWebhookRetryProcessor } from './services/webhookRetryProcessor.js';
 import { csrfProtection } from './middleware/csrfMiddleware.js';
@@ -331,6 +332,10 @@ app.use(enhancedTracingMiddleware);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(xssSanitizer);
+app.use(sqlInjectionGuard);
+if (!useStructuredHttpLog) {
+  app.use(morgan('combined'));
+}
 app.use(apiLogger);
 app.use(performanceMonitor);
 app.use(cookieParser());
