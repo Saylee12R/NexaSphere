@@ -71,6 +71,7 @@ function Input({
   maxLength,
   inputMode: inputModeProp,
   onPaste,
+  'aria-label': ariaLabel,
 }) {
   return (
     <input
@@ -78,6 +79,7 @@ function Input({
       onChange={(e) => onChange(e.target.value)}
       onPaste={onPaste}
       placeholder={placeholder}
+      aria-label={ariaLabel || placeholder}
       type={type}
       maxLength={maxLength}
       inputMode={inputModeProp || (type === 'tel' ? 'numeric' : undefined)}
