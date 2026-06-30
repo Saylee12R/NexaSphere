@@ -1,4 +1,5 @@
 import { forumRepository } from '../repositories/forumRepository.js';
+import { emitToUserByEmail } from '../config/socket.js';
 
 export const forumService = {
   async getCategories() {
@@ -30,7 +31,25 @@ export const forumService = {
   },
 
   async createReply(threadId, input) {
-    return forumRepository.createReply(threadId, input);
+    const thread = await forumRepository.getThreadById(threadId);
+    const reply = await forumRepository.createReply(threadId, input);
+
+    if (reply && thread && thread.authorEmail) {
+      // Don't notify if the replier is the thread author
+      if (thread.authorEmail.toLowerCase() !== input.author_email.toLowerCase()) {
+        try {
+          emitToUserByEmail(thread.authorEmail, 'new-comment', {
+            threadId,
+            threadTitle: thread.title,
+            authorName: input.author_name,
+          });
+        } catch (err) {
+          console.error('[ForumService] Failed to emit new-comment notification:', err.message);
+        }
+      }
+    }
+
+    return reply;
   },
 
   async getReply(id) {

@@ -197,6 +197,20 @@ router.put('/portfolio', protectedActionRateLimiter, async (req, res) => {
       username,
       passkey,
     });
+
+    // If projects are saved, push real-time project approval notification
+    if (saved && Array.isArray(saved.projects) && saved.projects.length > 0) {
+      try {
+        const { emitToRoom } = await import('../config/socket.js');
+        const lastProject = saved.projects[saved.projects.length - 1];
+        emitToRoom(`user-${String(username).toLowerCase()}`, 'project-approved', {
+          projectName: lastProject.name,
+        });
+      } catch (socketErr) {
+        console.warn('[Portfolio] Could not emit project-approved notification:', socketErr.message);
+      }
+    }
+
     return res.json({ ok: true, portfolio: saved });
   } catch (err) {
     if (err.code === '23505') {

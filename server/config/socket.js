@@ -464,6 +464,15 @@ export function emitToUser(userId, eventName, data) {
 }
 
 /**
+ * Emit event to specific user by email
+ */
+export function emitToUserByEmail(email, eventName, data) {
+  if (!io) return;
+  io.to(`user-${String(email).toLowerCase()}`).emit(eventName, data);
+  logger.debug('Emit to user by email room', { email, event: eventName });
+}
+
+/**
  * Get connected users count
  */
 export function getConnectedUsersCount() {
@@ -518,6 +527,10 @@ function _cleanupWorkspaceMembership(socketId) {
   }
 }
 
+export function _setIOForTests(mockIo) {
+  io = mockIo;
+}
+
 /**
  * Emit an event to the admin role-scoped room(s) that have permission
  * to receive it.  Falls back to the legacy shared `admin-room` for
@@ -552,9 +565,11 @@ export default {
   broadcastEvent,
   emitToRoom,
   emitToUser,
+  emitToUserByEmail,
   emitToRole,
   _clearConnectedUsers,
   _clearWorkspaceRoomMembers,
   _clearJoinRoomAttempts,
   _onConnection,
+  _setIOForTests,
 };
