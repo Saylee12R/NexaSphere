@@ -25,9 +25,7 @@ import * as subscriptionsController from '../controllers/subscriptionsController
 import * as portfolioAnalyticsController from '../controllers/portfolioAnalyticsController.js';
 import { achievementSchema } from '../validators/portfolioSchemas.js';
 import { auditLogRepository } from '../repositories/auditLogRepository.js';
-import announcementPriorityRouter from './announcementPriority.js';
-import eventConflictRouter from './eventConflict.js';
-import waitlistRoutes from './waitlist.js';
+import * as localAuthController from '../controllers/localAuthController.js';
 
 import * as recommendationsController from '../controllers/recommendationsController.js';
 import * as gamificationController from '../controllers/gamificationController.js';
@@ -152,6 +150,10 @@ router.delete(
   usersController.adminDeactivateUser
 );
 router.post('/api/admin/login', authRateLimiter, adminAuthMiddleware.login);
+
+// Local User Auth
+router.post('/api/auth/local/login', authRateLimiter, localAuthController.localLogin);
+
 router.post('/api/admin/2fa/verify', authRateLimiter, adminAuthMiddleware.verifyTwoFactor);
 router.post(
   '/api/admin/2fa/setup/verify',

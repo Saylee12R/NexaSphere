@@ -23,6 +23,15 @@ export default function UserManager() {
     admin_roles: 'member',
   });
 
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvText, setCsvText] = useState('');
+  const [importPreview, setImportPreview] = useState(null);
+  const [importJobId, setImportJobId] = useState(null);
+  const [importProgress, setImportProgress] = useState(null);
+  const [importErrors, setImportErrors] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+
   async function fetchUsers() {
     setLoading(true);
     try {
@@ -39,6 +48,83 @@ export default function UserManager() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    let interval;
+    if (importJobId && importProgress !== 100) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/admin/bulk/jobs/${importJobId}`, { credentials: 'include' });
+          if (res.ok) {
+            const job = await res.json();
+            setImportProgress(job.progress);
+            if (job.status === 'completed' || job.status === 'failed') {
+              setImportErrors(job.errors || []);
+              clearInterval(interval);
+              fetchUsers(); // Refresh after import
+            }
+          }
+        } catch (err) {
+          console.error('Failed to poll job status');
+        }
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [importJobId, importProgress]);
+
+  function downloadCsvTemplate() {
+    const template = 'email,username,displayname,role,major,year,tags\njohn@college.edu,johndoe,John Doe,user,Computer Science,2028,tech;sports\n';
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users_import_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleFileSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    setCsvText(text);
+
+    // Get preview
+    const res = await fetch('/api/admin/bulk/users/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ csv: text }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setImportPreview(data);
+    } else {
+      alert('Failed to generate preview');
+    }
+  }
+
+  async function handleImportSubmit() {
+    if (!csvText) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/admin/bulk/users/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ csv: csvText }),
+      });
+      if (res.ok) {
+        const job = await res.json();
+        setImportJobId(job.id);
+        setImportProgress(0);
+      } else {
+        alert('Failed to start import');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function handleCreate() {
     setSubmitting(true);
@@ -155,9 +241,14 @@ export default function UserManager() {
         }}
       >
         <h2>User Management</h2>
-        <button onClick={() => setShowAddModal(true)} disabled={submitting}>
-          + Add User
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => setShowImportModal(true)} disabled={submitting}>
+            Batch Import
+          </button>
+          <button onClick={() => setShowAddModal(true)} disabled={submitting}>
+            + Add User
+          </button>
+        </div>
       </div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -273,7 +364,7 @@ export default function UserManager() {
         </div>
       )}
 
-      {awardBadgeUser && (
+      {showImportModal && (
         <div
           style={{
             position: 'fixed',
@@ -282,6 +373,7 @@ export default function UserManager() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            zIndex: 1000,
           }}
         >
           <div
@@ -289,46 +381,90 @@ export default function UserManager() {
               background: '#fff',
               padding: '24px',
               borderRadius: '8px',
-              minWidth: '320px',
+              minWidth: '500px',
+              maxWidth: '800px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '16px',
             }}
           >
-            <h3>Award Badge to {awardBadgeUser.username}</h3>
-            <input
-              placeholder="Badge Name (e.g., Top Contributor)"
-              value={badgeForm.name}
-              onChange={(e) => setBadgeForm((f) => ({ ...f, name: e.target.value }))}
-            />
-            <input
-              placeholder="Description"
-              value={badgeForm.description}
-              onChange={(e) => setBadgeForm((f) => ({ ...f, description: e.target.value }))}
-            />
-            <select
-              value={badgeForm.icon}
-              onChange={(e) => setBadgeForm((f) => ({ ...f, icon: e.target.value }))}
-            >
-              <option value="Award">Award</option>
-              <option value="Star">Star</option>
-              <option value="Shield">Shield</option>
-              <option value="Zap">Zap</option>
-              <option value="Target">Target</option>
-            </select>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={handleAwardBadge} style={{ background: '#8B5CF6', color: 'white' }}>
-                Award
-              </button>
-              <button
-                onClick={() => {
-                  setAwardBadgeUser(null);
-                  setBadgeForm({ name: '', description: '', icon: 'Award' });
-                }}
-              >
-                Cancel
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Batch Import Users</h3>
+              <button onClick={() => {
+                setShowImportModal(false);
+                setImportPreview(null);
+                setCsvText('');
+                setImportJobId(null);
+                setImportProgress(null);
+                setImportErrors([]);
+              }}>X</button>
             </div>
+
+            {!importJobId && (
+              <>
+                <div>
+                  <button onClick={downloadCsvTemplate} style={{ marginBottom: '8px' }}>
+                    Download CSV Template
+                  </button>
+                  <br />
+                  <label>
+                    <strong>Upload CSV: </strong>
+                    <input type="file" accept=".csv" onChange={handleFileSelected} />
+                  </label>
+                </div>
+
+                {importPreview && (
+                  <div>
+                    <h4>Preview</h4>
+                    <p>Valid Rows: {importPreview.preview?.length || 0}</p>
+                    <p>Invalid Rows: {importPreview.errors?.length || 0}</p>
+                    {importPreview.errors?.length > 0 && (
+                      <div style={{ color: 'red', fontSize: '14px' }}>
+                        <ul>
+                          {importPreview.errors.map((e, idx) => (
+                            <li key={idx}>Row {e.row}: {e.errors.join(', ')}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleImportSubmit}
+                      disabled={submitting || importPreview.preview?.length === 0}
+                      style={{ marginTop: '16px' }}
+                    >
+                      {submitting ? 'Starting...' : `Import ${importPreview.preview?.length || 0} Users`}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {importJobId && (
+              <div>
+                <h4>Import Progress</h4>
+                <div style={{ width: '100%', height: '20px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${importProgress}%`, height: '100%', background: '#4caf50', transition: 'width 0.3s' }}></div>
+                </div>
+                <p>{importProgress}% Completed</p>
+                {importProgress === 100 && (
+                  <div style={{ marginTop: '16px' }}>
+                    <p style={{ color: 'green' }}>Import Finished!</p>
+                    {importErrors.length > 0 && (
+                      <div style={{ color: 'red', marginTop: '8px' }}>
+                        <h5>Errors during import:</h5>
+                        <ul>
+                          {importErrors.map((err, idx) => (
+                            <li key={idx}>{err.message}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
