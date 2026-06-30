@@ -117,6 +117,17 @@ async function ensureSchema(client) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolios_username_lower_unique
     ON portfolios (LOWER(username))
   `);
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS portfolio_skill_endorsements (
+      id SERIAL PRIMARY KEY,
+      portfolio_username VARCHAR(100) REFERENCES portfolios(username) ON DELETE CASCADE,
+      skill_name VARCHAR(100) NOT NULL,
+      endorser_id VARCHAR(100) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(portfolio_username, skill_name, endorser_id)
+    )
+  `);
 }
 
 async function ensureReady() {
@@ -229,7 +240,28 @@ export const portfolioRepository = {
             sanitizedUsername,
           ]);
           if (!rows.length) return null;
-          return mapRow(rows[0]);
+          const portfolio = mapRow(rows[0]);
+
+          // Fetch endorsements
+          const { rows: endorsementRows } = await client.query(
+            'SELECT skill_name, COUNT(*) as count FROM portfolio_skill_endorsements WHERE portfolio_username = $1 GROUP BY skill_name',
+            [sanitizedUsername]
+          );
+          const endorsementsMap = {};
+          endorsementRows.forEach((r) => {
+            endorsementsMap[r.skill_name] = parseInt(r.count, 10);
+          });
+
+          if (Array.isArray(portfolio.skills)) {
+            portfolio.skills = portfolio.skills.map((skill) => {
+              if (typeof skill === 'string') {
+                return { name: skill, endorsements: endorsementsMap[skill] || 0 };
+              }
+              return { ...skill, endorsements: endorsementsMap[skill.name] || 0 };
+            });
+          }
+
+          return portfolio;
         });
       } catch (err) {
         console.error('Database query failed. Falling back to local file.', err);

@@ -9,9 +9,10 @@ import { Helmet } from 'react-helmet-async';
 import { generatePortfolioMeta } from '../../utils/seoUtils';
 import { safeHref } from '../../utils/safeHref';
 import '../../styles/print.css';
-import ProfileBadges from '../../components/profile/ProfileBadges';
+import { useStudentAuth } from '../../context/StudentAuthContext';
 
 export default function PublicPortfolio({ username, onBack }) {
+  const { user } = useStudentAuth();
   const [portfolio, setPortfolio] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,6 +53,52 @@ export default function PublicPortfolio({ username, onBack }) {
     documentTitle: `${username}_Resume`,
     removeAfterPrint: true,
   });
+
+  const handleEndorse = async (skillName) => {
+    if (!user) {
+      alert('You must be signed in as a club member to endorse skills.');
+      return;
+    }
+    if (user.username && user.username.toLowerCase() === username.toLowerCase()) {
+      alert('You cannot endorse your own skills.');
+      return;
+    }
+    try {
+      const base = getApiBase();
+      const res = await apiClient(`${base}/api/portfolio/${username}/endorse`, {
+        method: 'POST',
+        body: { skillName },
+      });
+      if (res.success) {
+        setPortfolio((prev) => {
+          const updatedSkills = prev.skills.map((s) => {
+            const sName = typeof s === 'string' ? s : s.name;
+            if (sName === skillName) {
+              return {
+                name: sName,
+                endorsements: (s.endorsements || 0) + 1,
+              };
+            }
+            return typeof s === 'string' ? { name: s, endorsements: 0 } : s;
+          });
+          return { ...prev, skills: updatedSkills };
+        });
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to endorse skill');
+    }
+  };
+
+  const getTopSkills = (skills) => {
+    if (!skills || skills.length === 0) return new Set();
+    const withCounts = skills.map((s) => ({
+      name: typeof s === 'string' ? s : s.name,
+      count: typeof s === 'string' ? 0 : s.endorsements || 0,
+    }));
+    const maxCount = Math.max(...withCounts.map((s) => s.count));
+    if (maxCount === 0) return new Set();
+    return new Set(withCounts.filter((s) => s.count === maxCount).map((s) => s.name));
+  };
 
   if (isLoading) {
     return <PortfolioSkeleton />;
@@ -357,11 +404,53 @@ export default function PublicPortfolio({ username, onBack }) {
                 Certified Capabilities
               </h2>
               <div className="portfolio-pills-list">
-                {skills.map((skill) => (
-                  <span key={skill} className="portfolio-pill">
-                    {skill}
-                  </span>
-                ))}
+                {skills.map((skill) => {
+                  const sName = typeof skill === 'string' ? skill : skill.name;
+                  const sCount = typeof skill === 'string' ? 0 : skill.endorsements || 0;
+                  const isTop = getTopSkills(skills).has(sName);
+
+                  return (
+                    <span
+                      key={sName}
+                      className="portfolio-pill"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      {sName}
+                      {isTop && <span title="Top Endorsed Skill">🏆</span>}
+                      {sCount > 0 && (
+                        <span
+                          className="endorsement-count"
+                          style={{
+                            backgroundColor: 'var(--accent-portfolio)',
+                            color: '#fff',
+                            borderRadius: '50%',
+                            padding: '2px 6px',
+                            fontSize: '0.8em',
+                          }}
+                        >
+                          {sCount}
+                        </span>
+                      )}
+                      {user && (
+                        <button
+                          onClick={() => handleEndorse(sName)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            color: 'var(--accent-portfolio)',
+                            fontSize: '1em',
+                            opacity: 0.8,
+                          }}
+                          title="Endorse this skill"
+                        >
+                          +
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
             </section>
           )}

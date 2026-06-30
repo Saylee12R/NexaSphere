@@ -8,6 +8,8 @@ import { Router } from 'express';
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { portfolioContentSchema, portfolioPutSchema } from '../validators/portfolioSchemas.js';
 import { protectedActionRateLimiter } from '../middleware/authRateLimiter.js';
+import { requireStudentAuth } from '../middleware/studentAuthMiddleware.js';
+import notificationsService from '../services/notificationsService.js';
 
 const router = Router();
 
@@ -136,6 +138,63 @@ router.get('/portfolio/:username', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
+
+/**
+ * POST /api/portfolio/:username/endorse — Endorse a skill.
+ */
+router.post(
+  '/portfolio/:username/endorse',
+  requireStudentAuth,
+  protectedActionRateLimiter,
+  async (req, res) => {
+    try {
+      const username = String(req.params.username || '').trim();
+      const { skillName } = req.body;
+      const endorserId = req.studentUser.id;
+
+      if (!username || !skillName) {
+        return res.status(400).json({ error: 'Username and skillName are required' });
+      }
+
+      // Prevent self-endorsements (comparing lowercased usernames/ids, but usually endorserId is ID, portfolio is username. Wait!
+      // The portfolio is identified by username, the endorser is identified by ID or username from studentUser.
+      // If studentUser has username, check against it.
+      if (
+        req.studentUser.username &&
+        req.studentUser.username.toLowerCase() === username.toLowerCase()
+      ) {
+        return res.status(400).json({ error: 'You cannot endorse your own skills' });
+      }
+
+      await portfolioRepository.endorseSkill(username, skillName, endorserId);
+
+      // Trigger a notification to the portfolio owner
+      try {
+        await notificationsService.addNotification(username, {
+          type: 'endorsement',
+          priority: 'normal',
+          title: 'New Skill Endorsement!',
+          message: `Someone just endorsed your skill: ${skillName}.`,
+          link: `/portfolio/${username}`,
+        });
+      } catch (notifErr) {
+        console.warn('Failed to send endorsement notification:', notifErr.message);
+      }
+
+      return res.json({ success: true, message: 'Skill endorsed successfully' });
+    } catch (err) {
+      if (
+        err.message === 'You have already endorsed this skill' ||
+        err.message === 'You have reached the limit of 3 endorsements per day' ||
+        err.message === 'Portfolio not found'
+      ) {
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('Error endorsing skill:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
 
 /**
  * PUT /api/portfolio — Create or update a portfolio.
