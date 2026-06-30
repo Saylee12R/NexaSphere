@@ -360,12 +360,12 @@ export const emailCampaignRepository = {
     return withDb(async (client) => {
       let query = 'SELECT DISTINCT s.id, s.email, s.full_name FROM student_users s';
       const params = [];
-      
+
       let joinCount = 0;
       if (criteria.groupId) {
         query += ` JOIN user_group_members ugm ON s.id = ugm.student_id`;
       }
-      
+
       query += ' WHERE 1=1';
 
       if (criteria.groupId) {

@@ -43,15 +43,15 @@ Lightbox.jsx                    GET /api/photos/:id
 
 ## Files Changed
 
-| File | Purpose |
-|------|---------|
-| `components/Gallery/PhotoUpload.jsx` | Bulk drag-and-drop upload with XHR progress |
-| `components/Gallery/PhotoGallery.jsx` | Masonry grid, infinite scroll, filters, sort |
-| `components/Gallery/Lightbox.jsx` | Full-screen viewer, swipe, comments, tagging, share |
-| `server/routes/photos.js` | Upload, list, like, comment, tag endpoints |
-| `server/routes/albums.js` | Album CRUD, sub-albums, featured photos |
-| `server/services/aiTagging.js` | AWS Rekognition: labels, faces, moderation |
-| `server/services/imageProcessing.js` | sharp resize, WebP, S3 upload, EXIF |
+| File                                  | Purpose                                             |
+| ------------------------------------- | --------------------------------------------------- |
+| `components/Gallery/PhotoUpload.jsx`  | Bulk drag-and-drop upload with XHR progress         |
+| `components/Gallery/PhotoGallery.jsx` | Masonry grid, infinite scroll, filters, sort        |
+| `components/Gallery/Lightbox.jsx`     | Full-screen viewer, swipe, comments, tagging, share |
+| `server/routes/photos.js`             | Upload, list, like, comment, tag endpoints          |
+| `server/routes/albums.js`             | Album CRUD, sub-albums, featured photos             |
+| `server/services/aiTagging.js`        | AWS Rekognition: labels, faces, moderation          |
+| `server/services/imageProcessing.js`  | sharp resize, WebP, S3 upload, EXIF                 |
 
 ---
 
@@ -71,19 +71,22 @@ REKOGNITION_COLLECTION_ID=nexasphere-faces   # optional, enables face matching
 ## Setup
 
 ### 1. Install dependencies
+
 ```bash
 npm install sharp exifr multer aws-sdk
 ```
 
 ### 2. Register routes in server/index.js
+
 ```js
-const photosRouter = require("./routes/photos");
-const albumsRouter = require("./routes/albums");
-app.use("/api/photos", photosRouter);
-app.use("/api/albums", albumsRouter);
+const photosRouter = require('./routes/photos');
+const albumsRouter = require('./routes/albums');
+app.use('/api/photos', photosRouter);
+app.use('/api/albums', albumsRouter);
 ```
 
 ### 3. Create Rekognition face collection (optional — enables face matching)
+
 ```bash
 aws rekognition create-collection \
   --collection-id nexasphere-faces \
@@ -91,24 +94,25 @@ aws rekognition create-collection \
 ```
 
 ### 4. Users opt-in to face indexing
+
 Call `aiTagging.indexFaceForUser(userId, imageBuffer)` when a user uploads a profile photo and consents to face matching.
 
 ---
 
 ## Acceptance Criteria Coverage
 
-| AC | Implementation |
-|----|---------------|
-| Bulk upload works smoothly | `PhotoUpload.jsx` — drag-and-drop, batched XHR with per-file progress |
-| Gallery renders performantly (1000+ photos) | Infinite scroll (30/page), lazy loading, WebP srcset, masonry CSS columns |
-| AI tagging suggests correct users | `aiTagging.analyzePhoto` → Rekognition `searchFacesByImage` against face collection |
+| AC                                              | Implementation                                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Bulk upload works smoothly                      | `PhotoUpload.jsx` — drag-and-drop, batched XHR with per-file progress                      |
+| Gallery renders performantly (1000+ photos)     | Infinite scroll (30/page), lazy loading, WebP srcset, masonry CSS columns                  |
+| AI tagging suggests correct users               | `aiTagging.analyzePhoto` → Rekognition `searchFacesByImage` against face collection        |
 | Content moderation catches inappropriate images | `aiTagging.moderateContent` → Rekognition `detectModerationLabels`, rejects before storage |
-| Social features (like, comment, share) work | `Lightbox.jsx` + `/api/photos/:id/like`, `/comments` endpoints |
-| Albums organized correctly | `albums.js` route — CRUD, sub-albums (parentAlbumId), featured photos |
-| Image quality maintained after compression | sharp WebP at 88–92% quality; original stored at 2000px max |
-| Mobile upload and viewing optimized | Touch swipe in Lightbox; `srcset` responsive images; `accept` on file input |
-| Privacy controls respected | Users can remove their own tag via `DELETE /api/photos/:id/tags/:userId` |
-| QA test with large photo sets | Infinite scroll + pagination tested with 1000+ photo sets |
+| Social features (like, comment, share) work     | `Lightbox.jsx` + `/api/photos/:id/like`, `/comments` endpoints                             |
+| Albums organized correctly                      | `albums.js` route — CRUD, sub-albums (parentAlbumId), featured photos                      |
+| Image quality maintained after compression      | sharp WebP at 88–92% quality; original stored at 2000px max                                |
+| Mobile upload and viewing optimized             | Touch swipe in Lightbox; `srcset` responsive images; `accept` on file input                |
+| Privacy controls respected                      | Users can remove their own tag via `DELETE /api/photos/:id/tags/:userId`                   |
+| QA test with large photo sets                   | Infinite scroll + pagination tested with 1000+ photo sets                                  |
 
 ---
 

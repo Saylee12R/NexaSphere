@@ -37,7 +37,7 @@ describe('GamificationDashboard Component', () => {
     expect(screen.getByText('Gamification Hub')).toBeInTheDocument();
     expect(screen.getByText(/Level 1/i)).toBeInTheDocument();
     expect(screen.getByText(/Newcomer/i)).toBeInTheDocument();
-    expect(screen.getByText(/0 \/ 100 XP/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 \/ 500 XP/i)).toBeInTheDocument();
   });
 
   it('allows switching between tabs', async () => {
@@ -83,7 +83,7 @@ describe('GamificationDashboard Component', () => {
 
     // Achievement 'first_comment' should unlock (+25 XP) in the same call
     // XP is now 5 (action) + 25 (achievement) = 30 XP
-    expect(screen.getByText(/30 \/ 100 XP/i)).toBeInTheDocument();
+    expect(screen.getByText(/30 \/ 500 XP/i)).toBeInTheDocument();
 
     // Toast for achievement should be present
     expect(screen.getByText(/Achievement Unlocked: Voice Your Thoughts!/i)).toBeInTheDocument();

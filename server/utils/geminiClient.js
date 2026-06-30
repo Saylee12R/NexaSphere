@@ -2,8 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * Invokes Gemini AI to get matched project recommendations based on the resume text and current project list.
- * @param {string} resumeText 
- * @param {Array<Object>} projects 
+ * @param {string} resumeText
+ * @param {Array<Object>} projects
  * @returns {Promise<Object>}
  */
 export async function getRecommendationsFromGemini(resumeText, projects) {
@@ -51,7 +51,10 @@ ${JSON.stringify(projects, null, 2)}
 
     const text = response.response.text();
     // Parse the JSON response
-    const cleanedText = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
+    const cleanedText = text
+      .replace(/```json/gi, '')
+      .replace(/```/gi, '')
+      .trim();
     return JSON.parse(cleanedText);
   } catch (error) {
     console.error('Failed to get recommendations from Gemini:', error);

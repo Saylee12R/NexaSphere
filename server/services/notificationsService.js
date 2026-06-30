@@ -1,9 +1,9 @@
-import { notificationPreferencesRepository } from '../repositories/notificationPreferencesRepository.js';
 import { notificationAnalyticsRepository } from '../repositories/notificationAnalyticsRepository.js';
 import { pushSubscriptionsRepository } from '../repositories/pushSubscriptionsRepository.js';
 import { notificationsRepository } from '../repositories/notificationsRepository.js';
 import { HAS_SUPABASE, supabaseRequest } from '../storage/supabaseClient.js';
 import webpush from 'web-push';
+import { shouldDeliver } from './notificationPreferencesService.js';
 
 /**
  * Orchestrates notification delivery based on user preferences and behavior.
@@ -20,16 +20,16 @@ class NotificationsService {
   }
 
   async addNotification(userId, data) {
-    const { type, priority = 'normal' } = data;
+    const { type = 'info', priority = 'normal', title, message, link = null } = data;
 
     // 1. Smart Fatigue Adjustment
     const activity = await notificationAnalyticsRepository.getUserActivityMetrics(userId);
-    const prefs = await notificationPreferencesRepository.get(userId);
-    const config = prefs.types[type] || { push: true, frequency: 'immediate' };
 
-    if (!config.push) return; // Opted out
+    // 2. Check delivery preferences (handles DND, quiet hours, channel prefs)
+    const result = await shouldDeliver(userId, type, 'push', priority === 'high');
+    if (!result.deliver) return;
 
-    let effectiveFrequency = config.frequency;
+    let effectiveFrequency = result.frequency;
 
     // Feature: If user hasn't opened app in 5 days, increase frequency (bypass digest)
     if (activity.daysSinceLastActive >= 5 && effectiveFrequency !== 'disabled') {
@@ -40,22 +40,29 @@ class NotificationsService {
       effectiveFrequency = 'daily_digest';
     }
 
-    // 2. Check DND status (critical notifications bypass DND)
-    const isDND = await notificationPreferencesRepository.isDNDActive(userId);
-    if (isDND && priority !== 'high') {
-      return this.queueForLater(userId, data, 'dnd');
-    }
+    // Create the notification record in DB
+    const id =
+      data.id ||
+      (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2));
+    const note = await notificationsRepository.create({
+      id,
+      userId,
+      type,
+      title,
+      message,
+      link,
+      isRead: data.isRead || false,
+    });
 
     if (effectiveFrequency === 'immediate') {
-      // 3. Check Quiet Hours
-      const inQuietHours = await notificationPreferencesRepository.isInsideQuietHours(userId);
-      if (inQuietHours && priority !== 'high') {
-        return this.queueForLater(userId, data, 'quiet_hours');
-      }
-      return this.sendNow(userId, data);
+      await this.sendNow(userId, { ...data, id });
     } else if (effectiveFrequency !== 'disabled') {
-      return this.addToDigest(userId, effectiveFrequency, data);
+      await this.addToDigest(userId, effectiveFrequency, { ...data, id });
     }
+
+    return note;
   }
 
   async sendNow(userId, data) {
@@ -153,5 +160,5 @@ export const getNotifications = notificationsService.getNotifications.bind(notif
 export const markAsRead = notificationsService.markAsRead.bind(notificationsService);
 export const markAllAsRead = notificationsService.markAllAsRead.bind(notificationsService);
 export const clearAll = notificationsService.clearAll.bind(notificationsService);
-export const removeNotification = notificationsService.removeNotification.bind(notificationsService);
-
+export const removeNotification =
+  notificationsService.removeNotification.bind(notificationsService);

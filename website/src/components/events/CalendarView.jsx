@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import useSocket from '../../hooks/useSocketConnection';
+import useSocketConnection from '../../hooks/useSocketConnection';
 import { getEventConflictStatus, detectConflicts } from '../../services/eventConflicts';
 import './CalendarView.css';
 
@@ -18,7 +18,7 @@ export default function CalendarView({ events: initialEvents, onEventClick, isAd
   const [draggedEvent, setDraggedEvent] = useState(null);
   const [conflictToast, setConflictToast] = useState(null); // { message, severity }
 
-  const { on: onSocket } = useSocket();
+  const { on: onSocket } = useSocketConnection();
 
   // Real-time synchronization
   useEffect(() => {
@@ -239,7 +239,7 @@ export default function CalendarView({ events: initialEvents, onEventClick, isAd
         {daysToRender.map((date, idx) => {
           const keyPrefix = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
           return (
-            <div key={idx} className="day-column">
+            <div key={keyPrefix} className="day-column">
               <div className="time-slot-header">
                 {isDayView ? '' : daysOfWeek[idx]} {date.getDate()}
               </div>

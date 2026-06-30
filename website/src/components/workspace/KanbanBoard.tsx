@@ -8,7 +8,7 @@ import React, {
   Fragment,
 } from 'react';
 import { useSocketContext } from '../../context/SocketContext';
-import { useSocket } from '../../hooks/useSocket';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
 import {
   Plus,
   AlertCircle,
@@ -245,7 +245,7 @@ export default function KanbanBoard({
     return map;
   }, [state.tasks]);
 
-  useSocket(
+  useSocketEvent(
     'task_updated',
     (payload: { taskId: string; status: Task['status']; roomId: string }) => {
       if (!payload || payload.roomId !== roomId) return;
@@ -256,12 +256,12 @@ export default function KanbanBoard({
     }
   );
 
-  useSocket('task_created', (payload: Task & { roomId: string }) => {
+  useSocketEvent('task_created', (payload: Task & { roomId: string }) => {
     if (!payload || payload.roomId !== roomId) return;
     dispatch({ type: 'ADD_TASK', payload });
   });
 
-  useSocket('typing_start', (payload: { socketId: string; user?: { name: string } }) => {
+  useSocketEvent('typing_start', (payload: { socketId: string; user?: { name: string } }) => {
     if (!payload || payload.socketId === socket?.id) return;
     setTypingUsers((prev) => ({
       ...prev,
@@ -269,7 +269,7 @@ export default function KanbanBoard({
     }));
   });
 
-  useSocket('typing_stop', (payload: { socketId: string }) => {
+  useSocketEvent('typing_stop', (payload: { socketId: string }) => {
     if (!payload) return;
     setTypingUsers((prev) => {
       const next = { ...prev };
@@ -278,7 +278,7 @@ export default function KanbanBoard({
     });
   });
 
-  useSocket('presence_update', (payload: { users: User[] }) => {
+  useSocketEvent('presence_update', (payload: { users: User[] }) => {
     if (!payload) return;
     setCollaborators(payload.users.filter((u) => u.id !== user.id));
   });
@@ -657,11 +657,9 @@ export default function KanbanBoard({
                             )}
 
                             {task.isRecurring && (
-                              <RefreshCw
-                                size={12}
-                                className="text-emerald-400/60"
-                                title="Recurring task"
-                              />
+                              <span title="Recurring task">
+                                <RefreshCw size={12} className="text-emerald-400/60" />
+                              </span>
                             )}
                             {task.timeSpent && (
                               <div className="flex items-center gap-1 text-[10px] text-white/30">

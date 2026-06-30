@@ -311,7 +311,7 @@ export class FinancialService {
     const totalActual = comparisons.reduce((sum, c) => sum + c.actual, 0);
     const totalVariance = totalBudgeted - totalActual;
 
-    const utilization = totalBudgeted > 0 ? (totalActual / totalBudgeted) : 0;
+    const utilization = totalBudgeted > 0 ? totalActual / totalBudgeted : 0;
     let alert = null;
     if (utilization >= 0.9) {
       alert = { alertLevel: '90%' };
@@ -484,7 +484,14 @@ export class FinancialService {
     const paymentMethodBreakdown = Object.keys(paymentBreakdownMap).map((method) => ({
       method: method.toUpperCase(),
       amount: paymentBreakdownMap[method],
-      percentage: totalPaidCount > 0 ? Math.round((paymentBreakdownMap[method] / revenues.reduce((sum, rev) => sum + (rev.isRefunded ? 0 : rev.amount), 0)) * 100) : 0,
+      percentage:
+        totalPaidCount > 0
+          ? Math.round(
+              (paymentBreakdownMap[method] /
+                revenues.reduce((sum, rev) => sum + (rev.isRefunded ? 0 : rev.amount), 0)) *
+                100
+            )
+          : 0,
     }));
 
     // Refund tracking
@@ -516,7 +523,10 @@ export class FinancialService {
 
     // Tax summary
     const totalTax = revenues.reduce((sum, r) => sum + (r.isRefunded ? 0 : r.taxAmount), 0);
-    const totalBeforeTax = revenues.reduce((sum, r) => sum + (r.isRefunded ? 0 : (r.amount - r.taxAmount)), 0);
+    const totalBeforeTax = revenues.reduce(
+      (sum, r) => sum + (r.isRefunded ? 0 : r.amount - r.taxAmount),
+      0
+    );
     const totalRevenue = revenues.reduce((sum, r) => sum + (r.isRefunded ? 0 : r.amount), 0);
 
     return {

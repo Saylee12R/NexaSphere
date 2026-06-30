@@ -84,11 +84,74 @@ export const notificationPreferencesRepository = {
 
   async get(userId, category) {
     return withDb(async (client) => {
+      if (category) {
+        const { rows } = await client.query(
+          'SELECT * FROM notification_preferences WHERE user_id = $1 AND category = $2 LIMIT 1',
+          [userId, category]
+        );
+        return rows[0] || null;
+      } else {
+        const { rows } = await client.query(
+          'SELECT * FROM notification_preferences WHERE user_id = $1',
+          [userId]
+        );
+        const types = {};
+        for (const row of rows) {
+          types[row.category] = {
+            email: row.email,
+            push: row.push,
+            in_app: row.in_app,
+            sms: row.sms,
+            frequency: row.frequency,
+            quiet_start: row.quiet_start,
+            quiet_end: row.quiet_end,
+            dnd: row.dnd,
+          };
+        }
+        return { types };
+      }
+    });
+  },
+
+  async isDNDActive(userId) {
+    return withDb(async (client) => {
       const { rows } = await client.query(
-        'SELECT * FROM notification_preferences WHERE user_id = $1 AND category = $2 LIMIT 1',
-        [userId, category]
+        'SELECT 1 FROM notification_preferences WHERE user_id = $1 AND dnd = true LIMIT 1',
+        [userId]
       );
-      return rows[0] || null;
+      return rows.length > 0;
+    });
+  },
+
+  async isInsideQuietHours(userId) {
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        'SELECT quiet_start, quiet_end FROM notification_preferences WHERE user_id = $1 AND quiet_start IS NOT NULL AND quiet_end IS NOT NULL',
+        [userId]
+      );
+      if (rows.length === 0) return false;
+
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      for (const row of rows) {
+        const { quiet_start, quiet_end } = row;
+        const startParts = quiet_start.split(':');
+        const endParts = quiet_end.split(':');
+        const startMinutes = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
+        const endMinutes = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
+
+        if (startMinutes <= endMinutes) {
+          if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+            return true;
+          }
+        } else {
+          if (currentMinutes >= startMinutes || currentMinutes <= endMinutes) {
+            return true;
+          }
+        }
+      }
+      return false;
     });
   },
 };

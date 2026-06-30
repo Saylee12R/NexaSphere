@@ -15,6 +15,7 @@ All components, services, and infrastructure for real-time analytics have been c
 ### Backend Infrastructure
 
 #### Services & Business Logic
+
 - **`server/services/analyticsService.js`** ✅ NEW
   - Core analytics business logic
   - In-memory caching (5-second TTL)
@@ -23,6 +24,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Data export functionality
 
 #### Data Access Layer
+
 - **`server/repositories/analyticsRepository.js`** ✅ NEW
   - Event metrics queries
   - Registration trends analysis
@@ -32,6 +34,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Analytics data export
 
 #### API Controllers
+
 - **`server/controllers/registrationTrackingController.js`** ✅ NEW
   - Registration request handling
   - Check-in processing
@@ -40,6 +43,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Error handling
 
 #### API Routes
+
 - **`server/routes/analytics.js`** ✅ NEW
   - REST endpoints for all analytics operations
   - 11 endpoints covering all functionality
@@ -47,11 +51,13 @@ All components, services, and infrastructure for real-time analytics have been c
   - Error handling and validation
 
 #### Registration Tracking Routes
+
 - **`server/routes/registrationTracking.js`** ✅ NEW
   - Alternative route structure for registrations
   - Can be mounted separately if needed
 
 #### WebSocket Configuration
+
 - **`server/config/socket.js`** ✅ ENHANCED
   - Analytics event handlers added
   - Subscription management for events
@@ -59,6 +65,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Dynamic room management
 
 #### Database Schema
+
 - **`server/analytics-schema.sql`** ✅ NEW
   - Registrations table with proper indexing
   - Events table capacity fields
@@ -70,6 +77,7 @@ All components, services, and infrastructure for real-time analytics have been c
 ### Frontend Components
 
 #### Main Dashboard
+
 - **`admin-dashboard/src/components/AnalyticsDashboard.jsx`** ✅ NEW
   - Central orchestrator component
   - Manages data flow and state
@@ -77,6 +85,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Real-time connection monitoring
 
 #### Metric Cards
+
 - **`admin-dashboard/src/components/LiveMetricsCards.jsx`** ✅ NEW
   - Displays 5 key metrics in card format
   - Animated value changes
@@ -84,6 +93,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Responsive grid layout
 
 #### Chart Components
+
 - **`admin-dashboard/src/components/RegistrationTrendsChart.jsx`** ✅ NEW
   - Recharts integration (3 chart types)
   - Line, area, and bar chart options
@@ -98,6 +108,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Dynamic data display
 
 #### Activity & Export
+
 - **`admin-dashboard/src/components/RecentRegistrationsList.jsx`** ✅ NEW
   - Real-time activity feed
   - Last 20 registrations display
@@ -111,6 +122,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Timestamp in filename
 
 #### Custom Hooks
+
 - **`admin-dashboard/src/hooks/useAnalyticsSocket.js`** ✅ NEW
   - `useAnalyticsSocket()` - Socket connection management
   - `useEventAnalytics()` - Event-specific analytics data
@@ -118,6 +130,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Automatic cleanup on unmount
 
 #### API Service
+
 - **`admin-dashboard/src/services/analyticsAPI.js`** ✅ NEW
   - Centralized API communication
   - 15 API methods for all operations
@@ -125,6 +138,7 @@ All components, services, and infrastructure for real-time analytics have been c
   - Authentication via credentials
 
 #### Styling
+
 - **`admin-dashboard/src/styles/analytics-dashboard.css`** ✅ NEW
   - Comprehensive component styling
   - Responsive design (3 breakpoints)
@@ -134,12 +148,14 @@ All components, services, and infrastructure for real-time analytics have been c
   - Interactive elements
 
 #### Sample Page
+
 - **`admin-dashboard/src/pages/AnalyticsDashboardPage.jsx`** ✅ NEW
   - Ready-to-use dashboard page
   - Event selection state
   - Integration example
 
 #### Package Dependencies
+
 - **`admin-dashboard/package.json`** ✅ UPDATED
   - Added `recharts@^2.10.3` for charting
   - Added `socket.io-client@^4.7.2` for WebSocket
@@ -149,6 +165,7 @@ All components, services, and infrastructure for real-time analytics have been c
 ### Documentation
 
 #### Comprehensive Guides
+
 - **`REAL_TIME_ANALYTICS_GUIDE.md`** ✅ NEW
   - Complete implementation guide
   - Architecture documentation
@@ -178,6 +195,7 @@ All components, services, and infrastructure for real-time analytics have been c
 ## 🎯 Key Features Implemented
 
 ### 1. Real-Time Metrics Display
+
 - ✅ Live registration counter
 - ✅ Live check-in tracking
 - ✅ Occupancy rate calculation
@@ -185,6 +203,7 @@ All components, services, and infrastructure for real-time analytics have been c
 - ✅ Metrics update without page refresh
 
 ### 2. WebSocket Integration
+
 - ✅ Socket.IO server setup
 - ✅ Real-time event broadcasting
 - ✅ Client subscription management
@@ -192,6 +211,7 @@ All components, services, and infrastructure for real-time analytics have been c
 - ✅ Connection status indicator
 
 ### 3. Advanced Analytics
+
 - ✅ Registration trends over time
 - ✅ Hourly trend analysis
 - ✅ Check-in statistics
@@ -199,6 +219,7 @@ All components, services, and infrastructure for real-time analytics have been c
 - ✅ Historical data aggregation
 
 ### 4. Interactive Visualizations
+
 - ✅ Line charts for trends
 - ✅ Area charts alternative
 - ✅ Bar charts alternative
@@ -206,6 +227,7 @@ All components, services, and infrastructure for real-time analytics have been c
 - ✅ Responsive chart sizing
 
 ### 5. Data Export
+
 - ✅ CSV export with all event data
 - ✅ JSON export for integration
 - ✅ Timestamped file names
@@ -213,6 +235,7 @@ All components, services, and infrastructure for real-time analytics have been c
 - ✅ Full data inclusion
 
 ### 6. Performance Optimization
+
 - ✅ In-memory caching (5-second TTL)
 - ✅ Database query optimization
 - ✅ Indexed registrations table
@@ -220,6 +243,7 @@ All components, services, and infrastructure for real-time analytics have been c
 - ✅ Lazy chart loading
 
 ### 7. Security Features
+
 - ✅ Admin authentication required
 - ✅ Protected API endpoints
 - ✅ WebSocket connection validation
@@ -264,12 +288,12 @@ npm run dev
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 // Use with specific event ID:
-<AnalyticsDashboard eventId="event-123" />
+<AnalyticsDashboard eventId="event-123" />;
 ```
 
 ### 4. Verify Setup
 
-- Open http://localhost:5173/analytics
+- Open <http://localhost:5173/analytics>
 - Check for live connection indicator (green dot)
 - Try registering a user via API
 - Verify metrics update in real-time
@@ -280,24 +304,25 @@ import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 ### Analytics Endpoints (All require admin auth)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/admin/analytics/events` | All events metrics |
-| GET | `/api/admin/analytics/events/:eventId` | Specific event metrics |
-| GET | `/api/admin/analytics/events/:eventId/trends` | Registration trends |
-| GET | `/api/admin/analytics/events/:eventId/trends/hourly` | Hourly trends |
-| GET | `/api/admin/analytics/events/:eventId/registrations/recent` | Recent registrations |
-| GET | `/api/admin/analytics/events/:eventId/checkin/stats` | Check-in breakdown |
-| POST | `/api/admin/analytics/events/:eventId/register` | Record registration |
-| POST | `/api/admin/analytics/events/:eventId/checkin` | Record check-in |
-| GET | `/api/admin/analytics/events/:eventId/export` | Export data (CSV/JSON) |
-| POST | `/api/admin/analytics/cache/clear` | Clear cache |
+| Method | Endpoint                                                    | Purpose                |
+| ------ | ----------------------------------------------------------- | ---------------------- |
+| GET    | `/api/admin/analytics/events`                               | All events metrics     |
+| GET    | `/api/admin/analytics/events/:eventId`                      | Specific event metrics |
+| GET    | `/api/admin/analytics/events/:eventId/trends`               | Registration trends    |
+| GET    | `/api/admin/analytics/events/:eventId/trends/hourly`        | Hourly trends          |
+| GET    | `/api/admin/analytics/events/:eventId/registrations/recent` | Recent registrations   |
+| GET    | `/api/admin/analytics/events/:eventId/checkin/stats`        | Check-in breakdown     |
+| POST   | `/api/admin/analytics/events/:eventId/register`             | Record registration    |
+| POST   | `/api/admin/analytics/events/:eventId/checkin`              | Record check-in        |
+| GET    | `/api/admin/analytics/events/:eventId/export`               | Export data (CSV/JSON) |
+| POST   | `/api/admin/analytics/cache/clear`                          | Clear cache            |
 
 ---
 
 ## 🔌 WebSocket Events
 
 ### Client → Server
+
 ```javascript
 socket.emit('analytics:subscribe', eventId);
 socket.emit('analytics:unsubscribe', eventId);
@@ -306,6 +331,7 @@ socket.emit('analytics:request:trends', { eventId, timeWindow });
 ```
 
 ### Server → Client
+
 ```javascript
 socket.on('analytics:metrics:update', data);
 socket.on('analytics:metrics:current', data);
@@ -351,6 +377,7 @@ The dashboard is fully responsive with breakpoints:
 ## 🛠️ Tech Stack
 
 ### Backend
+
 - Node.js with Express
 - Socket.IO for WebSocket
 - PostgreSQL/Supabase for data
@@ -358,6 +385,7 @@ The dashboard is fully responsive with breakpoints:
 - Sentry for error tracking (optional)
 
 ### Frontend
+
 - React 18.2+
 - Recharts for visualizations
 - Socket.IO Client for WebSocket
@@ -412,16 +440,19 @@ Documentation Files:
 ## 🆘 Troubleshooting
 
 ### WebSocket Connection Issues
+
 - Check CORS_ORIGIN env variable
 - Verify Socket.IO port is accessible
 - Check browser DevTools for connection errors
 
 ### Missing Metrics
+
 - Verify database migration was run
 - Check indexes are created
 - Clear cache and refresh
 
 ### Performance Issues
+
 - Check database query times
 - Verify indexes are being used
 - Monitor WebSocket message frequency
@@ -465,6 +496,7 @@ curl -X POST http://localhost:3001/api/tracking/events/event-123/bulk-register \
 ## 📞 Support
 
 For issues or questions:
+
 1. Check the troubleshooting section in REAL_TIME_ANALYTICS_GUIDE.md
 2. Review the integration guide in SERVER_INTEGRATION_GUIDE.md
 3. Check component source code for usage examples

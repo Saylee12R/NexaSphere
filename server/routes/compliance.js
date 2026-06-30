@@ -33,7 +33,7 @@ const adminAuth = adminAuthMiddleware.requireAdmin || adminAuthMiddleware;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function safePagination(query) {
-  const limit  = Math.min(parseInt(query.limit,  10) || 50, 200);
+  const limit = Math.min(parseInt(query.limit, 10) || 50, 200);
   const offset = Math.max(parseInt(query.offset, 10) || 0, 0);
   return { limit, offset };
 }
@@ -163,7 +163,8 @@ router.post('/admin/documents', adminAuth, async (req, res) => {
     );
     res.status(201).json(doc);
   } catch (err) {
-    if (err.message.includes('Invalid document type')) return res.status(400).json({ error: err.message });
+    if (err.message.includes('Invalid document type'))
+      return res.status(400).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -198,7 +199,12 @@ router.get('/admin/acceptances', adminAuth, async (req, res) => {
   try {
     const { documentId, documentType } = req.query;
     const { limit, offset } = safePagination(req.query);
-    const result = await complianceService.listAcceptances({ documentId, documentType, limit, offset });
+    const result = await complianceService.listAcceptances({
+      documentId,
+      documentType,
+      limit,
+      offset,
+    });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -226,10 +232,15 @@ router.patch('/admin/gdpr/:id', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'status must be completed or rejected' });
     }
     const actorId = req.adminSession?.username || 'admin';
-    const gdprReq = await complianceService.processGdprRequest(req.params.id, { status, notes }, actorId);
+    const gdprReq = await complianceService.processGdprRequest(
+      req.params.id,
+      { status, notes },
+      actorId
+    );
     res.json(gdprReq);
   } catch (err) {
-    if (err.message === 'GDPR request not found') return res.status(404).json({ error: err.message });
+    if (err.message === 'GDPR request not found')
+      return res.status(404).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
 });

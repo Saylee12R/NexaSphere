@@ -66,7 +66,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setThemeState(newTheme);
     try {
       localStorage.setItem('ns-theme', newTheme);
-      
+
       // Sync with database if token exists
       const token = localStorage.getItem('ns_student_token');
       if (token) {
@@ -74,10 +74,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ theme: newTheme })
-        }).catch(err => console.error('Failed to sync theme preference:', err));
+          body: JSON.stringify({ theme: newTheme }),
+        }).catch((err) => console.error('Failed to sync theme preference:', err));
       }
     } catch {
       // Storage/Network unavailable

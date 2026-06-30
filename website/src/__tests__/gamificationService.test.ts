@@ -29,31 +29,31 @@ describe('GamificationService', () => {
   });
 
   it('calculates current and next level XP thresholds correctly', () => {
-    // Level 1: current is 0, next is 100
+    // Level 1: current is 0, next is 500
     expect(gamificationService.getCurrentLevelXP()).toBe(0);
-    expect(gamificationService.getNextLevelXP()).toBe(100);
+    expect(gamificationService.getNextLevelXP()).toBe(500);
 
     // Let's add XP to level 2
-    gamificationService.addXP(150);
+    gamificationService.addXP(600);
     expect(gamificationService.userData.level).toBe(2);
-    // Level 2: current is 100, next is 300
-    expect(gamificationService.getCurrentLevelXP()).toBe(100);
-    expect(gamificationService.getNextLevelXP()).toBe(300);
+    // Level 2: current is 500, next is 1500
+    expect(gamificationService.getCurrentLevelXP()).toBe(500);
+    expect(gamificationService.getNextLevelXP()).toBe(1500);
   });
 
   it('tracks user actions and awards XP correctly', () => {
-    const result = gamificationService.trackAction('EVENT_ATTENDANCE');
-    expect(result.xpEarned).toBe(XP_VALUES.EVENT_ATTENDANCE);
+    const result = gamificationService.trackAction('ATTEND_EVENT');
+    expect(result.xpEarned).toBe(XP_VALUES.ATTEND_EVENT);
     // 50 XP from attendance + 50 XP from "First Step" achievement = 100 XP total
     expect(result.totalXP).toBe(100);
     expect(gamificationService.userData.stats.events_attended).toBe(1);
   });
 
   it('transitions user levels when crossing thresholds', () => {
-    // Add 120 XP (threshold for Level 2 is 100)
-    gamificationService.addXP(120);
+    // Add 600 XP (threshold for Level 2 is 500)
+    gamificationService.addXP(600);
     expect(gamificationService.userData.level).toBe(2);
-    expect(gamificationService.userData.title).toBe('Learner');
+    expect(gamificationService.userData.title).toBe('Explorer');
     expect(gamificationService.userData.notifications[0].type).toBe('level_up');
   });
 
@@ -65,9 +65,9 @@ describe('GamificationService', () => {
     // Pre-populate database with yesterday as last active and 2-day streak
     const initialData = {
       userId: null,
-      xp: 100,
+      xp: 600,
       level: 2,
-      title: 'Learner',
+      title: 'Explorer',
       achievements: [],
       stats: {
         events_attended: 1,
@@ -93,7 +93,7 @@ describe('GamificationService', () => {
 
     expect(gamificationService.userData.stats.current_streak).toBe(3);
     expect(gamificationService.userData.stats.longest_streak).toBe(3);
-    expect(gamificationService.userData.xp).toBe(100 + XP_VALUES.DAILY_STREAK);
+    expect(gamificationService.userData.xp).toBe(600 + XP_VALUES.DAILY_STREAK);
     expect(gamificationService.userData.notifications[0].type).toBe('streak');
   });
 
@@ -104,9 +104,9 @@ describe('GamificationService', () => {
 
     const initialData = {
       userId: null,
-      xp: 100,
+      xp: 600,
       level: 2,
-      title: 'Learner',
+      title: 'Explorer',
       achievements: [],
       stats: {
         events_attended: 1,

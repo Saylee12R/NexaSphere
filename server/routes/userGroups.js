@@ -98,7 +98,10 @@ router.post('/admin/groups/:id/members', async (req, res) => {
 // Remove member from group
 router.delete('/admin/groups/:id/members/:studentId', async (req, res) => {
   try {
-    const success = await userGroupsRepository.removeMemberFromGroup(req.params.id, req.params.studentId);
+    const success = await userGroupsRepository.removeMemberFromGroup(
+      req.params.id,
+      req.params.studentId
+    );
     if (!success) return res.status(404).json({ error: 'Member not found in group' });
     res.json({ success: true });
   } catch (err) {
@@ -114,11 +117,11 @@ router.post('/admin/groups/:id/email', async (req, res) => {
     if (!subject || !htmlContent) {
       return res.status(400).json({ error: 'Subject and htmlContent required' });
     }
-    
+
     // Import inside route to avoid circular deps if any
     const { emailCampaignRepository } = await import('../repositories/emailCampaignRepository.js');
     const { emailCampaignService } = await import('../services/emailCampaignService.js');
-    
+
     // Create a one-off campaign for this group
     const campaign = await emailCampaignRepository.createCampaign({
       name: `Group Email - ${req.params.id} - ${new Date().toISOString()}`,
@@ -128,7 +131,7 @@ router.post('/admin/groups/:id/email', async (req, res) => {
       status: 'draft',
       createdBy: req.user?.username || 'admin',
     });
-    
+
     // Send it immediately
     const stats = await emailCampaignService.sendCampaign(campaign.id);
     res.json({ success: true, campaignId: campaign.id, stats });

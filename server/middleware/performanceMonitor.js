@@ -32,9 +32,18 @@ class TimeWindowMetrics {
     this.buckets.push({ durationMs, isError, timestamp: now });
   }
 
-  getCount() { this._prune(); return this.buckets.length; }
-  getErrorCount() { this._prune(); return this.buckets.filter((b) => b.isError).length; }
-  getTotalTime() { this._prune(); return this.buckets.reduce((sum, b) => sum + b.durationMs, 0); }
+  getCount() {
+    this._prune();
+    return this.buckets.length;
+  }
+  getErrorCount() {
+    this._prune();
+    return this.buckets.filter((b) => b.isError).length;
+  }
+  getTotalTime() {
+    this._prune();
+    return this.buckets.reduce((sum, b) => sum + b.durationMs, 0);
+  }
 
   getAverageTime() {
     const count = this.getCount();
@@ -303,10 +312,14 @@ const checkErrorRateThreshold = (threshold = 5) => {
 };
 
 function getHealthStatus() {
-  const fiveMinErrors = Array.from(endpointMetrics.values())
-    .reduce((sum, m) => sum + m.fiveMin.getErrorCount(), 0);
-  const fiveMinTotal = Array.from(endpointMetrics.values())
-    .reduce((sum, m) => sum + m.fiveMin.getCount(), 0);
+  const fiveMinErrors = Array.from(endpointMetrics.values()).reduce(
+    (sum, m) => sum + m.fiveMin.getErrorCount(),
+    0
+  );
+  const fiveMinTotal = Array.from(endpointMetrics.values()).reduce(
+    (sum, m) => sum + m.fiveMin.getCount(),
+    0
+  );
   const errorRate = fiveMinTotal > 0 ? (fiveMinErrors / fiveMinTotal) * 100 : 0;
 
   if (errorRate > 10) return 'critical';

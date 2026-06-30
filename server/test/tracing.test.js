@@ -3,8 +3,16 @@ import assert from 'node:assert';
 import http from 'http';
 import express from 'express';
 import pg from 'pg';
-import { appContext } from '../config/appContext.js';
-import { tracingMiddleware } from '../middleware/tracingMiddleware.js';
+
+let capturedPgArgs = null;
+const originalPgQuery = pg.Client.prototype.query;
+pg.Client.prototype.query = function (...args) {
+  capturedPgArgs = args;
+  return originalPgQuery.apply(this, args);
+};
+
+const { appContext, tracedFetch } = await import('../config/appContext.js');
+const { tracingMiddleware } = await import('../middleware/tracingMiddleware.js');
 
 describe('API Request Tracing and Distributed Correlation IDs', () => {
   test('generates a new X-Request-ID if not provided', async () => {
@@ -62,6 +70,7 @@ describe('API Request Tracing and Distributed Correlation IDs', () => {
     const testId = 'db-tracing-test-id';
     const config = { text: 'SELECT * FROM users' };
 
+    capturedPgArgs = null;
     appContext.run({ reqId: testId }, () => {
       client.query(config).catch(() => {}); // Catch any errors, we don't need it to succeed
     });
@@ -69,11 +78,13 @@ describe('API Request Tracing and Distributed Correlation IDs', () => {
     // Close the client so the event loop doesn't hang
     client.end();
 
-    assert.ok(
-      config.text.includes(`/* reqId: ${testId} */`),
-      'SQL should include the reqId comment'
-    );
-    assert.ok(config.text.includes('SELECT * FROM users'), 'SQL should include the original query');
+    console.log('capturedPgArgs:', capturedPgArgs);
+
+    assert.ok(capturedPgArgs, 'query should be captured');
+    const queryText =
+      typeof capturedPgArgs[0] === 'string' ? capturedPgArgs[0] : capturedPgArgs[0]?.text;
+    assert.ok(queryText.includes(`/* reqId: ${testId} */`), 'SQL should include the reqId comment');
+    assert.ok(queryText.includes('SELECT * FROM users'), 'SQL should include the original query');
   });
 
   test('injects X-Request-ID into downstream fetch calls', async () => {
@@ -87,7 +98,7 @@ describe('API Request Tracing and Distributed Correlation IDs', () => {
 
     const testId = 'fetch-tracing-test-id';
     await appContext.run({ reqId: testId }, async () => {
-      const res = await fetch(`http://127.0.0.1:${port}/test`);
+      const res = await tracedFetch(`http://127.0.0.1:${port}/test`);
       const data = await res.json();
       assert.equal(
         data.header,

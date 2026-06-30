@@ -358,8 +358,10 @@ export default function GamificationDashboard() {
           }}
         >
           {userStats.badges.map((badge) => {
-            const achDef = Object.values(ACHIEVEMENTS || {}).find(a => a.id === badge.id || a.title === badge.title);
-            const tooltipText = achDef 
+            const achDef = Object.values(ACHIEVEMENTS || {}).find(
+              (a) => a.id === badge.id || a.title === badge.title
+            );
+            const tooltipText = achDef
               ? `${achDef.description} (Earn +${achDef.xpReward} XP)`
               : 'Unlocked via system achievement milestone';
 

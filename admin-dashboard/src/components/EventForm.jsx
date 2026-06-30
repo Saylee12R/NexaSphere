@@ -72,7 +72,9 @@ export function EventForm({ event, onClose }) {
       ? {
           ...event,
           tagsInput: Array.isArray(event.tags) ? event.tags.join(', ') : event.tags || '',
-          restrictedGroupsInput: Array.isArray(event.restrictedGroups) ? event.restrictedGroups.join(', ') : '',
+          restrictedGroupsInput: Array.isArray(event.restrictedGroups)
+            ? event.restrictedGroups.join(', ')
+            : '',
           dateISO: toISODate(event.dateText ?? event.date ?? ''),
           gradientColors: Array.isArray(event.gradientColors) ? [...event.gradientColors] : [],
           capacity: event.capacity ?? '',
@@ -128,7 +130,7 @@ export function EventForm({ event, onClose }) {
 
       const duplicate = allEvents.find((e) => {
         if (event?.id === e.id) return false;
-        
+
         const existingStart = e.startDate ? new Date(e.startDate).getTime() : null;
         if (!existingStart) return false;
 
@@ -149,7 +151,7 @@ export function EventForm({ event, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (await checkForDuplicates()) {
       const confirmed = window.confirm(
         'A similar event is already scheduled within a 2-hour window. Do you want to proceed anyway?'
@@ -172,7 +174,10 @@ export function EventForm({ event, onClose }) {
         ...form,
         tags,
         restrictedGroups: form.restrictedGroupsInput
-          ? form.restrictedGroupsInput.split(',').map(s => parseInt(s.trim(), 10)).filter(id => !isNaN(id))
+          ? form.restrictedGroupsInput
+              .split(',')
+              .map((s) => parseInt(s.trim(), 10))
+              .filter((id) => !isNaN(id))
           : [],
         capacity: form.capacity ? parseInt(form.capacity, 10) : null,
         startDate: form.startDate || null,

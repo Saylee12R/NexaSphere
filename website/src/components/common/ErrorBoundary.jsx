@@ -22,6 +22,7 @@
 
 import React from 'react';
 import { DynamicIcon } from '../../shared/Icons';
+import PageError from '../PageError';
 
 function DefaultFallback({ error, resetError }) {
   const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
@@ -161,70 +162,27 @@ export class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-const { error } = this.state;
-    const { fallback } = this.props;
+      const { error } = this.state;
+      const { fallback } = this.props;
 
-    if (fallback) {
-      if (React.isValidElement(fallback)) {
-        return fallback;
+      if (fallback) {
+        if (React.isValidElement(fallback)) {
+          return fallback;
+        }
+        if (typeof fallback === 'function') {
+          return fallback({ error, resetError: this.resetError });
+        }
       }
-      if (typeof fallback === 'function') {
-        return fallback({ error, resetError: this.resetError });
-      }
-    }
 
-    return (
-      <div
-        role="alert"
-        aria-live="assertive"
-        style={{
-          minHeight: '400px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: '40px 24px',
-          background: 'var(--color-background)',
-          borderRadius: '12px',
-          border: '1px solid var(--color-error)',
-          margin: '20px',
-        }}
-      >
-        <div style={{ color: 'var(--color-error)', marginBottom: '16px' }} aria-hidden="true">
-          <DynamicIcon name="AlertTriangle" size={48} />
-        </div>
-        <h2
-          style={{
-            fontFamily: "'Orbitron', monospace",
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: 'var(--color-text-primary)',
-            marginBottom: '12px',
+      return (
+        <PageError
+          error={error}
+          onRetry={this.resetError}
+          onGoHome={() => {
+            window.location.href = '/';
           }}
-        >
-          Something went wrong
-        </h2>
-        <p
-          style={{
-            color: 'var(--color-text-secondary)',
-            fontSize: '0.95rem',
-            maxWidth: '420px',
-            lineHeight: 1.6,
-            marginBottom: '24px',
-          }}
-        >
-          We encountered an unexpected issue while loading this content. Please try reloading the page.
-        </p>
-        <button
-          className="btn btn-primary"
-          onClick={() => window.location.reload()}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          <DynamicIcon name="RefreshCw" size={16} /> Reload Page
-        </button>
-      </div>
-    );
+        />
+      );
     }
 
     return this.props.children;

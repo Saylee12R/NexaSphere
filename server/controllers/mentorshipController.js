@@ -92,7 +92,7 @@ export const listMentorships = wrapAsync(async (req, res) => {
   }
   const { page, limit, status } = req.query;
   const isAdmin = req.studentUser.role === 'admin';
-  const email = (isAdmin && req.query.email) ? req.query.email : req.studentUser.email;
+  const email = isAdmin && req.query.email ? req.query.email : req.studentUser.email;
 
   const result = await mentorshipService.listMentorships({
     page: Math.max(1, parseInt(page, 10) || 1),
@@ -117,9 +117,14 @@ export const getMentorship = wrapAsync(async (req, res) => {
   const mentorEmail = mentor ? mentor.email : null;
 
   const isAdmin = req.studentUser.role === 'admin';
-  const isAuthorized = isAdmin || mentorship.menteeEmail === req.studentUser.email || mentorEmail === req.studentUser.email;
+  const isAuthorized =
+    isAdmin ||
+    mentorship.menteeEmail === req.studentUser.email ||
+    mentorEmail === req.studentUser.email;
   if (!isAuthorized) {
-    return res.status(403).json({ error: 'Forbidden: You are not authorized to view this mentorship' });
+    return res
+      .status(403)
+      .json({ error: 'Forbidden: You are not authorized to view this mentorship' });
   }
 
   return res.json({ mentorship });
@@ -150,11 +155,15 @@ export const updateMentorshipStatus = wrapAsync(async (req, res) => {
   const isMentee = req.studentUser && req.studentUser.email === mentorship.menteeEmail;
 
   if (!isAdmin && !isMentor && !isMentee) {
-    return res.status(403).json({ error: 'Forbidden: You are not authorized to update this status' });
+    return res
+      .status(403)
+      .json({ error: 'Forbidden: You are not authorized to update this status' });
   }
 
   if (isMentee && !isAdmin && status !== 'completed') {
-    return res.status(403).json({ error: 'Forbidden: Mentees can only mark mentorship as completed' });
+    return res
+      .status(403)
+      .json({ error: 'Forbidden: Mentees can only mark mentorship as completed' });
   }
 
   const updated = await mentorshipService.updateMentorshipStatus(id, status);
@@ -175,9 +184,14 @@ export const logSession = wrapAsync(async (req, res) => {
   const mentorEmail = mentor ? mentor.email : null;
 
   const isAdmin = req.studentUser.role === 'admin';
-  const isAuthorized = isAdmin || mentorship.menteeEmail === req.studentUser.email || mentorEmail === req.studentUser.email;
+  const isAuthorized =
+    isAdmin ||
+    mentorship.menteeEmail === req.studentUser.email ||
+    mentorEmail === req.studentUser.email;
   if (!isAuthorized) {
-    return res.status(403).json({ error: 'Forbidden: You are not authorized to log sessions for this mentorship' });
+    return res
+      .status(403)
+      .json({ error: 'Forbidden: You are not authorized to log sessions for this mentorship' });
   }
 
   const input = logSessionSchema.parse(req.body);
@@ -200,9 +214,14 @@ export const listSessions = wrapAsync(async (req, res) => {
   const mentorEmail = mentor ? mentor.email : null;
 
   const isAdmin = req.studentUser.role === 'admin';
-  const isAuthorized = isAdmin || mentorship.menteeEmail === req.studentUser.email || mentorEmail === req.studentUser.email;
+  const isAuthorized =
+    isAdmin ||
+    mentorship.menteeEmail === req.studentUser.email ||
+    mentorEmail === req.studentUser.email;
   if (!isAuthorized) {
-    return res.status(403).json({ error: 'Forbidden: You are not authorized to view sessions for this mentorship' });
+    return res
+      .status(403)
+      .json({ error: 'Forbidden: You are not authorized to view sessions for this mentorship' });
   }
 
   const { page, limit } = req.query;
@@ -220,9 +239,12 @@ export const createBuddyPair = wrapAsync(async (req, res) => {
   const input = buddyPairSchema.parse(req.body);
 
   const isAdmin = req.studentUser.role === 'admin';
-  const isSelf = input.buddy1_email === req.studentUser.email || input.buddy2_email === req.studentUser.email;
+  const isSelf =
+    input.buddy1_email === req.studentUser.email || input.buddy2_email === req.studentUser.email;
   if (!isSelf && !isAdmin) {
-    return res.status(403).json({ error: 'Forbidden: You can only register buddy pairings for yourself' });
+    return res
+      .status(403)
+      .json({ error: 'Forbidden: You can only register buddy pairings for yourself' });
   }
 
   const pair = await mentorshipService.createBuddyPair(input);
@@ -236,7 +258,7 @@ export const listBuddyPairs = wrapAsync(async (req, res) => {
   }
   const { page, limit } = req.query;
   const isAdmin = req.studentUser.role === 'admin';
-  const email = (isAdmin && req.query.email) ? req.query.email : req.studentUser.email;
+  const email = isAdmin && req.query.email ? req.query.email : req.studentUser.email;
 
   const result = await mentorshipService.listBuddyPairs({
     page: Math.max(1, parseInt(page, 10) || 1),

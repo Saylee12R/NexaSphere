@@ -11,9 +11,9 @@ import express from 'express';
  */
 
 import logger from '../utils/logger.js';
-import { captureException, captureMessage, addBreadcrumb } from '../utils/sentry.js';
-import securityPatchManager from "../utils/securityPatchManager.js";
-import encryptionManager from "../utils/encryptionManager.js";
+import { captureMessage, addBreadcrumb } from '../utils/sentry.js';
+import securityPatchManager from '../utils/securityPatchManager.js';
+import encryptionManager from '../utils/encryptionManager.js';
 
 // In-memory error store (consider using database in production)
 const errorStore = {
@@ -60,16 +60,13 @@ async function logError(error, context = {}) {
   // Define endpoint for tagging and logging
   const endpoint = `${errorData.method} ${errorData.url}`;
 
-  // Log to Winston
-  logger.error('Error logged', errorData);
-
-  // Send to Sentry
-  captureException(error, {
+  // Log to Winston (which now forwards to Sentry automatically)
+  logger.error(error.message || 'Error logged', { 
+    error, 
+    ...errorData, 
     userId: context.userId,
     requestPath: context.url,
-    method: context.method,
-    tags: { status: errorData.status, endpoint },
-    extra: { context },
+    tags: { status: errorData.status, endpoint } 
   });
 
   // Add breadcrumb
@@ -285,13 +282,10 @@ function clearErrors() {
 
 // Monitor critical security patches
 export const checkCriticalSecurityAlerts = () => {
-  const criticalIssues =
-    securityPatchManager.getCriticalVulnerabilities();
+  const criticalIssues = securityPatchManager.getCriticalVulnerabilities();
 
   if (criticalIssues.length > 0) {
-    console.error(
-      `[SECURITY ALERT] ${criticalIssues.length} critical patches required`
-    );
+    console.error(`[SECURITY ALERT] ${criticalIssues.length} critical patches required`);
   }
 
   return criticalIssues;
@@ -301,10 +295,8 @@ export const checkCriticalSecurityAlerts = () => {
 export const checkEncryptionCompliance = () => {
   const status = encryptionManager.getEncryptionStatus();
 
-  if (status.status !== "SECURE") {
-    console.error(
-      "[SECURITY ALERT] Encryption compliance issue detected"
-    );
+  if (status.status !== 'SECURE') {
+    console.error('[SECURITY ALERT] Encryption compliance issue detected');
   }
 
   return status;

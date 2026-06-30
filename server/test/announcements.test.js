@@ -283,6 +283,10 @@ test('Announcement Scheduling and Targeting API & Scheduler', async (t) => {
       }
     );
   } finally {
+    try {
+      const { schedulerService } = await import('../services/schedulerService.js');
+      schedulerService.shutdown();
+    } catch (_) {}
     server.close();
   }
 });

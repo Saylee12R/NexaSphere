@@ -45,9 +45,10 @@ export const getCustomFunnel = wrapAsync(async (req, res) => {
   // Validate step names against known types
   const invalid = steps.filter((s) => !FUNNEL_STEP_TYPES.includes(s));
   if (invalid.length > 0) {
-    return res
-      .status(400)
-      .json({ error: `Invalid step type(s): ${invalid.join(', ')}`, validTypes: FUNNEL_STEP_TYPES });
+    return res.status(400).json({
+      error: `Invalid step type(s): ${invalid.join(', ')}`,
+      validTypes: FUNNEL_STEP_TYPES,
+    });
   }
 
   const funnel = await analyticsService.getFunnelAnalysis(steps);

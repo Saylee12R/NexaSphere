@@ -60,7 +60,7 @@ The `server/` directory contains the **Node.js / Express** backend API that powe
 
 ## 3. Directory Structure
 
-```text
+````text
 server/
 ├── index.js                       ← Entry point (Express app + Socket.io init)
 │
@@ -232,7 +232,7 @@ Route → Middleware → Controller → Service → Repository → PostgreSQL
 
 ### Configuration
 
-Connection string is read from `DATABASE_URL` in `server/.env`.  
+Connection string is read from `DATABASE_URL` in `server/.env`.
 Migration config: `server/.postgres_migrations_config.json`
 
 ```json
@@ -240,7 +240,7 @@ Migration config: `server/.postgres_migrations_config.json`
   "database-url-var": "DATABASE_URL",
   "migrations-dir": "migrations"
 }
-```
+````
 
 ### Migration Commands
 

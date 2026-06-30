@@ -65,7 +65,7 @@ const CommonIdentitySchema = z
 
 const RecruitmentExtrasSchema = z
   .object({
-    year: z.string().trim().min(1, 'Year is required').max(40),
+    year: z.string().trim().max(40).optional(),
     role: OptionalText(80),
     interests: TextList,
     skills: OptionalText(400),
@@ -160,9 +160,7 @@ const recruitmentSubmissionSchema = CommonIdentitySchema.passthrough()
       groups: data.groups,
       whyJoin: normalized.reason,
     };
-  })
-  // Strip any leftover fallback/unknown keys at the final output boundary
-  .pipe(z.object({}).passthrough().strip());
+  });
 
 const coreTeamApplicationSchema = recruitmentSubmissionSchema;
 
@@ -195,9 +193,7 @@ const membershipSubmissionSchema = CommonIdentitySchema.passthrough()
       whyJoin: normalized.reason,
       reason: normalized.reason,
     };
-  })
-  // Strip any leftover fallback/unknown keys at the final output boundary
-  .pipe(z.object({}).passthrough().strip());
+  });
 
 function normalizeFormSubmission(formType, body) {
   if (formType === 'recruitment') {
@@ -212,5 +208,9 @@ function normalizeFormSubmission(formType, body) {
   throw new Error(`Invalid form type: ${formType}`);
 }
 
-export { coreTeamApplicationSchema, membershipSubmissionSchema, recruitmentSubmissionSchema, normalizeFormSubmission };
-
+export {
+  coreTeamApplicationSchema,
+  membershipSubmissionSchema,
+  recruitmentSubmissionSchema,
+  normalizeFormSubmission,
+};

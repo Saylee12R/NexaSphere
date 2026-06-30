@@ -3,18 +3,21 @@
 ## 🎯 Quick Start (5 minutes)
 
 ### Step 1: Run Database Migration
+
 ```sql
 -- Copy and run in Supabase SQL Editor
 -- File: server/analytics-schema.sql
 ```
 
 ### Step 2: Start Backend
+
 ```bash
 cd server
 npm run dev
 ```
 
 ### Step 3: Start Frontend
+
 ```bash
 cd admin-dashboard
 npm install  # if not done yet
@@ -22,13 +25,15 @@ npm run dev
 ```
 
 ### Step 4: Access Dashboard
-Visit: http://localhost:5173/analytics
+
+Visit: <http://localhost:5173/analytics>
 
 ---
 
 ## 📡 Common API Tasks
 
 ### Register User for Event
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/analytics/events/event-123/register \
   -H "Content-Type: application/json" \
@@ -39,6 +44,7 @@ curl -X POST http://localhost:3001/api/admin/analytics/events/event-123/register
 ```
 
 ### Check In User
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/analytics/events/event-123/checkin \
   -H "Content-Type: application/json" \
@@ -49,11 +55,13 @@ curl -X POST http://localhost:3001/api/admin/analytics/events/event-123/checkin 
 ```
 
 ### Get Event Metrics
+
 ```bash
 curl http://localhost:3001/api/admin/analytics/events/event-123
 ```
 
 ### Get Registration Trends
+
 ```bash
 # Last 7 days
 curl "http://localhost:3001/api/admin/analytics/events/event-123/trends?timeWindow=7%20days"
@@ -66,21 +74,25 @@ curl "http://localhost:3001/api/admin/analytics/events/event-123/trends?timeWind
 ```
 
 ### Get Recent Registrations
+
 ```bash
 curl "http://localhost:3001/api/admin/analytics/events/event-123/registrations/recent?limit=20"
 ```
 
 ### Export Analytics (CSV)
+
 ```bash
 curl -O http://localhost:3001/api/admin/analytics/events/event-123/export?format=csv
 ```
 
 ### Export Analytics (JSON)
+
 ```bash
 curl http://localhost:3001/api/admin/analytics/events/event-123/export?format=json > analytics.json
 ```
 
 ### Clear Cache
+
 ```bash
 curl -X POST http://localhost:3001/api/admin/analytics/cache/clear \
   -H "Content-Type: application/json" \
@@ -92,29 +104,23 @@ curl -X POST http://localhost:3001/api/admin/analytics/cache/clear \
 ## 💻 React Component Usage
 
 ### Basic Dashboard Usage
+
 ```jsx
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 export default function Page() {
-  return (
-    <AnalyticsDashboard eventId="kss-153" />
-  );
+  return <AnalyticsDashboard eventId="kss-153" />;
 }
 ```
 
 ### Using Custom Hooks
+
 ```jsx
 import { useEventAnalytics } from './hooks/useAnalyticsSocket';
 
 export default function MyComponent() {
-  const {
-    metrics,
-    registrationTrends,
-    recentRegistrations,
-    loading,
-    error,
-    isConnected
-  } = useEventAnalytics('event-123');
+  const { metrics, registrationTrends, recentRegistrations, loading, error, isConnected } =
+    useEventAnalytics('event-123');
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -130,6 +136,7 @@ export default function MyComponent() {
 ```
 
 ### Using API Service
+
 ```jsx
 import analyticsAPI from './services/analyticsAPI';
 import { useState, useEffect } from 'react';
@@ -138,9 +145,10 @@ export default function MyComponent() {
   const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
-    analyticsAPI.getEventMetrics('event-123')
+    analyticsAPI
+      .getEventMetrics('event-123')
       .then(setMetrics)
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   }, []);
 
   return <div>Registrations: {metrics?.totalRegistrations}</div>;
@@ -152,6 +160,7 @@ export default function MyComponent() {
 ## 🔌 WebSocket Examples
 
 ### Basic Socket Connection
+
 ```javascript
 import { useAnalyticsSocket } from './hooks/useAnalyticsSocket';
 
@@ -170,6 +179,7 @@ socket.emit('analytics:unsubscribe', 'event-123');
 ```
 
 ### Request Current Metrics
+
 ```javascript
 socket.emit('analytics:request:metrics', 'event-123');
 socket.on('analytics:metrics:current', (data) => {
@@ -178,6 +188,7 @@ socket.on('analytics:metrics:current', (data) => {
 ```
 
 ### Listen for New Registrations
+
 ```javascript
 socket.on('analytics:registration:new', (data) => {
   console.log('New registration:', data.registration);
@@ -186,6 +197,7 @@ socket.on('analytics:registration:new', (data) => {
 ```
 
 ### Listen for Check-ins
+
 ```javascript
 socket.on('analytics:checkin:new', (data) => {
   console.log('User checked in:', data.checkIn);
@@ -198,6 +210,7 @@ socket.on('analytics:checkin:new', (data) => {
 ## 🧪 Test Data Generation
 
 ### Generate 50 Test Registrations
+
 ```bash
 curl -X POST http://localhost:3001/api/tracking/events/event-123/bulk-register \
   -H "Content-Type: application/json" \
@@ -211,6 +224,7 @@ curl -X POST http://localhost:3001/api/tracking/events/event-123/bulk-register \
 ```
 
 ### Simulate Check-ins
+
 ```bash
 # First get recent registrations
 REGS=$(curl -s http://localhost:3001/api/admin/analytics/events/event-123/registrations/recent?limit=5)
@@ -231,6 +245,7 @@ curl -X POST http://localhost:3001/api/admin/analytics/events/event-123/checkin 
 ### Environment Variables
 
 **Server (.env)**
+
 ```env
 PORT=3001
 SOCKET_URL=http://localhost:3001
@@ -239,6 +254,7 @@ FRONTEND_URL=http://localhost:5173
 ```
 
 **Frontend (.env.local)**
+
 ```env
 REACT_APP_API_URL=http://localhost:3001/api
 REACT_APP_SOCKET_URL=http://localhost:3001
@@ -293,18 +309,19 @@ REACT_APP_SOCKET_URL=http://localhost:3001
 
 ## ✅ Common Status Values
 
-| Status | Meaning |
-|--------|---------|
+| Status       | Meaning                            |
+| ------------ | ---------------------------------- |
 | `registered` | User registered but not checked in |
-| `checked_in` | User checked in at event |
-| `cancelled` | Registration cancelled |
-| `no_show` | Registered but didn't attend |
+| `checked_in` | User checked in at event           |
+| `cancelled`  | Registration cancelled             |
+| `no_show`    | Registered but didn't attend       |
 
 ---
 
 ## 🚨 Error Handling
 
 ### API Error Response
+
 ```json
 {
   "ok": false,
@@ -313,6 +330,7 @@ REACT_APP_SOCKET_URL=http://localhost:3001
 ```
 
 ### WebSocket Error
+
 ```javascript
 socket.on('analytics:error', (data) => {
   console.error('Analytics error:', data.error);
@@ -343,13 +361,15 @@ curl --cookie "session_token=YOUR_TOKEN" \
 ## 📱 Component Props
 
 ### AnalyticsDashboard
+
 ```javascript
 <AnalyticsDashboard
-  eventId="event-123"  // Required: Event ID to display
+  eventId="event-123" // Required: Event ID to display
 />
 ```
 
 ### LiveMetricsCards
+
 ```javascript
 <LiveMetricsCards
   metrics={{
@@ -358,12 +378,13 @@ curl --cookie "session_token=YOUR_TOKEN" \
     pendingCheckIn: 30,
     maxAttendees: 200,
     availableSeats: 50,
-    occupancyRate: "75.00"
+    occupancyRate: '75.00',
   }}
 />
 ```
 
 ### RegistrationTrendsChart
+
 ```javascript
 <RegistrationTrendsChart
   eventId="event-123"
@@ -378,6 +399,7 @@ curl --cookie "session_token=YOUR_TOKEN" \
 ## 🐛 Debugging
 
 ### Enable Socket.IO Debug Logging
+
 ```javascript
 // In browser console
 localStorage.debug = 'socket.io-client:*';
@@ -385,6 +407,7 @@ location.reload();
 ```
 
 ### Log All Socket Events
+
 ```javascript
 const socket = useAnalyticsSocket();
 
@@ -394,6 +417,7 @@ socket.onAny((eventName, ...args) => {
 ```
 
 ### Check API Responses
+
 ```javascript
 // In browser DevTools Network tab, filter by "analytics"
 ```

@@ -42,10 +42,10 @@ const ENDPOINT_LIMITS = {
   },
 };
 
-const ENDPOINT_PREFIXES = Object.keys(ENDPOINT_LIMITS)
-  .sort((a, b) => b.length - a.length);
+const ENDPOINT_PREFIXES = Object.keys(ENDPOINT_LIMITS).sort((a, b) => b.length - a.length);
 
 function resolveEndpointConfig(path, tier) {
+  if (!path) return {};
   const matched = ENDPOINT_PREFIXES.find((prefix) => path.startsWith(prefix));
   return matched ? ENDPOINT_LIMITS[matched][tier] : {};
 }

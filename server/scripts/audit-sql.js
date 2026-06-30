@@ -45,7 +45,10 @@ for (const file of files) {
         '${staleThresholdDays}',
       ];
 
-      const isSafe = hasInterpolation && !hasConcat && safePatterns.some((pattern) => firstPart.includes(pattern));
+      const isSafe =
+        hasInterpolation &&
+        !hasConcat &&
+        safePatterns.some((pattern) => firstPart.includes(pattern));
 
       if (!isSafe) {
         console.log(`[Vulnerable] File: ${file}`);

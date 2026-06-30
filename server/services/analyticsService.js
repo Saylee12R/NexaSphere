@@ -67,9 +67,7 @@ export const analyticsService = {
         totalRegistrations,
         totalPageViews,
         engagementRate:
-          activeUsers > 0
-            ? ((totalRegistrations + totalPageViews) / activeUsers).toFixed(2)
-            : 0,
+          activeUsers > 0 ? ((totalRegistrations + totalPageViews) / activeUsers).toFixed(2) : 0,
       };
     });
   },
@@ -142,8 +140,7 @@ export const analyticsService = {
 
         if (prevStep !== null && prevCount !== null) {
           // Drop-off from previous step
-          dropOffPercent =
-            prevCount > 0 ? Math.round(((prevCount - count) / prevCount) * 100) : 0;
+          dropOffPercent = prevCount > 0 ? Math.round(((prevCount - count) / prevCount) * 100) : 0;
 
           // Average time between prevStep and this step, for sessions that did both
           const { rows: timeRows } = await client.query(

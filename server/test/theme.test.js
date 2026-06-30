@@ -18,7 +18,18 @@ setWithDbOverride(async (fn) => {
         return { rows: [{ id: params[1], theme: params[0] }], rowCount: 1 };
       }
       if (sql.includes('SELECT * FROM student_users WHERE provider')) {
-        return { rows: [{ id: 1, email: 'test@example.com', full_name: 'Test Student', role: 'student', theme: 'light' }], rowCount: 1 };
+        return {
+          rows: [
+            {
+              id: 1,
+              email: 'test@example.com',
+              full_name: 'Test Student',
+              role: 'student',
+              theme: 'light',
+            },
+          ],
+          rowCount: 1,
+        };
       }
       return { rows: [], rowCount: 0 };
     },
@@ -32,13 +43,13 @@ test.beforeEach(() => {
 
 test('Theme Persistence - Repository updateTheme', async () => {
   const { studentUsersRepository } = await import('../repositories/studentUsersRepository.js');
-  
+
   const user = await studentUsersRepository.updateTheme(42, 'light');
-  
+
   assert.ok(user);
   assert.equal(user.id, 42);
   assert.equal(user.theme, 'light');
-  
+
   assert.equal(executedQueries.length, 1);
   const q = executedQueries[0];
   assert.ok(q.sql.includes('UPDATE student_users SET theme = $1'));
@@ -48,7 +59,7 @@ test('Theme Persistence - Repository updateTheme', async () => {
 
 test('Theme Persistence - Controller getMe returns theme', async () => {
   const { getMe } = await import('../controllers/studentAuthController.js');
-  
+
   const req = {
     studentUser: {
       sub: 1,
@@ -56,18 +67,18 @@ test('Theme Persistence - Controller getMe returns theme', async () => {
       email: 'test@example.com',
       name: 'Test Student',
       role: 'student',
-    }
+    },
   };
-  
+
   let jsonResponse = null;
   const res = {
     json: (data) => {
       jsonResponse = data;
-    }
+    },
   };
-  
+
   await getMe(req, res);
-  
+
   assert.ok(jsonResponse);
   assert.ok(jsonResponse.user);
   assert.equal(jsonResponse.user.theme, 'light');
@@ -76,13 +87,13 @@ test('Theme Persistence - Controller getMe returns theme', async () => {
 
 test('Theme Persistence - Controller updateTheme validation and update', async () => {
   const { updateTheme } = await import('../controllers/studentAuthController.js');
-  
+
   // Test invalid theme
   const reqInvalid = {
     studentUser: { sub: 1 },
-    body: { theme: 'invalid_theme' }
+    body: { theme: 'invalid_theme' },
   };
-  
+
   let statusSet = null;
   let errorResponse = null;
   const resInvalid = {
@@ -91,34 +102,34 @@ test('Theme Persistence - Controller updateTheme validation and update', async (
       return {
         json: (data) => {
           errorResponse = data;
-        }
+        },
       };
-    }
+    },
   };
-  
+
   await updateTheme(reqInvalid, resInvalid);
   assert.equal(statusSet, 400);
   assert.equal(errorResponse.error, 'Invalid theme');
-  
+
   // Test valid theme
   const reqValid = {
     studentUser: { sub: 42 },
-    body: { theme: 'dark' }
+    body: { theme: 'dark' },
   };
-  
+
   let jsonResponse = null;
   const resValid = {
     json: (data) => {
       jsonResponse = data;
-    }
+    },
   };
-  
+
   await updateTheme(reqValid, resValid);
   assert.ok(jsonResponse);
   assert.equal(jsonResponse.ok, true);
   assert.equal(jsonResponse.theme, 'dark');
-  
-  const updateQuery = executedQueries.find(q => q.sql.includes('UPDATE student_users SET theme'));
+
+  const updateQuery = executedQueries.find((q) => q.sql.includes('UPDATE student_users SET theme'));
   assert.ok(updateQuery);
   assert.equal(updateQuery.params[0], 'dark');
   assert.equal(updateQuery.params[1], 42);

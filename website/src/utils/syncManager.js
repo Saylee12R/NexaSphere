@@ -21,6 +21,7 @@
  */
 
 import { getQueue, removeFromQueue, updateRetryCount } from './offlineQueue.js';
+import { STORAGE_KEYS } from './storageKeys.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -63,10 +64,11 @@ function emit(name, detail = {}) {
 async function replayRequest(entry) {
   const { id, url, method, body, headers } = entry;
 
-  // Re-attach auth token from current session (not from stored headers)
+  // Re-attach auth token from current session (localStorage only —
+  // auth tokens must never be stored in sessionStorage due to tab isolation issues).
   const authHeaders = {};
   try {
-    const token = sessionStorage.getItem('ns-auth-token') || localStorage.getItem('ns-auth-token');
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (token) {
       authHeaders['Authorization'] = `Bearer ${token}`;
     }

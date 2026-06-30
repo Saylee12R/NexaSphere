@@ -3,6 +3,7 @@
 ## Overview
 
 This implementation provides enterprise-grade error logging, monitoring, and alerting for NexaSphere using:
+
 - **Sentry**: Error tracking and monitoring (frontend + backend)
 - **Winston**: Structured logging with file rotation
 - **Slack Integration**: Real-time alerts for critical errors
@@ -11,6 +12,7 @@ This implementation provides enterprise-grade error logging, monitoring, and ale
 ## Features Implemented
 
 ### ✅ Frontend Error Tracking
+
 - **Sentry Integration** (`src/utils/errorTracking.js`)
   - Automatic error capture for unhandled exceptions
   - Session replay with media masking
@@ -24,6 +26,7 @@ This implementation provides enterprise-grade error logging, monitoring, and ale
   - Page refresh option for users
 
 ### ✅ Backend Error Tracking
+
 - **Winston Logger** (`server/utils/logger.js`)
   - Console, file, and daily rotation transports
   - Automatic exception and rejection handlers
@@ -43,6 +46,7 @@ This implementation provides enterprise-grade error logging, monitoring, and ale
   - Sensitive data sanitization
 
 ### ✅ Performance Monitoring
+
 - **Performance Monitor Middleware** (`server/middleware/performanceMonitor.js`)
   - Response time tracking per endpoint
   - Error rate calculation and thresholds
@@ -50,6 +54,7 @@ This implementation provides enterprise-grade error logging, monitoring, and ale
   - Real-time metrics collection
 
 ### ✅ Slack Alerts
+
 - **Slack Integration** (`server/utils/slack.js`)
   - Automatic alerts for HTTP 500+ errors
   - Error rate threshold alerts (>5% by default)
@@ -57,6 +62,7 @@ This implementation provides enterprise-grade error logging, monitoring, and ale
   - Formatted messages with stack traces and context
 
 ### ✅ Monitoring API
+
 - **Monitoring Routes** (`server/routes/monitoring.js`)
   - `/api/monitoring/health` - Health check
   - `/api/monitoring/metrics` - Current performance metrics
@@ -68,6 +74,7 @@ This implementation provides enterprise-grade error logging, monitoring, and ale
   - `/api/monitoring/test-error` - Test error trigger (dev only)
 
 ### ✅ Error Tracking Service
+
 - **Error Service** (`server/services/errorTrackingService.js`)
   - Centralized error logging and statistics
   - Endpoint and user-specific error tracking
@@ -171,37 +178,42 @@ import { asyncHandler } from './middleware/errorHandler.js';
 import { logError } from './services/errorTrackingService.js';
 
 // In your route handlers:
-app.get('/api/users/:id', asyncHandler(async (req, res) => {
-  const user = await getUserById(req.params.id);
-  
-  if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
-  }
-  
-  res.json(user);
-}));
+app.get(
+  '/api/users/:id',
+  asyncHandler(async (req, res) => {
+    const user = await getUserById(req.params.id);
+
+    if (!user) {
+      const error = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    res.json(user);
+  })
+);
 ```
 
 ## Acceptance Criteria Status
 
-| Criteria | Status | Details |
-|----------|--------|---------|
-| ✅ Sentry captures all unhandled exceptions | Complete | Frontend & backend integration |
-| ✅ All errors logged with context | Complete | userId, path, stack trace, headers, IP |
+| Criteria                                       | Status   | Details                                                    |
+| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
+| ✅ Sentry captures all unhandled exceptions    | Complete | Frontend & backend integration                             |
+| ✅ All errors logged with context              | Complete | userId, path, stack trace, headers, IP                     |
 | ✅ Dashboard shows error rate & slow endpoints | Complete | `/api/monitoring/metrics` & `/api/monitoring/errors/stats` |
-| ✅ Alerts trigger on error rate > 5% | Complete | Automatic Slack alerts via threshold check |
-| ✅ No sensitive data in logs | Complete | Automatic sanitization of passwords, tokens, etc. |
+| ✅ Alerts trigger on error rate > 5%           | Complete | Automatic Slack alerts via threshold check                 |
+| ✅ No sensitive data in logs                   | Complete | Automatic sanitization of passwords, tokens, etc.          |
 
 ## Monitoring Dashboard API Examples
 
 ### Get Performance Metrics
+
 ```bash
 curl http://localhost:3000/api/monitoring/metrics
 ```
 
 Response:
+
 ```json
 {
   "totalRequests": 1250,
@@ -220,16 +232,19 @@ Response:
 ```
 
 ### Get Error Statistics
+
 ```bash
 curl http://localhost:3000/api/monitoring/errors/stats
 ```
 
 ### Get Recent Errors
+
 ```bash
 curl http://localhost:3000/api/monitoring/errors/recent?limit=10
 ```
 
 ### Get Endpoint-Specific Errors
+
 ```bash
 curl http://localhost:3000/api/monitoring/errors/endpoint?url=/api/users
 ```
@@ -237,6 +252,7 @@ curl http://localhost:3000/api/monitoring/errors/endpoint?url=/api/users
 ## Log Files
 
 Logs are stored in `server/logs/`:
+
 - `error.log` - Error level logs only
 - `combined.log` - All logs combined
 - `exceptions.log` - Uncaught exceptions
@@ -264,12 +280,14 @@ Logs are stored in `server/logs/`:
 ## Testing Error Tracking
 
 ### Frontend Error Boundary Test
+
 ```javascript
 // In React component
 throw new Error('Test error to trigger error boundary');
 ```
 
 ### Backend Error Test
+
 ```bash
 curl -X POST http://localhost:3000/api/monitoring/test-error
 ```
@@ -292,16 +310,19 @@ curl -X POST http://localhost:3000/api/monitoring/test-error
 ## Performance Considerations
 
 ### Log Storage
+
 - **Development**: All logs retained in memory and files
 - **Production**: Consider external log aggregation service
 - **Recommended**: Log retention of 7-30 days depending on volume
 
 ### Sentry Sampling
+
 - **Development**: 100% trace sample rate (all requests tracked)
 - **Production**: 10% trace sample rate (1 in 10 requests)
 - **Adjust** based on your traffic and quota
 
 ### Performance Impact
+
 - Minimal overhead for error tracking (<5ms per request)
 - Log file I/O is async and non-blocking
 - Sentry events batched and sent asynchronously
@@ -309,18 +330,21 @@ curl -X POST http://localhost:3000/api/monitoring/test-error
 ## Troubleshooting
 
 ### Sentry not capturing errors
+
 1. Verify DSN is correctly configured
 2. Check that Sentry is initialized before app code
 3. Ensure error is actually being thrown
 4. Check Sentry project settings for filtering
 
 ### Slack alerts not working
+
 1. Verify webhook URL is correct
 2. Check Slack channel permissions
 3. Test webhook with curl command
 4. Verify error rate threshold (5% by default)
 
 ### Missing logs
+
 1. Check `server/logs/` directory exists
 2. Verify disk space available
 3. Check file permissions (log directory must be writable)
@@ -338,7 +362,7 @@ curl -X POST http://localhost:3000/api/monitoring/test-error
 
 ## Support & Documentation
 
-- Sentry Docs: https://docs.sentry.io/
-- Winston Docs: https://github.com/winstonjs/winston
-- Slack API: https://api.slack.com/
+- Sentry Docs: <https://docs.sentry.io/>
+- Winston Docs: <https://github.com/winstonjs/winston>
+- Slack API: <https://api.slack.com/>
 - Performance Monitoring: See API examples above

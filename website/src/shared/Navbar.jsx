@@ -5,6 +5,7 @@ import NotificationBell from '../components/NotificationBell';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { useStudentAuth } from '../context/StudentAuthContext';
 import LanguageSelector from '../components/common/LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 const TABS = [
   'Home',
@@ -12,14 +13,8 @@ const TABS = [
   'Events',
   'Projects',
   'Roadmaps',
-  'Recommendations',
-  'Portfolio',
-  'Blog',
   'Resources',
-  'Gamification',
   'Forum',
-  'Mentorship',
-  'Q&A / Polling',
   'About',
   'Core Team',
   'Contact',
@@ -66,6 +61,14 @@ function BookmarkToggle({ onToggle }) {
 export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onToggleBookmarks }) {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const { t } = useTranslation();
+
+  const getTabLabel = (tab) => {
+    let key = tab.toLowerCase().replace(/\s+/g, '_');
+    if (key === 'core_team') key = 'team';
+    const translated = t(`nav.${key}`);
+    return translated && !translated.startsWith('nav.') ? translated : tab;
+  };
   const [compact, setCompact] = useState(window.innerWidth <= 1200);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -139,7 +142,7 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
             <BookmarkToggle onToggle={onToggleBookmarks} />
             <ThemeToggle />
             <LanguageSelector />
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <span
                 className="ns-nav-user-badge"
                 onClick={() => navigate('/dashboard')}
@@ -148,23 +151,6 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
               >
                 👤
               </span>
-            ) : (
-              <button
-                className="ns-nav-login-btn"
-                onClick={() => login('google')}
-                aria-label="Sign in"
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--border)',
-                  color: 'var(--t1)',
-                  borderRadius: '6px',
-                  padding: '2px 8px',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                }}
-              >
-                Login
-              </button>
             )}
           </div>
         </div>
@@ -179,7 +165,7 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
               onClick={() => handleTab(t)}
               aria-current={activeTab === t ? 'page' : undefined}
             >
-              {t}
+              {getTabLabel(t)}
             </button>
           ))}
 
@@ -188,7 +174,7 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
             onClick={onJoin}
             aria-label="Join as Member"
           >
-            Join
+            {t('nav.join', 'Join')}
           </button>
 
           <button
@@ -196,7 +182,7 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
             onClick={onApply}
             aria-label="Apply for Core Team"
           >
-            Apply
+            {t('nav.apply', 'Apply')}
           </button>
         </div>
       </nav>
@@ -248,7 +234,7 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
                 onClick={onJoin}
                 aria-label="Join as Member"
               >
-                Join
+                {t('nav.join', 'Join')}
               </button>
 
               <button
@@ -256,14 +242,14 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
                 onClick={onApply}
                 aria-label="Apply for Core Team"
               >
-                Apply
+                {t('nav.apply', 'Apply')}
               </button>
             </div>
 
             <ThemeToggle />
             <LanguageSelector />
 
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <span
                 className="ns-nav-user-badge"
                 onClick={() => navigate('/dashboard')}
@@ -272,15 +258,6 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
               >
                 👤
               </span>
-            ) : (
-              <button
-                className="btn btn-sm btn-outline"
-                onClick={() => login('google')}
-                aria-label="Sign in"
-                style={{ marginLeft: '4px' }}
-              >
-                Login
-              </button>
             )}
 
             <button
@@ -307,7 +284,7 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
                   onClick={() => handleTab(t)}
                   aria-current={activeTab === t ? 'page' : undefined}
                 >
-                  {t}
+                  {getTabLabel(t)}
                 </button>
               </li>
             ))}

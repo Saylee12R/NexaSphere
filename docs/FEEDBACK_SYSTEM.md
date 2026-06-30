@@ -1,6 +1,7 @@
 # Event Feedback & Rating System with NPS
 
 ## Overview
+
 Post-event feedback system with multi-dimensional star ratings, NPS scoring, open-ended questions, automated email triggers, gamification rewards, and an organiser analytics dashboard.
 
 ## Architecture
@@ -80,36 +81,38 @@ CREATE TABLE feedback_schedule (
 
 ## API Reference
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/feedback` | Submit feedback (awards +25 XP) |
-| GET | `/api/feedback/analytics/:eventId` | Organiser analytics |
-| GET | `/api/feedback/export/:eventId?format=csv\|pdf` | Download export |
-| GET | `/api/feedback/check/:eventId` | Has current user submitted? |
+| Method | Path                                            | Description                     |
+| ------ | ----------------------------------------------- | ------------------------------- |
+| POST   | `/api/feedback`                                 | Submit feedback (awards +25 XP) |
+| GET    | `/api/feedback/analytics/:eventId`              | Organiser analytics             |
+| GET    | `/api/feedback/export/:eventId?format=csv\|pdf` | Download export                 |
+| GET    | `/api/feedback/check/:eventId`                  | Has current user submitted?     |
 
 ## NPS Calculation
+
 - **Detractors**: score 0–6
 - **Passives**: score 7–8
 - **Promoters**: score 9–10
 - **NPS** = (% Promoters − % Detractors) × 100 → range −100 to +100
 
 ## Gamification
-| Trigger | Reward |
-|---------|--------|
-| First feedback submitted | +25 XP |
-| 5th feedback submitted | "Feedback Champion" badge |
+
+| Trigger                  | Reward                    |
+| ------------------------ | ------------------------- |
+| First feedback submitted | +25 XP                    |
+| 5th feedback submitted   | "Feedback Champion" badge |
 
 ## Acceptance Criteria Coverage
 
-| # | Criterion | Implementation |
-|---|-----------|----------------|
-| 1 | Feedback form sends automatically after event | `feedbackScheduler.js` cron, 1h after `end_time` |
-| 2 | All rating dimensions collected | 7 dimensions in `FeedbackForm.jsx` + DB columns |
-| 3 | NPS calculated correctly | `calculateNPS()` in `feedbackAnalytics.js` |
-| 4 | Open-ended responses captured | 3 text fields stored in `open_enjoyed/improve/comments` |
-| 5 | Analytics dashboard accurate | `OrganizerDashboard.jsx` → `/api/feedback/analytics/:id` |
-| 6 | Response rate > 40% | Tracked in analytics; scheduler drives participation |
-| 7 | Reminder emails increase participation | 24h reminder skips already-submitted users |
-| 8 | Organiser can view and export feedback | Dashboard + CSV/PDF export endpoint |
-| 9 | Incentives encourage feedback | +25 XP on submit; badge at 5 submissions |
-| 10 | QA test full feedback flow | Duplicate guard (409), validation, full happy-path route |
+| #   | Criterion                                     | Implementation                                           |
+| --- | --------------------------------------------- | -------------------------------------------------------- |
+| 1   | Feedback form sends automatically after event | `feedbackScheduler.js` cron, 1h after `end_time`         |
+| 2   | All rating dimensions collected               | 7 dimensions in `FeedbackForm.jsx` + DB columns          |
+| 3   | NPS calculated correctly                      | `calculateNPS()` in `feedbackAnalytics.js`               |
+| 4   | Open-ended responses captured                 | 3 text fields stored in `open_enjoyed/improve/comments`  |
+| 5   | Analytics dashboard accurate                  | `OrganizerDashboard.jsx` → `/api/feedback/analytics/:id` |
+| 6   | Response rate > 40%                           | Tracked in analytics; scheduler drives participation     |
+| 7   | Reminder emails increase participation        | 24h reminder skips already-submitted users               |
+| 8   | Organiser can view and export feedback        | Dashboard + CSV/PDF export endpoint                      |
+| 9   | Incentives encourage feedback                 | +25 XP on submit; badge at 5 submissions                 |
+| 10  | QA test full feedback flow                    | Duplicate guard (409), validation, full happy-path route |

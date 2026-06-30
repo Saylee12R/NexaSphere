@@ -16,73 +16,77 @@ if (process.env.REDIS_URL) {
 /**
  * Worker for processing scheduled event reminders via BullMQ.
  */
-export const reminderWorker = connection ? new Worker(
-  eventRemindersQueueName,
-  async (job) => {
-    const { eventId, userId, type } = job.data;
-    logger.info(`[reminderWorker] Processing ${type} job ${job.id} for event ${eventId}`);
+export const reminderWorker = connection
+  ? new Worker(
+      eventRemindersQueueName,
+      async (job) => {
+        const { eventId, userId, type } = job.data;
+        logger.info(`[reminderWorker] Processing ${type} job ${job.id} for event ${eventId}`);
 
-    const event = await eventsRepository.getById(eventId);
-    if (!event) {
-      throw new Error(`Event ${eventId} not found`);
-    }
+        const event = await eventsRepository.getById(eventId);
+        if (!event) {
+          throw new Error(`Event ${eventId} not found`);
+        }
 
-    if (type === 'event-reminder' || type === 'deadline-reminder') {
-      // Fetch confirmed attendees
-      let attendees = [];
-      await withDb(async (client) => {
-        let query = `
+        if (type === 'event-reminder' || type === 'deadline-reminder') {
+          // Fetch confirmed attendees
+          let attendees = [];
+          await withDb(async (client) => {
+            let query = `
           SELECT r.full_name, r.email, u.id as user_id, p.push_token 
           FROM event_registrations r
           LEFT JOIN student_users u ON r.email = u.email
           LEFT JOIN push_subscriptions p ON u.id = p.user_id
           WHERE r.event_id = $1 AND r.status = 'confirmed'
         `;
-        const params = [eventId];
-        
-        if (userId) {
-          query += ` AND u.id = $2`;
-          params.push(userId);
-        }
+            const params = [eventId];
 
-        const { rows } = await client.query(query, params);
-        attendees = rows;
-      });
+            if (userId) {
+              query += ` AND u.id = $2`;
+              params.push(userId);
+            }
 
-      if (attendees.length === 0) {
-        logger.info(`[reminderWorker] No confirmed attendees to notify for event ${eventId}`);
-        return { sent: 0 };
-      }
-
-      let sentCount = 0;
-      for (const attendee of attendees) {
-        try {
-          // Emit internal event so eventEmitterService handles preferences, emails, and push notifications
-          eventManager.emit(type, {
-            userId: attendee.user_id,
-            userEmail: attendee.email,
-            userName: attendee.full_name,
-            eventName: event.name,
-            eventDate: event.date,
-            eventTime: event.time || '',
-            eventLocation: event.location || 'TBA',
-            eventId: event.id,
-            pushToken: attendee.push_token,
-            timeUntilEvent: 'soon', // could be dynamically computed
+            const { rows } = await client.query(query, params);
+            attendees = rows;
           });
-          sentCount++;
-        } catch (err) {
-          logger.error(`[reminderWorker] Failed to emit ${type} for user ${attendee.email}: ${err.message}`);
-        }
-      }
 
-      return { sent: sentCount, total: attendees.length };
-    } else {
-      throw new Error(`Unknown job type: ${type}`);
-    }
-  },
-  { connection }
-) : null;
+          if (attendees.length === 0) {
+            logger.info(`[reminderWorker] No confirmed attendees to notify for event ${eventId}`);
+            return { sent: 0 };
+          }
+
+          let sentCount = 0;
+          for (const attendee of attendees) {
+            try {
+              // Emit internal event so eventEmitterService handles preferences, emails, and push notifications
+              eventManager.emit(type, {
+                userId: attendee.user_id,
+                userEmail: attendee.email,
+                userName: attendee.full_name,
+                eventName: event.name,
+                eventDate: event.date,
+                eventTime: event.time || '',
+                eventLocation: event.location || 'TBA',
+                eventId: event.id,
+                pushToken: attendee.push_token,
+                timeUntilEvent: 'soon', // could be dynamically computed
+              });
+              sentCount++;
+            } catch (err) {
+              logger.error(
+                `[reminderWorker] Failed to emit ${type} for user ${attendee.email}: ${err.message}`
+              );
+            }
+          }
+
+          return { sent: sentCount, total: attendees.length };
+        } else {
+          throw new Error(`Unknown job type: ${type}`);
+        }
+      },
+      { connection }
+    )
+  : null;
 
 if (reminderWorker) {
   reminderWorker.on('completed', (job, returnvalue) => {

@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import apiClient from '../utils/apiClient';
 import { useTheme } from '../hooks/useTheme';
 
-
 export const StudentAuthContext = createContext(null);
 
 const TOKEN_KEY = 'ns_student_token';
@@ -36,19 +35,6 @@ export function StudentAuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token');
-    if (urlToken) {
-      params.delete('token');
-      const cleanUrl =
-        window.location.pathname +
-        (params.toString() ? '?' + params.toString() : '') +
-        window.location.hash;
-      window.history.replaceState({}, '', cleanUrl);
-      fetchMe(urlToken).finally(() => setLoading(false));
-      return;
-    }
-
     const storedToken = localStorage.getItem(TOKEN_KEY);
     if (storedToken) {
       fetchMe(storedToken).finally(() => setLoading(false));

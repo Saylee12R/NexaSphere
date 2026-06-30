@@ -36,7 +36,7 @@
 }
 
 .waitlist-badge__position strong {
-  color: #E63946;
+  color: #e63946;
 }
 
 .waitlist-badge__total {
@@ -47,19 +47,21 @@
 
 .waitlist-badge__leave-btn {
   background: transparent;
-  border: 1px solid #E63946;
-  color: #E63946;
+  border: 1px solid #e63946;
+  color: #e63946;
   border-radius: 8px;
   padding: 0.4rem 0.7rem;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .waitlist-badge__leave-btn:hover:not(:disabled) {
-  background: #E63946;
+  background: #e63946;
   color: #fff;
 }
 

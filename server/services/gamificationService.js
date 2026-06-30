@@ -77,7 +77,9 @@ class GamificationService {
       try {
         await achievementsRepository.award(username, badge);
       } catch (e) {
-        logger.error(`[GamificationService] Failed to award "${badge.name}" to ${username}:`, { error: e.message });
+        logger.error(`[GamificationService] Failed to award "${badge.name}" to ${username}:`, {
+          error: e.message,
+        });
       }
     }
   }

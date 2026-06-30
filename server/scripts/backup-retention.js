@@ -4,7 +4,9 @@ const RETENTION_DAYS = parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
 const MAX_BACKUPS = parseInt(process.env.MAX_BACKUPS || '100', 10);
 
 async function cleanupOldBackups() {
-  console.log(`[backup-retention] Starting cleanup (retention: ${RETENTION_DAYS} days, max: ${MAX_BACKUPS} backups)`);
+  console.log(
+    `[backup-retention] Starting cleanup (retention: ${RETENTION_DAYS} days, max: ${MAX_BACKUPS} backups)`
+  );
   try {
     await backupService.applyRetentionPolicy();
     const history = await backupService.getBackupHistory();

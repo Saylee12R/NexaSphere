@@ -26,7 +26,7 @@ export const up = async (pgm) => {
 export const down = async (pgm) => {
   pgm.dropIndex('users', 'xp');
   pgm.dropIndex('student_users', 'xp');
-  
+
   pgm.dropColumns('users', ['xp', 'level', 'badges']);
   pgm.dropColumns('student_users', ['xp', 'level', 'badges']);
 };

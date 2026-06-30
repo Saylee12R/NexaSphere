@@ -62,4 +62,3 @@ CREATE INDEX IF NOT EXISTS idx_financial_audit_trail_record ON financial_audit_t
 export const down = (_pgm) => {
   // down migration not implemented
 };
-

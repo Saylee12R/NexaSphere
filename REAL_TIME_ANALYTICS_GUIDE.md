@@ -37,6 +37,7 @@ The Real-Time Analytics Dashboard provides admins with instant visibility into e
 ### Backend Stack
 
 #### Database Schema
+
 ```sql
 -- Registrations Table
 - id (UUID, Primary Key)
@@ -57,6 +58,7 @@ The Real-Time Analytics Dashboard provides admins with instant visibility into e
 #### Services & Controllers
 
 **Analytics Repository** (`repositories/analyticsRepository.js`)
+
 - `getEventMetrics(eventId)` - Fetch event metrics with aggregations
 - `getAllEventsMetrics()` - Dashboard overview
 - `getRegistrationTrends(eventId, timeWindow)` - Daily trends
@@ -68,12 +70,14 @@ The Real-Time Analytics Dashboard provides admins with instant visibility into e
 - `exportEventAnalytics(eventId)` - Data export
 
 **Analytics Service** (`services/analyticsService.js`)
+
 - In-memory caching (5-second TTL)
 - Real-time WebSocket broadcasting
 - Event subscription management
 - CSV/JSON data conversion
 
 **Registration Tracking Controller** (`controllers/registrationTrackingController.js`)
+
 - `registerForEvent()` - Handle registrations
 - `checkInUser()` - Process check-ins
 - `bulkRegister()` - Demo data generation
@@ -116,6 +120,7 @@ POST /api/admin/analytics/cache/clear
 #### WebSocket Events
 
 **Client → Server**
+
 ```javascript
 // Subscribe to event metrics
 socket.emit('analytics:subscribe', eventId);
@@ -131,6 +136,7 @@ socket.emit('analytics:request:trends', { eventId, timeWindow });
 ```
 
 **Server → Client**
+
 ```javascript
 // Metrics update
 socket.on('analytics:metrics:update', { eventId, metrics, timestamp });
@@ -154,12 +160,14 @@ socket.on('analytics:error', { eventId, error });
 #### React Components
 
 **AnalyticsDashboard** (`components/AnalyticsDashboard.jsx`)
+
 - Main orchestrator component
 - Manages analytics data flow
 - Fetches all events overview
 - Handles refresh functionality
 
 **LiveMetricsCards** (`components/LiveMetricsCards.jsx`)
+
 - Displays key metrics in card format
 - Shows:
   - Total registrations
@@ -169,6 +177,7 @@ socket.on('analytics:error', { eventId, error });
   - Occupancy rate
 
 **RegistrationTrendsChart** (`components/RegistrationTrendsChart.jsx`)
+
 - Recharts integration
 - Multiple chart types (line, area, bar)
 - Time window selection
@@ -176,18 +185,21 @@ socket.on('analytics:error', { eventId, error });
 - Responsive design
 
 **CheckInStatsChart** (`components/CheckInStatsChart.jsx`)
+
 - Pie/doughnut chart visualization
 - Status breakdown
 - Color-coded legend
 - Percentage display
 
 **RecentRegistrationsList** (`components/RecentRegistrationsList.jsx`)
+
 - Activity feed component
 - Real-time updates
 - Email truncation
 - Status indicators
 
 **AnalyticsExport** (`components/AnalyticsExport.jsx`)
+
 - CSV/JSON export buttons
 - Download management
 - User feedback
@@ -196,47 +208,44 @@ socket.on('analytics:error', { eventId, error });
 #### Custom Hooks
 
 **useAnalyticsSocket** (`hooks/useAnalyticsSocket.js`)
+
 ```javascript
 // Get Socket.IO instance
 const socket = useAnalyticsSocket();
 
 // Subscribe to event analytics
-const {
-  metrics,
-  registrationTrends,
-  recentRegistrations,
-  loading,
-  error,
-  isConnected
-} = useEventAnalytics(eventId);
+const { metrics, registrationTrends, recentRegistrations, loading, error, isConnected } =
+  useEventAnalytics(eventId);
 ```
 
 #### API Service
 
 **analyticsAPI** (`services/analyticsAPI.js`)
+
 ```javascript
 // Fetch operations
-getAllEventsMetrics()
-getEventMetrics(eventId)
-getRegistrationTrends(eventId, timeWindow)
-getHourlyTrends(eventId, hours)
-getRecentRegistrations(eventId, limit)
-getCheckInStats(eventId)
+getAllEventsMetrics();
+getEventMetrics(eventId);
+getRegistrationTrends(eventId, timeWindow);
+getHourlyTrends(eventId, hours);
+getRecentRegistrations(eventId, limit);
+getCheckInStats(eventId);
 
 // Mutation operations
-registerForEvent(eventId, email, name)
-checkInUser(eventId, registrationId, email)
+registerForEvent(eventId, email, name);
+checkInUser(eventId, registrationId, email);
 
 // Export operations
-exportAnalytics(eventId, format)
+exportAnalytics(eventId, format);
 
 // Admin operations
-clearCache(eventId)
+clearCache(eventId);
 ```
 
 #### Styling
 
 **analytics-dashboard.css** - Comprehensive styling
+
 - Responsive grid layouts
 - Real-time connection indicator
 - Animated loading states
@@ -262,6 +271,7 @@ psql -h <host> -U <user> -d <database> -f server/analytics-schema.sql
 ### 2. Backend Configuration
 
 Environment variables needed:
+
 ```env
 # Socket.IO
 SOCKET_URL=http://localhost:3001
@@ -282,6 +292,7 @@ yarn install
 ```
 
 This installs:
+
 - `recharts@^2.10.3` - Chart visualization
 - `socket.io-client@^4.7.2` - WebSocket client
 
@@ -352,12 +363,8 @@ import { useEventAnalytics } from './hooks/useAnalyticsSocket';
 
 function MyComponent() {
   const { metrics, isConnected } = useEventAnalytics('event-id');
-  
-  return (
-    <div>
-      {isConnected && <p>Live: {metrics.totalRegistrations}</p>}
-    </div>
-  );
+
+  return <div>{isConnected && <p>Live: {metrics.totalRegistrations}</p>}</div>;
 }
 ```
 
@@ -424,6 +431,7 @@ curl -X POST http://localhost:3001/api/admin/analytics/events/event-id/bulk-regi
 ### Unit Tests
 
 Example test structure:
+
 ```javascript
 describe('analyticsService', () => {
   test('getEventMetrics returns correct structure', async () => {
@@ -461,6 +469,7 @@ describe('analyticsService', () => {
 ### Debug Mode
 
 Enable verbose logging:
+
 ```javascript
 // In Socket.IO hook
 useEffect(() => {

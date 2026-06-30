@@ -31,7 +31,7 @@ export function apiLogger(req, res, next) {
   res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
     const status = res.statusCode;
-    
+
     const safePath = redactPath(originalUrl || req.path);
 
     // Prepare JSON payload for Winston (and subsequently ELK)

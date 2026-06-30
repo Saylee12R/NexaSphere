@@ -12,7 +12,11 @@ export function useThemeManagement() {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => {
+      if (prev === 'light') return 'dark';
+      if (prev === 'dark') return 'high-contrast';
+      return 'light';
+    });
   }, []);
 
   return { theme, toggleTheme };

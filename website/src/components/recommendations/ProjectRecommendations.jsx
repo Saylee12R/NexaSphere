@@ -51,17 +51,20 @@ export default function ProjectRecommendations({ onBack }) {
         {
           projectId: 'nexa-portal',
           matchChips: ['React', 'Node.js', 'Vite'],
-          whyItMatches: 'Your resume shows strong React and frontend experience which aligns perfectly with NexaSphere Portal requirements.',
+          whyItMatches:
+            'Your resume shows strong React and frontend experience which aligns perfectly with NexaSphere Portal requirements.',
         },
         {
           projectId: 'ui-kit',
           matchChips: ['UI Design', 'Figma', 'CSS Modules'],
-          whyItMatches: 'Your design sensitivity and storybook knowledge makes you an ideal candidate to build custom components for the Nexa UI Kit.',
+          whyItMatches:
+            'Your design sensitivity and storybook knowledge makes you an ideal candidate to build custom components for the Nexa UI Kit.',
         },
         {
           projectId: 'secure-share',
           matchChips: ['Mobile Dev', 'React Native'],
-          whyItMatches: 'Your experience with cross-platform apps maps well onto the mobile and cloud security requirements of SecureShare.',
+          whyItMatches:
+            'Your experience with cross-platform apps maps well onto the mobile and cloud security requirements of SecureShare.',
         },
       ]);
       setStep('result');
@@ -86,7 +89,11 @@ export default function ProjectRecommendations({ onBack }) {
       {step === 'upload' && (
         <div className="ra-upload-section">
           <ResumeUpload onUpload={handleUpload} />
-          {error && <p className="upload-error" style={{ textAlign: 'center', marginTop: '10px' }}>{error}</p>}
+          {error && (
+            <p className="upload-error" style={{ textAlign: 'center', marginTop: '10px' }}>
+              {error}
+            </p>
+          )}
         </div>
       )}
 
@@ -96,7 +103,8 @@ export default function ProjectRecommendations({ onBack }) {
         <div className="ra-results animate-fade-in">
           {isDemo && (
             <div className="ra-demo-banner" style={{ marginBottom: '20px' }}>
-              ⚠️ Demo mode — resume recommendations API is not configured or backend is running offline. Showing sample recommendations.
+              ⚠️ Demo mode — resume recommendations API is not configured or backend is running
+              offline. Showing sample recommendations.
             </div>
           )}
 
@@ -111,11 +119,7 @@ export default function ProjectRecommendations({ onBack }) {
             {recommendations.map((match, idx) => {
               const matchedProject = projectsData.find((p) => p.id === match.projectId);
               return (
-                <RecommendationCard
-                  key={idx}
-                  project={matchedProject}
-                  match={match}
-                />
+                <RecommendationCard key={match.projectId} project={matchedProject} match={match} />
               );
             })}
           </div>

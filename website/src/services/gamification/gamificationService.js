@@ -4,14 +4,19 @@ import { getApiBase } from '../../utils/runtimeConfig';
 // XP Values for different actions
 export const XP_VALUES = {
   ATTEND_EVENT: 50,
+  EVENT_ATTENDANCE: 50, // alias for dashboard/tests
   ORGANIZE_EVENT: 200,
   COMPLETE_MENTORSHIP: 500,
   ADD_PORTFOLIO_PROJECT: 100,
+  CONTENT_CREATION: 100, // alias for dashboard
   GIVE_FEEDBACK: 25,
+  FEEDBACK_GIVEN: 25, // alias for dashboard
   HELP_SOMEONE: 30, // Answered a question
   DAILY_STREAK: 20,
   SHARE_EVENT: 15,
   LEARNING_PATH_COMPLETE: 1000,
+  COMMENT_POSTED: 5, // for dashboard/tests
+  REFERRAL: 100, // for dashboard
 };
 
 // Achievement tiers and requirements
@@ -102,6 +107,15 @@ export const ACHIEVEMENTS = {
   },
 
   // Social
+  FIRST_COMMENT: {
+    id: 'first_comment',
+    title: 'Voice Your Thoughts',
+    description: 'Post your first comment',
+    icon: '💬',
+    tier: 'bronze',
+    xpReward: 25,
+    requirement: { type: 'comments', count: 1 },
+  },
   FIRST_CONNECTION: {
     id: 'first_connection',
     title: 'Networker',
@@ -256,17 +270,7 @@ class GamificationService {
   }
 
   loadUserData() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem('gamification_user_data');
-        if (stored) {
-          return JSON.parse(stored);
-        }
-      }
-    } catch (e) {
-      console.warn('LocalStorage not available:', e);
-    }
-    return {
+    const defaults = {
       userId: null,
       xp: 0,
       level: 1,
@@ -297,6 +301,24 @@ class GamificationService {
       last_actions: {}, // For anti-gaming
       notifications: [],
     };
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem('gamification_user_data');
+        if (stored) {
+          const parsed = JSON.parse(stored) || {};
+          return {
+            ...defaults,
+            ...parsed,
+            stats: { ...defaults.stats, ...(parsed.stats || {}) },
+            last_actions: { ...defaults.last_actions, ...(parsed.last_actions || {}) },
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage not available:', e);
+    }
+    return defaults;
   }
 
   saveUserData() {
@@ -382,6 +404,7 @@ class GamificationService {
 
     switch (action) {
       case 'ATTEND_EVENT':
+      case 'EVENT_ATTENDANCE':
         stats.events_attended++;
         break;
       case 'EVENT_REGISTRATION':
@@ -397,9 +420,11 @@ class GamificationService {
         stats.comments++;
         break;
       case 'ADD_PORTFOLIO_PROJECT':
+      case 'CONTENT_CREATION':
         stats.content_created++;
         break;
       case 'GIVE_FEEDBACK':
+      case 'FEEDBACK_GIVEN':
         stats.feedback++;
         break;
       case 'MAKE_CONNECTION':
@@ -413,6 +438,9 @@ class GamificationService {
         break;
       case 'HACKATHON_WIN':
         stats.hackathon_wins++;
+        break;
+      case 'REFERRAL':
+        stats.referrals++;
         break;
     }
   }

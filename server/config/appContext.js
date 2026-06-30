@@ -44,16 +44,19 @@ if (!pg.Client.prototype.query[PG_PATCH_APPLIED]) {
 
   pg.Client.prototype.query = function (...args) {
     const store = appContext.getStore();
+    console.log('PG query patch. store:', store);
 
     if (store?.reqId) {
       const safeId = sanitizeReqId(store.reqId);
       const firstArg = args[0];
       const secondArgIsCallback = typeof args[1] === 'function';
+      console.log('Inside patch: firstArg:', firstArg, 'secondArgIsCallback:', secondArgIsCallback);
 
       if (typeof firstArg === 'string') {
         args[0] = `/* reqId: ${safeId} */ ${firstArg}`;
       } else if (firstArg?.text && !secondArgIsCallback) {
         args[0] = { ...firstArg, text: `/* reqId: ${safeId} */ ${firstArg.text}` };
+        console.log('Modified args[0]:', args[0]);
       }
     }
 

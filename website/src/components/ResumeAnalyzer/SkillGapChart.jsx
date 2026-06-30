@@ -24,7 +24,10 @@ const SkillGapChart = React.memo(function SkillGapChart({ skills }) {
       <ResponsiveContainer width="100%" height={300}>
         <RadarChart data={data}>
           <PolarGrid stroke="var(--border-color, rgba(255,255,255,0.08))" />
-          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: 'var(--text-secondary, #64748b)' }} />
+          <PolarAngleAxis
+            dataKey="subject"
+            tick={{ fontSize: 12, fill: 'var(--text-secondary, #64748b)' }}
+          />
           <Tooltip
             contentStyle={{
               background: 'var(--bg-secondary, var(--bg-card, #fff))',

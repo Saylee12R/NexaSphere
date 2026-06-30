@@ -221,7 +221,9 @@ export default function CertificateVerifyPage({ certificateId, onGoHome }) {
       } catch (err) {
         if (err.name === 'AbortError') return;
         setMessage(
-          err.message || 'Unable to reach the verification server. Please try again later.'
+          err.message && err.message !== 'Network error' && err.message !== 'Failed to fetch'
+            ? err.message
+            : 'Unable to reach the verification server. Please try again later.'
         );
         setStatus('error');
       }

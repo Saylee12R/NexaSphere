@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag to rollback to'
+        description: 'Release tag to rollback to (e.g. production-42)'
         required: true
 
 jobs:
@@ -15,12 +15,16 @@ jobs:
       name: production
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout Repository at Release Tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.release_tag }} # ← actually checks out the tag
 
       - name: Rollback Information
         run: |
           echo "Rolling back to release: ${{ github.event.inputs.release_tag }}"
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "Timestamp: $(git log -1 --format=%ci)"
 
       - name: Trigger Render Redeploy
         uses: johnbeynon/render-deploy-action@v0.0.9
@@ -28,10 +32,19 @@ jobs:
           service-id: ${{ secrets.RENDER_PRODUCTION_SERVICE_ID }}
           api-key: ${{ secrets.RENDER_API_KEY }}
 
+      - name: Wait for Render to stabilize
+        run: sleep 30
+
       - name: Deployment Health Check
         run: |
           curl -f https://nexasphere-api.onrender.com/health
 
+      - name: Notify Slack of Rollback
+        run: |
+          curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            --data "{\"text\":\"⚠️ Production rolled back to ${{ github.event.inputs.release_tag }} by ${{ github.actor }}\"}"
+
       - name: Rollback Complete
         run: |
-          echo "Rollback completed successfully"
+          echo "Rollback to ${{ github.event.inputs.release_tag }} completed successfully"

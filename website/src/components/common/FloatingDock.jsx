@@ -77,6 +77,13 @@ export default function FloatingDock() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const toggleRef = useRef(null);
+  const [mobile, setMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', fn, { passive: true });
+    return () => window.removeEventListener('resize', fn);
+  }, []);
 
   // Close dock on Escape and return focus to toggle button
   useEffect(() => {
@@ -107,7 +114,7 @@ export default function FloatingDock() {
       style={{
         position: 'fixed',
         bottom: '24px',
-        right: '24px',
+        right: mobile ? '90px' : '110px',
         zIndex: 9000,
         display: 'flex',
         flexDirection: 'column',

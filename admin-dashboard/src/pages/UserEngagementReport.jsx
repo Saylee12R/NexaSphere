@@ -19,7 +19,7 @@ import {
 
 export function UserEngagementReport() {
   const [activeTab, setActiveTab] = useState('engagement');
-  
+
   // Engagement state
   const [users, setUsers] = useState([]);
   const [engagementLoading, setEngagementLoading] = useState(true);
@@ -86,13 +86,15 @@ export function UserEngagementReport() {
         </p>
 
         {/* Custom Tab Switcher */}
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          marginTop: '1.5rem',
-          borderBottom: '1px solid var(--admin-border, #333)',
-          paddingBottom: '8px'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            marginTop: '1.5rem',
+            borderBottom: '1px solid var(--admin-border, #333)',
+            paddingBottom: '8px',
+          }}
+        >
           <button
             onClick={() => setActiveTab('engagement')}
             style={{
@@ -100,14 +102,22 @@ export function UserEngagementReport() {
               background: activeTab === 'engagement' ? 'rgba(204,17,17,0.1)' : 'transparent',
               border: 'none',
               borderRadius: '6px',
-              color: activeTab === 'engagement' ? 'var(--admin-accent, #CC1111)' : 'var(--admin-text-muted, #888)',
+              color:
+                activeTab === 'engagement'
+                  ? 'var(--admin-accent, #CC1111)'
+                  : 'var(--admin-text-muted, #888)',
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              borderBottom: activeTab === 'engagement' ? '2px solid var(--admin-accent, #CC1111)' : 'none'
+              borderBottom:
+                activeTab === 'engagement' ? '2px solid var(--admin-accent, #CC1111)' : 'none',
             }}
           >
-            <AdminIcon name="Users" size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            <AdminIcon
+              name="Users"
+              size={16}
+              style={{ marginRight: '8px', verticalAlign: 'middle' }}
+            />
             User Engagement
           </button>
           <button
@@ -117,14 +127,22 @@ export function UserEngagementReport() {
               background: activeTab === 'revenue' ? 'rgba(204,17,17,0.1)' : 'transparent',
               border: 'none',
               borderRadius: '6px',
-              color: activeTab === 'revenue' ? 'var(--admin-accent, #CC1111)' : 'var(--admin-text-muted, #888)',
+              color:
+                activeTab === 'revenue'
+                  ? 'var(--admin-accent, #CC1111)'
+                  : 'var(--admin-text-muted, #888)',
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              borderBottom: activeTab === 'revenue' ? '2px solid var(--admin-accent, #CC1111)' : 'none'
+              borderBottom:
+                activeTab === 'revenue' ? '2px solid var(--admin-accent, #CC1111)' : 'none',
             }}
           >
-            <AdminIcon name="TrendingUp" size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            <AdminIcon
+              name="TrendingUp"
+              size={16}
+              style={{ marginRight: '8px', verticalAlign: 'middle' }}
+            />
             Revenue & Payments
           </button>
         </div>
@@ -302,13 +320,18 @@ export function UserEngagementReport() {
               <DashboardCardSkeleton />
             </div>
           ) : revenueError ? (
-            <div className="page-error" style={{ marginBottom: '2rem' }}>{revenueError}</div>
+            <div className="page-error" style={{ marginBottom: '2rem' }}>
+              {revenueError}
+            </div>
           ) : revenueData ? (
             <>
               {/* Revenue Stats Grid */}
               <div className="stats-grid" style={{ marginBottom: '2rem' }}>
                 <div className="stat-card">
-                  <span className="stat-icon" style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)' }}>
+                  <span
+                    className="stat-icon"
+                    style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)' }}
+                  >
                     <AdminIcon name="TrendingUp" size={28} aria-hidden="true" />
                   </span>
                   <div>
@@ -319,33 +342,51 @@ export function UserEngagementReport() {
                   </div>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-icon" style={{ color: '#3b82f6', background: 'rgba(59,130,246,0.1)' }}>
+                  <span
+                    className="stat-icon"
+                    style={{ color: '#3b82f6', background: 'rgba(59,130,246,0.1)' }}
+                  >
                     <AdminIcon name="CheckCircle" size={28} aria-hidden="true" />
                   </span>
                   <div>
-                    <div className="stat-value" style={{ fontFamily: 'Orbitron,monospace', color: '#3b82f6' }}>
+                    <div
+                      className="stat-value"
+                      style={{ fontFamily: 'Orbitron,monospace', color: '#3b82f6' }}
+                    >
                       ${revenueData.stats.netRevenue.toLocaleString()}
                     </div>
                     <div className="stat-label">Net Revenue</div>
                   </div>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-icon" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}>
+                  <span
+                    className="stat-icon"
+                    style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}
+                  >
                     <AdminIcon name="Clock" size={28} aria-hidden="true" />
                   </span>
                   <div>
-                    <div className="stat-value" style={{ fontFamily: 'Orbitron,monospace', color: '#ef4444' }}>
+                    <div
+                      className="stat-value"
+                      style={{ fontFamily: 'Orbitron,monospace', color: '#ef4444' }}
+                    >
                       ${revenueData.stats.totalRefunded.toLocaleString()}
                     </div>
                     <div className="stat-label">Total Refunded</div>
                   </div>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-icon" style={{ color: '#8b5cf6', background: 'rgba(139,92,246,0.1)' }}>
+                  <span
+                    className="stat-icon"
+                    style={{ color: '#8b5cf6', background: 'rgba(139,92,246,0.1)' }}
+                  >
                     <AdminIcon name="Award" size={28} aria-hidden="true" />
                   </span>
                   <div>
-                    <div className="stat-value" style={{ fontFamily: 'Orbitron,monospace', color: '#8b5cf6' }}>
+                    <div
+                      className="stat-value"
+                      style={{ fontFamily: 'Orbitron,monospace', color: '#8b5cf6' }}
+                    >
                       ${revenueData.stats.totalTax.toLocaleString()}
                     </div>
                     <div className="stat-label">Tax Summary (Collected)</div>
@@ -354,12 +395,14 @@ export function UserEngagementReport() {
               </div>
 
               {/* Chart Visualizations Row */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '2rem'
-              }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                  gap: '1.5rem',
+                  marginBottom: '2rem',
+                }}
+              >
                 {/* Daily Revenue Trend Chart */}
                 <div className="card" style={{ padding: '1.5rem' }}>
                   <h3 className="card-title" style={{ marginBottom: '1.25rem' }}>
@@ -371,20 +414,46 @@ export function UserEngagementReport() {
                       <AreaChart data={revenueData.revenueTrend}>
                         <defs>
                           <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--admin-accent, #CC1111)" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="var(--admin-accent, #CC1111)" stopOpacity={0}/>
+                            <stop
+                              offset="5%"
+                              stopColor="var(--admin-accent, #CC1111)"
+                              stopOpacity={0.4}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="var(--admin-accent, #CC1111)"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                        <XAxis dataKey="date" stroke="var(--admin-text-muted, #888)" fontSize={11} tickLine={false} />
-                        <YAxis stroke="var(--admin-text-muted, #888)" fontSize={11} tickLine={false} />
-                        <Tooltip contentStyle={{
-                          background: 'var(--admin-bg-card, #1a1a2e)',
-                          border: '1px solid var(--admin-border, #333)',
-                          borderRadius: '8px',
-                          color: '#fff'
-                        }} />
-                        <Area type="monotone" dataKey="revenue" stroke="var(--admin-accent, #CC1111)" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                        <XAxis
+                          dataKey="date"
+                          stroke="var(--admin-text-muted, #888)"
+                          fontSize={11}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          stroke="var(--admin-text-muted, #888)"
+                          fontSize={11}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: 'var(--admin-bg-card, #1a1a2e)',
+                            border: '1px solid var(--admin-border, #333)',
+                            borderRadius: '8px',
+                            color: '#fff',
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke="var(--admin-accent, #CC1111)"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorRevenue)"
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -396,7 +465,14 @@ export function UserEngagementReport() {
                     <AdminIcon name="Users" size={16} style={{ marginRight: '8px' }} />
                     Payment Method Breakdown
                   </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: 260,
+                    }}
+                  >
                     <div style={{ width: '60%', height: '100%' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -417,19 +493,28 @@ export function UserEngagementReport() {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div style={{ width: '40%', fontSize: '0.8rem', color: 'var(--admin-text, #eee)' }}>
+                    <div
+                      style={{ width: '40%', fontSize: '0.8rem', color: 'var(--admin-text, #eee)' }}
+                    >
                       {revenueData.paymentMethodBreakdown.map((item, index) => (
-                        <div key={item.method} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            width: '10px',
-                            height: '10px',
-                            backgroundColor: COLORS[index % COLORS.length],
-                            borderRadius: '50%',
-                            marginRight: '8px'
-                          }} />
+                        <div
+                          key={item.method}
+                          style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}
+                        >
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '10px',
+                              height: '10px',
+                              backgroundColor: COLORS[index % COLORS.length],
+                              borderRadius: '50%',
+                              marginRight: '8px',
+                            }}
+                          />
                           <strong>{item.method}</strong>
-                          <span style={{ marginLeft: 'auto', color: 'var(--admin-text-muted, #888)' }}>
+                          <span
+                            style={{ marginLeft: 'auto', color: 'var(--admin-text-muted, #888)' }}
+                          >
                             {item.percentage}%
                           </span>
                         </div>
@@ -440,11 +525,13 @@ export function UserEngagementReport() {
               </div>
 
               {/* Event Revenue Details & Refund Tracking Tables */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-                gap: '1.5rem'
-              }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                  gap: '1.5rem',
+                }}
+              >
                 {/* Event Revenue Summary Table */}
                 <div className="card">
                   <div className="card-header">
@@ -462,7 +549,13 @@ export function UserEngagementReport() {
                         {revenueData.revenueByEvent.map((item, index) => (
                           <tr key={index}>
                             <td style={{ fontWeight: 500 }}>{item.eventName}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 'bold', color: item.revenue > 0 ? '#22c55e' : 'var(--admin-text-muted)' }}>
+                            <td
+                              style={{
+                                textAlign: 'right',
+                                fontWeight: 'bold',
+                                color: item.revenue > 0 ? '#22c55e' : 'var(--admin-text-muted)',
+                              }}
+                            >
                               ${item.revenue.toLocaleString()}
                             </td>
                           </tr>

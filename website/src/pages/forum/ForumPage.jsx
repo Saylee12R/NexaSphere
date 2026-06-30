@@ -5,6 +5,7 @@ import { getApiBase } from '../../utils/runtimeConfig';
 import { fallbackCategories, fallbackThreads } from '../../data/forumData.js';
 import Footer from '../../shared/Footer';
 import { EmptyState } from '../../components/EmptyState';
+import { ForumPostSkeleton } from '../../components/ui/skeleton/ForumPostSkeleton';
 
 export default function ForumPage({ onBack }) {
   const navigate = useNavigate();
@@ -223,9 +224,7 @@ export default function ForumPage({ onBack }) {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-secondary)' }}>
-            Loading discussions...
-          </div>
+          <ForumPostSkeleton count={5} />
         ) : filteredThreads.length === 0 ? (
           <EmptyState
             title="No Threads Found"

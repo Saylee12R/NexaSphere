@@ -29,7 +29,8 @@ const ALGORITHM = 'aes-256-gcm';
 function getEncryptionPassphrase() {
   if (process.env.ENCRYPTION_KEY) return process.env.ENCRYPTION_KEY;
   // Derive a deterministic passphrase from available secrets
-  const secret = process.env.JWT_SECRET || process.env.DATABASE_URL || process.env.NODE_ENV || 'dev';
+  const secret =
+    process.env.JWT_SECRET || process.env.DATABASE_URL || process.env.NODE_ENV || 'dev';
   return crypto.createHash('sha256').update(secret).digest('hex');
 }
 

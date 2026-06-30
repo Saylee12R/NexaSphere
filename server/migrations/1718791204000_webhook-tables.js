@@ -42,4 +42,3 @@ CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_next_retry ON webhook_deliveri
 export const down = (_pgm) => {
   // down migration not implemented
 };
-

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Code, ExternalLink, X, Tag, Users } from 'lucide-react';
 import { projectsData } from '../../data/projectsData';
 import SafeImage from '../../shared/SafeImage';
+import { ProjectCardSkeleton } from '../../components/ui/skeleton/ProjectCardSkeleton';
 import '../../styles/projects.css';
 
 const CATEGORIES = [
@@ -14,7 +15,7 @@ const CATEGORIES = [
   'UI/UX Design',
 ];
 
-export default function ProjectsPage({ onBack }) {
+export default function ProjectsPage({ onBack, loading = false }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedProject, setSelectedProject] = useState(null);
   const triggerRef = useRef(null);
@@ -95,63 +96,69 @@ export default function ProjectsPage({ onBack }) {
 
       {/* Projects Gallery Grid */}
       <motion.div layout className="projects-grid">
-        <AnimatePresence>
-          {filteredProjects.map((project) => (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              key={project.id}
-              className="project-card"
-              onClick={(e) => {
-                triggerRef.current = e.currentTarget;
-                setSelectedProject(project);
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  triggerRef.current = e.currentTarget;
-                  setSelectedProject(project);
-                }
-              }}
-              aria-label={`View details for ${project.title}`}
-            >
-              <div className="project-card-image">
-                <SafeImage
-                  src={project.image}
-                  alt={project.title}
-                  loading="lazy"
-                  fallbackType="project"
-                />
-                <div className="project-card-overlay">
-                  <span className="view-details-text">View Details</span>
-                </div>
+        {loading ? (
+          <ProjectCardSkeleton count={6} />
+        ) : (
+          <>
+            <AnimatePresence>
+              {filteredProjects.map((project) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  key={project.id}
+                  className="project-card"
+                  onClick={(e) => {
+                    triggerRef.current = e.currentTarget;
+                    setSelectedProject(project);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      triggerRef.current = e.currentTarget;
+                      setSelectedProject(project);
+                    }
+                  }}
+                  aria-label={`View details for ${project.title}`}
+                >
+                  <div className="project-card-image">
+                    <SafeImage
+                      src={project.image}
+                      alt={project.title}
+                      loading="lazy"
+                      fallbackType="project"
+                    />
+                    <div className="project-card-overlay">
+                      <span className="view-details-text">View Details</span>
+                    </div>
+                  </div>
+                  <div className="project-card-content">
+                    <span className="project-category">{project.category}</span>
+                    <h3 className="project-card-title">{project.title}</h3>
+                    <p className="project-card-desc">{project.shortDesc}</p>
+                    <div className="project-tech-stack">
+                      {project.techStack.slice(0, 3).map((tech) => (
+                        <span key={tech} className="tech-pill">
+                          {tech}
+                        </span>
+                      ))}
+                      {project.techStack.length > 3 && (
+                        <span className="tech-pill">+{project.techStack.length - 3}</span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {filteredProjects.length === 0 && (
+              <div className="no-projects-msg">
+                <p>No projects found in this category.</p>
               </div>
-              <div className="project-card-content">
-                <span className="project-category">{project.category}</span>
-                <h3 className="project-card-title">{project.title}</h3>
-                <p className="project-card-desc">{project.shortDesc}</p>
-                <div className="project-tech-stack">
-                  {project.techStack.slice(0, 3).map((tech) => (
-                    <span key={tech} className="tech-pill">
-                      {tech}
-                    </span>
-                  ))}
-                  {project.techStack.length > 3 && (
-                    <span className="tech-pill">+{project.techStack.length - 3}</span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {filteredProjects.length === 0 && (
-          <div className="no-projects-msg">
-            <p>No projects found in this category.</p>
-          </div>
+            )}
+          </>
         )}
       </motion.div>
 

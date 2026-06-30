@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe } from 'lucide-react';
+import { Globe, Contrast } from 'lucide-react';
 import { BRAND_LOGO_FULL, BRAND_LOGO_ICON } from './brandAssets';
 
 const TABS = [
@@ -16,17 +16,19 @@ const TABS = [
 
 function ThemeToggle({ theme, onToggle }) {
   const { t } = useTranslation();
+
+  let label = t('nav.switch_dark', 'Switch to dark mode');
+  let title = t('nav.light_mode', 'Light mode');
+  if (theme === 'dark') {
+    label = t('nav.switch_high_contrast', 'Switch to high contrast mode');
+    title = t('nav.dark_mode', 'Dark mode');
+  } else if (theme === 'high-contrast') {
+    label = t('nav.switch_light', 'Switch to light mode');
+    title = t('nav.high_contrast_mode', 'High contrast mode');
+  }
+
   return (
-    <button
-      className="ns-theme-toggle"
-      onClick={onToggle}
-      aria-label={
-        theme === 'dark'
-          ? t('nav.switch_light', 'Switch to light mode')
-          : t('nav.switch_dark', 'Switch to dark mode')
-      }
-      title={theme === 'dark' ? t('nav.light_mode', 'Light mode') : t('nav.dark_mode', 'Dark mode')}
-    >
+    <button className="ns-theme-toggle" onClick={onToggle} aria-label={label} title={title}>
       {theme === 'dark' ? (
         <svg
           width="15"
@@ -48,6 +50,8 @@ function ThemeToggle({ theme, onToggle }) {
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
         </svg>
+      ) : theme === 'high-contrast' ? (
+        <Contrast size={15} strokeWidth={2.2} />
       ) : (
         <svg
           width="15"

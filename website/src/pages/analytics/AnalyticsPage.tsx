@@ -4,6 +4,7 @@ import { useAnalyticsData } from '../../hooks/analytics/useAnalyticsData';
 import { TrendChart } from '../../features/analytics/TrendChart';
 import { DistributionChart } from '../../features/analytics/DistributionChart';
 import { ActivityComparisonChart } from '../../features/analytics/ActivityComparisonChart';
+import { ChartSkeleton } from '../../components/ui/skeleton/ChartSkeleton';
 import { formatNumber } from '../../utils/chartDataFormatters';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -377,15 +378,23 @@ const AnalyticsDashboardContent: React.FC<AnalyticsPageProps> = ({ onBack }) => 
           {/* Trend + Distribution */}
           <div style={S.grid3}>
             <div style={{ gridColumn: 'span 2' }}>
-              <TrendChart data={trendData} loading={loading} />
+              {loading ? <ChartSkeleton /> : <TrendChart data={trendData} loading={loading} />}
             </div>
             <div>
-              <DistributionChart data={distributionData} loading={loading} />
+              {loading ? (
+                <ChartSkeleton />
+              ) : (
+                <DistributionChart data={distributionData} loading={loading} />
+              )}
             </div>
           </div>
 
           {/* Activity comparison */}
-          <ActivityComparisonChart data={comparisonData} loading={loading} />
+          {loading ? (
+            <ChartSkeleton />
+          ) : (
+            <ActivityComparisonChart data={comparisonData} loading={loading} />
+          )}
         </div>
       </div>
     </div>

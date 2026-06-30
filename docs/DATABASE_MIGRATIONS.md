@@ -303,6 +303,7 @@ This validation script runs automatically as part of the Database Migrations CI 
 3. **Always write a rollback** for Node.js migrations (`exports.down`).
 4. **Test locally** before opening a PR — run your migration against a fresh DB to catch issues early.
 5. **Update this document** when adding new migration files so the CI documentation check passes.
+
 ## Staging Migration Test Procedure
 
 Before any migration reaches production, it must pass the full staging cycle:

@@ -87,19 +87,27 @@ export const syncController = {
         return res.status(400).json({ error: `changes[${i}] must be an object` });
       }
       if (!change.type || typeof change.type !== 'string') {
-        return res.status(400).json({ error: `changes[${i}].type is required and must be a string` });
+        return res
+          .status(400)
+          .json({ error: `changes[${i}].type is required and must be a string` });
       }
       if (!['event'].includes(change.type)) {
-        return res.status(400).json({ error: `changes[${i}].type "event" is the only supported type` });
+        return res
+          .status(400)
+          .json({ error: `changes[${i}].type "event" is the only supported type` });
       }
       if (!change.id || typeof change.id !== 'string') {
         return res.status(400).json({ error: `changes[${i}].id is required and must be a string` });
       }
       if (!change.data || typeof change.data !== 'object' || Array.isArray(change.data)) {
-        return res.status(400).json({ error: `changes[${i}].data is required and must be an object` });
+        return res
+          .status(400)
+          .json({ error: `changes[${i}].data is required and must be an object` });
       }
       if (!change.data.name || typeof change.data.name !== 'string') {
-        return res.status(400).json({ error: `changes[${i}].data.name is required and must be a string` });
+        return res
+          .status(400)
+          .json({ error: `changes[${i}].data.name is required and must be a string` });
       }
     }
 

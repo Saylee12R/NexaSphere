@@ -17,7 +17,7 @@ export const portfolioService = {
     const username = saved.username;
     eventManager.emitEvent('portfolio-updated', {
       username,
-      portfolioData: { ...saved, ...data }
+      portfolioData: { ...saved, ...data },
     });
 
     const achievements = await achievementsRepository.getByUsername(username);

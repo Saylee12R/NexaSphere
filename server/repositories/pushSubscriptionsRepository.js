@@ -45,4 +45,19 @@ export const pushSubscriptionsRepository = {
       await client.query('delete from push_subscriptions where endpoint = $1', [endpoint]);
     });
   },
+
+  async listByUser(userId) {
+    return withDb(async (client) => {
+      try {
+        const { rows } = await client.query(
+          'select endpoint, p256dh, auth from push_subscriptions where user_id = $1 order by created_at asc',
+          [userId]
+        );
+        return rows.map(mapRow);
+      } catch (err) {
+        // Fallback if user_id column does not exist
+        return [];
+      }
+    });
+  },
 };

@@ -14,7 +14,7 @@ import { useEffect, useState, useCallback } from 'react';
 import socketClient from '../utils/socketClient';
 import { getSocketServerUrl } from '../utils/runtimeConfig';
 
-export function useSocket(serverUrl) {
+export function useSocketConnection(serverUrl) {
   const [connected, setConnected] = useState(false);
   const [socketId, setSocketId] = useState(null);
 
@@ -114,4 +114,4 @@ export function useSocket(serverUrl) {
   };
 }
 
-export default useSocket;
+export default useSocketConnection;

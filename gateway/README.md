@@ -31,11 +31,11 @@ Client (HTTPS :443)
 
 ## Rate Limit Zones
 
-| Zone | Routes | Limit | Burst |
-|------|--------|-------|-------|
-| `api_general` | `/api/*`, `/` | 20 req/s per IP | 40 |
-| `api_auth` | `/api/admin/*`, `/api/auth/*` | 5 req/s per IP | 10 |
-| `api_forms` | `/api/forms/*`, `/api/rsvp/*`, `/api/feedback/*` | 2 req/s per IP | 5 |
+| Zone          | Routes                                           | Limit           | Burst |
+| ------------- | ------------------------------------------------ | --------------- | ----- |
+| `api_general` | `/api/*`, `/`                                    | 20 req/s per IP | 40    |
+| `api_auth`    | `/api/admin/*`, `/api/auth/*`                    | 5 req/s per IP  | 10    |
+| `api_forms`   | `/api/forms/*`, `/api/rsvp/*`, `/api/feedback/*` | 2 req/s per IP  | 5     |
 
 Exceeded limits return `429 Too Many Requests` with a JSON body.
 
@@ -85,6 +85,7 @@ docker compose up gateway redis api
 ```
 
 The gateway will be available at:
+
 - `http://localhost` → redirects to HTTPS
 - `https://localhost` → API gateway (accept the self-signed cert warning in dev)
 
@@ -101,12 +102,14 @@ The gateway will be available at:
 ## Testing
 
 ### Verify routing
+
 ```bash
 curl -k https://localhost/health
 # Expected: {"status":"ok"} with 200
 ```
 
 ### Verify rate limiting
+
 ```bash
 # Send 50 rapid requests — should see 429 after burst is exhausted
 for i in $(seq 1 50); do
@@ -115,12 +118,14 @@ done
 ```
 
 ### Verify SSL redirect
+
 ```bash
 curl -v http://localhost/api/events
 # Expected: HTTP/1.1 301, Location: https://localhost/api/events
 ```
 
 ### Verify logs
+
 ```bash
 # Tail the access log
 tail -f logs/nginx/access.log | jq .
@@ -130,6 +135,7 @@ tail -f logs/nginx/error.log
 ```
 
 ### Verify security headers
+
 ```bash
 curl -sk -I https://localhost/health | grep -E "Strict-Transport|X-Frame|X-Content"
 ```

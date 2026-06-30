@@ -73,7 +73,7 @@ export default function EventsSection({ onEventClick, events = [] }) {
         </div>
         <div className="events-timeline">
           {sortedEvents.map((ev, i) => {
-            const hasDetailPage = !!ev.hasDetailPage;
+            const hasDetailPage = ev.hasDetailPage !== false;
             const dynamicGradient = buildGradient(ev);
             const glowColor = ev.gradientColors?.[0] || null;
             return (

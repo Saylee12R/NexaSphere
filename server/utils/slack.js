@@ -197,7 +197,6 @@ function formatSlackMessage(data) {
  * @param {Object} metrics - Performance metrics
  */
 async function sendPerformanceAlert(metrics) {
-
   const payload = {
     attachments: [
       {
@@ -227,7 +226,6 @@ async function sendPerformanceAlert(metrics) {
         ],
         footer: 'NexaSphere Performance Monitoring',
         ts: Math.floor(Date.now() / 1000),
-
       },
     ],
   };

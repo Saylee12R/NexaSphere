@@ -22,14 +22,14 @@ CloudFront sits in front of the existing Vercel deployment. All static asset req
 
 ## Files Changed
 
-| File | Purpose |
-|------|---------|
-| `infrastructure/cloudfront.tf` | Terraform config for CloudFront distribution, cache policies, S3 access logs |
-| `scripts/cdn-invalidate.sh` | Manual cache invalidation script |
-| `scripts/setup-cdn-cost-alert.sh` | One-time billing alert setup |
-| `scripts/measure-cdn-performance.js` | Baseline vs post-CDN performance comparison |
-| `.github/workflows/cdn-invalidate.yml` | Automated invalidation + cost annotation on deploy |
-| `docs/CDN_SETUP.md` | This document |
+| File                                   | Purpose                                                                      |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| `infrastructure/cloudfront.tf`         | Terraform config for CloudFront distribution, cache policies, S3 access logs |
+| `scripts/cdn-invalidate.sh`            | Manual cache invalidation script                                             |
+| `scripts/setup-cdn-cost-alert.sh`      | One-time billing alert setup                                                 |
+| `scripts/measure-cdn-performance.js`   | Baseline vs post-CDN performance comparison                                  |
+| `.github/workflows/cdn-invalidate.yml` | Automated invalidation + cost annotation on deploy                           |
+| `docs/CDN_SETUP.md`                    | This document                                                                |
 
 ---
 
@@ -68,13 +68,13 @@ terraform apply \
 
 Add these secrets to your GitHub repo (Settings → Secrets → Actions):
 
-| Secret | Value |
-|--------|-------|
-| `AWS_ACCESS_KEY_ID` | IAM user access key (CDN-only permissions) |
-| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
-| `AWS_CLOUDFRONT_DISTRIBUTION_ID` | From Terraform output |
-| `CLOUDFRONT_DOMAIN` | e.g. `xxxxxxxx.cloudfront.net` or your custom domain |
-| `ORIGIN_DOMAIN` | e.g. `nexasphere.vercel.app` |
+| Secret                           | Value                                                |
+| -------------------------------- | ---------------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`              | IAM user access key (CDN-only permissions)           |
+| `AWS_SECRET_ACCESS_KEY`          | IAM user secret key                                  |
+| `AWS_CLOUDFRONT_DISTRIBUTION_ID` | From Terraform output                                |
+| `CLOUDFRONT_DOMAIN`              | e.g. `xxxxxxxx.cloudfront.net` or your custom domain |
+| `ORIGIN_DOMAIN`                  | e.g. `nexasphere.vercel.app`                         |
 
 ### 4. Set up cost alerts
 
@@ -85,6 +85,7 @@ bash scripts/setup-cdn-cost-alert.sh \
 ```
 
 This creates:
+
 - CloudWatch alarm (fires when monthly CDN spend > $10)
 - AWS Budget with 80% warning notification
 - Cost allocation tags (Project=NexaSphere, Component=CDN)
@@ -106,6 +107,7 @@ The `vite.config.js` already reads `VITE_CDN_URL` as the `base` path for asset U
 ### Automatic (on every deploy)
 
 The workflow `.github/workflows/cdn-invalidate.yml` runs on every push to `main` and:
+
 1. Creates a `/*` CloudFront invalidation
 2. Waits for completion
 3. Verifies cache state via `x-cache` header
@@ -138,13 +140,13 @@ aws cloudfront create-invalidation \
 
 ## Cache Behaviors
 
-| Path | Cache Policy | TTL | Notes |
-|------|-------------|-----|-------|
-| `/assets/*` | Static Assets | 31,536,000s (1 year) | Content-hashed filenames; safe to cache forever |
-| `/images/*` | Static Assets | 31,536,000s (1 year) | Content-hashed |
-| `/fonts/*` | Static Assets | 31,536,000s (1 year) | Content-hashed |
-| `/` (HTML) | HTML Pages | 60s default, 300s max | Short TTL; invalidated on deploy anyway |
-| `/api/*` | API Passthrough | 0s | Never cached; all headers/cookies forwarded |
+| Path        | Cache Policy    | TTL                   | Notes                                           |
+| ----------- | --------------- | --------------------- | ----------------------------------------------- |
+| `/assets/*` | Static Assets   | 31,536,000s (1 year)  | Content-hashed filenames; safe to cache forever |
+| `/images/*` | Static Assets   | 31,536,000s (1 year)  | Content-hashed                                  |
+| `/fonts/*`  | Static Assets   | 31,536,000s (1 year)  | Content-hashed                                  |
+| `/` (HTML)  | HTML Pages      | 60s default, 300s max | Short TTL; invalidated on deploy anyway         |
+| `/api/*`    | API Passthrough | 0s                    | Never cached; all headers/cookies forwarded     |
 
 ---
 
@@ -194,18 +196,22 @@ curl -sI https://xxxxxxxx.cloudfront.net/assets/index-abc123.js | grep -i "x-cac
 ## Cost Tracking
 
 ### What you pay for
+
 - **Data transfer out** — $0.0085/GB (US/EU), cheaper than most origins
 - **HTTP requests** — $0.0075 per 10,000 requests
 - **Cache invalidations** — first 1,000 paths/month free, then $0.005/path
 - **S3 access logs** — negligible
 
 ### Typical cost for NexaSphere
+
 At ~10,000 DAU with average 500KB cached assets per session:
+
 - Data transfer: ~150 GB/month = ~$1.28
 - Requests: ~300,000/month = ~$0.23
 - **Total: ~$1.50-3.00/month** (well within $10 alert threshold)
 
 ### Viewing spend
+
 ```bash
 aws ce get-cost-and-usage \
   --time-period "Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d)" \
@@ -237,9 +243,7 @@ Create a dedicated IAM user for CI/CD with only these permissions:
     {
       "Sid": "CostExplorerRead",
       "Effect": "Allow",
-      "Action": [
-        "ce:GetCostAndUsage"
-      ],
+      "Action": ["ce:GetCostAndUsage"],
       "Resource": "*"
     }
   ]

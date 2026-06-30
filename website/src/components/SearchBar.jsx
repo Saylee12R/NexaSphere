@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowRight, Calendar, Zap, Users, BookOpen } from 'lucide-react';
-import { useSearch } from '../hooks/useSearch';
+import { useEventSearch } from '../hooks/useEventSearch';
 
 function Highlight({ text, query }) {
   if (!query || !text) return <>{text}</>;
@@ -54,10 +54,11 @@ const TYPE_CONFIG = {
 };
 
 export default function SearchBar({ open, onClose, activities, events, onNavigate, onEventClick }) {
+  const navigate = useNavigate();
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const [focusIdx, setFocusIdx] = useState(-1);
-  const { query, setQuery, filter, setFilter, results, loading, clearSearch } = useSearch(
+  const { query, setQuery, filter, setFilter, results, loading, clearSearch } = useEventSearch(
     activities,
     events
   );

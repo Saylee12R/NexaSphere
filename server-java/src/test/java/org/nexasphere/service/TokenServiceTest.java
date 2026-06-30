@@ -23,7 +23,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 /**
- * Unit tests for {@link TokenService} with mocked Redis — no real Redis connection required.
+ * Unit tests for {@link TokenService} with mocked Redis — no real Redis
+ * connection required.
  */
 @ExtendWith(MockitoExtension.class)
 class TokenServiceTest {
@@ -47,6 +48,7 @@ class TokenServiceTest {
     }
 
     @Test
+    @SuppressWarnings("null")
     void testCreateSessionStoresInRedisWithTtl() {
         TokenSession session = tokenService.createSession("admin@example.com");
 

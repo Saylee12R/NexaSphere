@@ -10,7 +10,8 @@ html {
   scrollbar-color: var(--c1) var(--bg);
 }
 body {
-  cursor: none;
+  /* cursor is hidden dynamically by the JS Cursor component in App.jsx
+     only on devices with hover support — see Cursor() component */
   background: var(--bg);
   color: var(--t1);
   font-family: 'Rajdhani', sans-serif;
@@ -68,7 +69,6 @@ p {
 a {
   color: var(--c1);
   text-decoration: none;
-  cursor: none;
 }
 img,
 svg {
@@ -76,7 +76,6 @@ svg {
   max-width: 100%;
 }
 button {
-  cursor: none;
   font-family: 'Rajdhani', sans-serif;
   border: none;
   background: none;
@@ -295,12 +294,15 @@ a {
   }
 }
 
+/* Interactive elements inherit cursor from body — the JS Cursor component
+   handles cursor hiding/showing on devices with hover support.
+   Touch devices always show the native cursor (via @media hover:none above). */
 button,
 a,
 input,
 select,
 [role='button'] {
-  cursor: none !important;
+  /* cursor is managed by the JS Cursor component, not CSS */
 }
 
 .move-to-top {

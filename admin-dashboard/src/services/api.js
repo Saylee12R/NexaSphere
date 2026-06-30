@@ -1105,7 +1105,79 @@ async function fetchWithAuth(url, options = {}) {
           },
         });
       }
-    }
+
+      // /api/admin/backups/restore-test-history
+      else if (url.startsWith('/api/admin/backups/restore-test-history')) {
+        resolve({
+          history: [
+            {
+              id: 'rest_test_1',
+              verified_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+              backup_key: 'backup_full_2026-06-08.enc',
+              restore_type: 'full',
+              status: 'success',
+              duration_ms: 1420,
+            },
+            {
+              id: 'rest_test_2',
+              verified_at: new Date(Date.now() - 86400000 * 45).toISOString(),
+              backup_key: 'backup_full_2026-05-08.enc',
+              restore_type: 'full',
+              status: 'success',
+              duration_ms: 1390,
+            },
+          ],
+        });
+      }
+
+      // /api/admin/backups
+      else if (url.startsWith('/api/admin/backups')) {
+        if (method === 'GET') {
+          resolve({
+            stats: {
+              totalSize: 45890000,
+              totalCount: 3,
+              storageType: 'AWS S3 Redundant Bucket (eu-west-1)',
+              utilizationPercentage: 14,
+            },
+            backups: [
+              {
+                key: 'backup_full_2026-06-22.enc',
+                filename: 'backup_full_2026-06-22.enc',
+                type: 'full',
+                size: 24500000,
+                location: 's3',
+                date: new Date(Date.now() - 86400000).toISOString(),
+              },
+              {
+                key: 'backup_inc_2026-06-23.enc',
+                filename: 'backup_inc_2026-06-23.enc',
+                type: 'incremental',
+                size: 1390000,
+                location: 's3',
+                date: new Date(Date.now() - 3600000 * 4).toISOString(),
+              },
+              {
+                key: 'backup_full_2026-06-15.enc',
+                filename: 'backup_full_2026-06-15.enc',
+                type: 'full',
+                size: 20000000,
+                location: 's3',
+                date: new Date(Date.now() - 86400000 * 8).toISOString(),
+              },
+            ],
+          });
+        } else if (method === 'POST' && url.includes('/manual')) {
+          resolve({
+            key: `backup_manual_${Date.now()}.enc`,
+            filename: `backup_manual_${Date.now()}.enc`,
+          });
+        } else if (method === 'POST' && url.includes('/restore')) {
+          resolve({ result: { durationMs: 480 } });
+        } else if (method === 'DELETE') {
+          resolve({ success: true });
+        }
+      }
     }, 300); // simulate slight network delay
   });
 }
@@ -1672,6 +1744,31 @@ export const api = {
   reports: {
     getEngagement: () => fetchWithAuth('/api/admin/reports/engagement'),
     getRevenue: () => fetchWithAuth('/api/admin/reports/revenue'),
+  },
+
+  backups: {
+    get: () => fetchWithAuth('/api/admin/backups'),
+    getRestoreHistory: () => fetchWithAuth('/api/admin/backups/restore-test-history'),
+    runManual: (type) =>
+      fetchWithAuth('/api/admin/backups/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      }),
+    restore: (backupKey) =>
+      fetchWithAuth('/api/admin/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backupKey }),
+      }),
+    restorePITR: (targetTime) =>
+      fetchWithAuth('/api/admin/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetTime }),
+      }),
+    delete: (key) =>
+      fetchWithAuth(`/api/admin/backups/${encodeURIComponent(key)}`, { method: 'DELETE' }),
   },
 };
 

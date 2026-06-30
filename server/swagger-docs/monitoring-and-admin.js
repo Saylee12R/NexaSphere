@@ -386,7 +386,6 @@
  *         description: Security patch scan result
  */
 
-
 /**
  * @swagger
  * /api/monitoring/security-patches/report:
@@ -411,7 +410,6 @@
  *         description: Encryption status details
  */
 
-
 /**
  * @swagger
  * /api/monitoring/key-rotation:
@@ -423,7 +421,6 @@
  *       200:
  *         description: Encryption key rotated successfully
  */
-
 
 /**
  * @swagger

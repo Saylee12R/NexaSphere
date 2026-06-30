@@ -41,8 +41,10 @@ const DEFAULT_STATE = {
       title: 'Privacy Policy',
       version: '1.0.0',
       effectiveDate: '2024-01-01T00:00:00.000Z',
-      content: 'NexaSphere collects and processes your personal data to provide our services. We respect your privacy and comply with GDPR regulations. Data we collect: name, email, activity data. Your rights: access, correction, deletion, portability. Contact dpo@nexasphere.org for any privacy concerns.',
-      summary: 'We collect your name and email to run the platform. You can delete your data anytime.',
+      content:
+        'NexaSphere collects and processes your personal data to provide our services. We respect your privacy and comply with GDPR regulations. Data we collect: name, email, activity data. Your rights: access, correction, deletion, portability. Contact dpo@nexasphere.org for any privacy concerns.',
+      summary:
+        'We collect your name and email to run the platform. You can delete your data anytime.',
       archived: false,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
@@ -53,8 +55,10 @@ const DEFAULT_STATE = {
       title: 'Terms of Service',
       version: '1.0.0',
       effectiveDate: '2024-01-01T00:00:00.000Z',
-      content: 'By using NexaSphere you agree to these terms. You must be 18+ or have parental consent. You may not use the platform for illegal activities. NexaSphere may suspend accounts that violate these terms.',
-      summary: 'Use the platform responsibly. Be 18+ or have parental consent. No illegal activity.',
+      content:
+        'By using NexaSphere you agree to these terms. You must be 18+ or have parental consent. You may not use the platform for illegal activities. NexaSphere may suspend accounts that violate these terms.',
+      summary:
+        'Use the platform responsibly. Be 18+ or have parental consent. No illegal activity.',
       archived: false,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
@@ -65,16 +69,17 @@ const DEFAULT_STATE = {
       title: 'Code of Conduct',
       version: '1.0.0',
       effectiveDate: '2024-01-01T00:00:00.000Z',
-      content: 'NexaSphere is committed to providing a welcoming environment for all. Be respectful and inclusive. No harassment, discrimination, or abusive language. Report violations to conduct@nexasphere.org.',
+      content:
+        'NexaSphere is committed to providing a welcoming environment for all. Be respectful and inclusive. No harassment, discrimination, or abusive language. Report violations to conduct@nexasphere.org.',
       summary: 'Be kind and respectful to everyone. Report harassment immediately.',
       archived: false,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     },
   ],
-  acceptances: [],    // { id, userId, documentId, documentType, version, acceptedAt, ipAddress }
-  gdprRequests: [],   // { id, userId, type, status, requestedAt, processedAt, notes }
-  auditLog: [],       // { id, action, actorId, targetId, details, timestamp }
+  acceptances: [], // { id, userId, documentId, documentType, version, acceptedAt, ipAddress }
+  gdprRequests: [], // { id, userId, type, status, requestedAt, processedAt, notes }
+  auditLog: [], // { id, action, actorId, targetId, details, timestamp }
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -135,7 +140,10 @@ export async function getActiveDocument(type) {
   return docs[0] || null;
 }
 
-export async function createDocument({ type, title, version, effectiveDate, content, summary }, actorId) {
+export async function createDocument(
+  { type, title, version, effectiveDate, content, summary },
+  actorId
+) {
   const s = await load();
   if (!DOCUMENT_TYPES.includes(type)) throw new Error(`Invalid document type: ${type}`);
 
@@ -220,9 +228,7 @@ export async function hasUserAccepted(userId, documentType) {
   const s = await load();
   const activeDoc = await getActiveDocument(documentType);
   if (!activeDoc) return false;
-  return s.acceptances.some(
-    (a) => a.userId === String(userId) && a.documentId === activeDoc.id
-  );
+  return s.acceptances.some((a) => a.userId === String(userId) && a.documentId === activeDoc.id);
 }
 
 export async function listAcceptances({ documentId, documentType, limit = 50, offset = 0 } = {}) {
@@ -310,9 +316,21 @@ export async function getStats() {
 }
 
 export default {
-  listDocuments, getDocument, getActiveDocument, createDocument, updateDocument, archiveDocument,
-  recordAcceptance, getUserAcceptances, hasUserAccepted, listAcceptances,
-  createGdprRequest, listGdprRequests, processGdprRequest,
-  getAuditLog, getStats,
-  DOCUMENT_TYPES, GDPR_REQUEST_TYPES,
+  listDocuments,
+  getDocument,
+  getActiveDocument,
+  createDocument,
+  updateDocument,
+  archiveDocument,
+  recordAcceptance,
+  getUserAcceptances,
+  hasUserAccepted,
+  listAcceptances,
+  createGdprRequest,
+  listGdprRequests,
+  processGdprRequest,
+  getAuditLog,
+  getStats,
+  DOCUMENT_TYPES,
+  GDPR_REQUEST_TYPES,
 };

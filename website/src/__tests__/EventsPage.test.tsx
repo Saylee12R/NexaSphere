@@ -3,6 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import EventsPage from '../pages/events/EventsPage';
 
+vi.mock('../context/StudentAuthContext', () => ({
+  useStudentAuth: () => ({
+    user: { id: 'STU001', sub: 'STU001', name: 'Test Student' },
+  }),
+}));
+
 describe('EventsPage Component', () => {
   const mockEvents: any[] = [
     {

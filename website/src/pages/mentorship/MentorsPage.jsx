@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search,
   Filter,
@@ -13,6 +13,7 @@ import {
   Loader,
 } from 'lucide-react';
 import { mentors as fallbackMentors, mentorDomains } from '../../data/mentorshipData.js';
+import { MentorCardSkeleton } from '../../components/ui/skeleton/MentorCardSkeleton';
 import './MentorsPage.css';
 import { getApiBase } from '../../utils/runtimeConfig';
 
@@ -44,10 +45,18 @@ function MentorsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
 
   const showToast = useCallback((message, type) => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
   }, []);
 
   const fetchMentors = useCallback(async () => {
@@ -144,9 +153,7 @@ function MentorsPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader className="w-8 h-8 animate-spin text-purple-500" />
-          </div>
+          <MentorCardSkeleton count={6} />
         ) : mentors.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
             <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />

@@ -25,7 +25,10 @@ const EventAttendanceChart = React.memo(function EventAttendanceChart({ data = [
         <div className="chart-shell">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={decimatedData} margin={{ left: -10, right: 8 }}>
-              <CartesianGrid stroke="var(--border-color, rgba(255,255,255,0.08))" vertical={false} />
+              <CartesianGrid
+                stroke="var(--border-color, rgba(255,255,255,0.08))"
+                vertical={false}
+              />
               <XAxis
                 dataKey="name"
                 tickLine={false}

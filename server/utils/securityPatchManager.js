@@ -9,18 +9,18 @@ const securityPatchManager = {
   checkSecurityUpdates() {
     const vulnerabilities = [
       {
-        package: "express",
-        currentVersion: "4.18.0",
-        recommendedVersion: "4.21.0",
-        severity: "medium",
-        issue: "Known security vulnerabilities fixed in latest release",
+        package: 'express',
+        currentVersion: '4.18.0',
+        recommendedVersion: '4.21.0',
+        severity: 'medium',
+        issue: 'Known security vulnerabilities fixed in latest release',
       },
       {
-        package: "jsonwebtoken",
-        currentVersion: "8.5.1",
-        recommendedVersion: "9.0.2",
-        severity: "critical",
-        issue: "Potential token verification security issue",
+        package: 'jsonwebtoken',
+        currentVersion: '8.5.1',
+        recommendedVersion: '9.0.2',
+        severity: 'critical',
+        issue: 'Potential token verification security issue',
       },
     ];
 
@@ -29,10 +29,7 @@ const securityPatchManager = {
       totalDependencies: 2,
       vulnerableDependencies: vulnerabilities.length,
       vulnerabilities,
-      status:
-        vulnerabilities.some((item) => item.severity === "critical")
-          ? "critical"
-          : "secure",
+      status: vulnerabilities.some((item) => item.severity === 'critical') ? 'critical' : 'secure',
     };
   },
 
@@ -40,9 +37,7 @@ const securityPatchManager = {
   getCriticalVulnerabilities() {
     const report = this.checkSecurityUpdates();
 
-    return report.vulnerabilities.filter(
-      (item) => item.severity === "critical"
-    );
+    return report.vulnerabilities.filter((item) => item.severity === 'critical');
   },
 
   // Generate detailed patch report
@@ -57,10 +52,10 @@ const securityPatchManager = {
         systemStatus: scanResult.status,
       },
       recommendations: [
-        "Update critical dependencies immediately",
-        "Run compatibility tests before deployment",
-        "Schedule regular security scans",
-        "Maintain updated dependency versions",
+        'Update critical dependencies immediately',
+        'Run compatibility tests before deployment',
+        'Schedule regular security scans',
+        'Maintain updated dependency versions',
       ],
       details: scanResult.vulnerabilities,
     };

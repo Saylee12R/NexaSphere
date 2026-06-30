@@ -57,6 +57,14 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
   const [pendingImportKey, setPendingImportKey] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState(roadmapTitle);
   const [metaDesc, setMetaDesc] = useState(roadmapDescription);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Auto-clear notice after 5 seconds
+  React.useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 5000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   // Sync theme changes
   React.useEffect(() => {
@@ -126,9 +134,9 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
         loadRoadmap(validated.title, validated.description, validated.nodes);
         setMetaTitle(validated.title);
         setMetaDesc(validated.description);
-        setNotice("Roadmap imported and restored successfully.");
+        setNotice('Roadmap imported and restored successfully.');
       } catch (err: any) {
-        let errorMessage = "Malformed JSON Schema: could not load roadmap.";
+        let errorMessage = 'Malformed JSON Schema: could not load roadmap.';
         if (err instanceof Error && err.message) {
           errorMessage = `Validation Error: ${err.message}`;
         } else if (typeof err === 'string') {
@@ -142,7 +150,6 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
     reader.readAsText(file);
     e.target.value = ''; // Reset file input trigger
   };
-
 
   // Trigger JSON Export
   const handleExportJSON = () => {
@@ -442,6 +449,22 @@ const RoadmapBuilderInner: React.FC<RoadmapBuilderInnerProps> = ({ onBack }) => 
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {notice && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 bg-[#111] border border-border-color text-t1 px-4 py-3 rounded-xl flex items-center gap-2 shadow-2xl pop-in"
+          style={{ maxWidth: '320px' }}
+        >
+          <span className="text-brand-red">✦</span>
+          <span className="text-xs">{notice}</span>
+          <button
+            onClick={() => setNotice(null)}
+            className="ml-auto text-t3 hover:text-t1 text-sm focus:outline-none"
+          >
+            ×
+          </button>
         </div>
       )}
     </div>

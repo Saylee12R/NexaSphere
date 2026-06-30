@@ -53,4 +53,3 @@ ON CONFLICT (id) DO NOTHING;
 export const down = (_pgm) => {
   // down migration not implemented
 };
-

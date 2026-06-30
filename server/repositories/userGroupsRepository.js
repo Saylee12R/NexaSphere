@@ -69,13 +69,16 @@ export const userGroupsRepository = {
 
   async getGroupMembers(groupId) {
     return withDb(async (client) => {
-      const { rows } = await client.query(`
+      const { rows } = await client.query(
+        `
         SELECT s.id, s.email, s.full_name, m.joined_at
         FROM student_users s
         JOIN user_group_members m ON s.id = m.student_id
         WHERE m.group_id = $1
         ORDER BY s.full_name ASC
-      `, [groupId]);
+      `,
+        [groupId]
+      );
       return rows;
     });
   },
@@ -105,14 +108,14 @@ export const userGroupsRepository = {
       return rowCount > 0;
     });
   },
-  
+
   async getUserGroupIds(studentId) {
     return withDb(async (client) => {
       const { rows } = await client.query(
         'SELECT group_id FROM user_group_members WHERE student_id = $1',
         [studentId]
       );
-      return rows.map(r => r.group_id);
+      return rows.map((r) => r.group_id);
     });
-  }
+  },
 };

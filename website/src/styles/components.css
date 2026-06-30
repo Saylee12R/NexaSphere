@@ -2538,3 +2538,13 @@
     padding: 0.5rem 0;
   }
 }
+
+.page-container {
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(16px, 5vw, 64px);
+  padding-right: clamp(16px, 5vw, 64px);
+  width: 100%;
+  box-sizing: border-box;
+}

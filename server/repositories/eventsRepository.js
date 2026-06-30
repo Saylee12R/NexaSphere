@@ -10,13 +10,26 @@ function mapRow(row) {
     status: row.status,
     icon: row.icon,
     tags: Array.isArray(row.tags) ? row.tags : (row.tags ?? []),
-    restrictedGroups: typeof row.restricted_groups === 'string' ? JSON.parse(row.restricted_groups) : (row.restricted_groups ?? []),
+    restrictedGroups:
+      typeof row.restricted_groups === 'string'
+        ? JSON.parse(row.restricted_groups)
+        : (row.restricted_groups ?? []),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 export const eventsRepository = {
-  async list({ page = 1, limit = 20, studentGroups = undefined } = {}) {
+  async list({
+    page = 1,
+    limit = 20,
+    status,
+    studentGroups = undefined,
+    startDate,
+    endDate,
+    category,
+    location,
+    search,
+  } = {}) {
     return withDb(async (client) => {
       await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ');
 
@@ -27,25 +40,68 @@ export const eventsRepository = {
         const params = [];
         let conditions = [];
 
+        if (status) {
+          conditions.push(`status = $${params.length + 1}`);
+          params.push(status);
+        }
+
+        if (category) {
+          conditions.push(`LOWER(array_to_string(tags, ',')) LIKE LOWER($${params.length + 1})`);
+          params.push(`%${category}%`);
+        }
+
+        if (location) {
+          conditions.push(`LOWER(description) LIKE LOWER($${params.length + 1})`);
+          params.push(`%${location}%`);
+        }
+
+        if (search) {
+          conditions.push(
+            `(LOWER(name) LIKE LOWER($${params.length + 1})
+      OR LOWER(description) LIKE LOWER($${params.length + 2}))`
+          );
+
+          params.push(`%${search}%`);
+          params.push(`%${search}%`);
+        }
+
+        if (startDate) {
+          conditions.push(`date_text >= $${params.length + 1}`);
+          params.push(startDate);
+        }
+
+        if (endDate) {
+          conditions.push(`date_text <= $${params.length + 1}`);
+          params.push(endDate);
+        }
+
         if (studentGroups === undefined) {
           // If no groups provided, only show public events
-          conditions.push(`(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb)`);
+          conditions.push(
+            `(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb)`
+          );
         } else {
           // Show public events OR events where restricted_groups overlaps with studentGroups
-          const groupArray = studentGroups.length ? studentGroups.map(id => `'${id}'`).join(',') : "'-1'"; // -1 to match nothing
-          conditions.push(`(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(restricted_groups) AS g WHERE g IN (${groupArray})))`);
+          const groupArray = studentGroups.length
+            ? studentGroups.map((id) => `'${id}'`).join(',')
+            : "'-1'"; // -1 to match nothing
+          conditions.push(
+            `(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(restricted_groups) AS g WHERE g IN (${groupArray})))`
+          );
         }
 
         if (conditions.length > 0) {
           query += ' where ' + conditions.join(' and ');
         }
-        
+
         query += ` order by created_at desc limit $1 offset $2`;
         params.push(limit, offset);
 
         const { rows } = await client.query(query, params);
 
-        const countQuery = 'select count(*)::int as total from events ' + (conditions.length > 0 ? ' where ' + conditions.join(' and ') : '');
+        const countQuery =
+          'select count(*)::int as total from events ' +
+          (conditions.length > 0 ? ' where ' + conditions.join(' and ') : '');
         const countResult = await client.query(countQuery);
 
         const total = countResult.rows[0]?.total ?? 0;
@@ -141,16 +197,80 @@ export const eventsRepository = {
       return rowCount > 0;
     });
   },
-  async listAll({ page = 1, limit = 20 } = {}) {
+  async listAll({
+    page = 1,
+    limit = 20,
+    status,
+    startDate,
+    endDate,
+    category,
+    location,
+    search,
+  } = {}) {
     return withDb(async (client) => {
       const offset = (page - 1) * limit;
-      const { rows } = await client.query(
-        'select * from events order by created_at desc limit $1 offset $2',
-        [limit, offset]
-      );
-      const countResult = await client.query('select count(*)::int as total from events');
-      const total = countResult.rows[0]?.total ?? 0;
-      return { rows: rows.map(mapRow), total };
+
+      let query = 'select * from events';
+      const params = [];
+      const conditions = [];
+
+      if (status) {
+        conditions.push(`status = $${params.length + 1}`);
+        params.push(status);
+      }
+
+      if (category) {
+        conditions.push(`LOWER(array_to_string(tags, ',')) LIKE LOWER($${params.length + 1})`);
+        params.push(`%${category}%`);
+      }
+
+      if (location) {
+        conditions.push(`LOWER(description) LIKE LOWER($${params.length + 1})`);
+        params.push(`%${location}%`);
+      }
+
+      if (search) {
+        conditions.push(
+          `(LOWER(name) LIKE LOWER($${params.length + 1})
+        OR LOWER(description) LIKE LOWER($${params.length + 2}))`
+        );
+
+        params.push(`%${search}%`);
+        params.push(`%${search}%`);
+      }
+
+      if (startDate) {
+        conditions.push(`date_text >= $${params.length + 1}`);
+        params.push(startDate);
+      }
+
+      if (endDate) {
+        conditions.push(`date_text <= $${params.length + 1}`);
+        params.push(endDate);
+      }
+
+      if (conditions.length) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+      params.push(limit, offset);
+
+      const { rows } = await client.query(query, params);
+
+      let countQuery = 'select count(*)::int as total from events';
+
+      if (conditions.length) {
+        countQuery += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      const countResult = await client.query(countQuery, params.slice(0, params.length - 2));
+
+      return {
+        rows: rows.map(mapRow),
+        total: countResult.rows[0]?.total ?? 0,
+      };
     });
   },
 };

@@ -158,6 +158,7 @@ test('addNotification and getNotifications work end-to-end', async () => {
     },
   ];
   await addNotification(userId, { title: 'Cached', message: 'test', isRead: true });
+  executedQueries = [];
   const result = await getNotifications(userId);
   assert.equal(result.length, 1, 'should return the notification');
   assert.equal(result[0].title, 'Cached');

@@ -7,6 +7,14 @@ import { visualizer } from 'rollup-plugin-visualizer';
 export default defineConfig({
   resolve: {
     alias: {
+      '@': '/src',
+      '@components': '/src/components',
+      '@hooks': '/src/hooks',
+      '@pages': '/src/pages',
+      '@services': '/src/services',
+      '@utils': '/src/utils',
+      '@styles': '/src/styles',
+      '@data': '/src/data',
       'next/image': '/src/shared/next-image.jsx',
       'next/dynamic': '/src/shared/next-dynamic.jsx',
     },
@@ -67,11 +75,11 @@ export default defineConfig({
       },
 
       injectManifest: {
-        // 4 MB limit to handle large vendor chunks (TensorFlow.js, FullCalendar)
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // 2 MB limit — TensorFlow.js has been removed; FullCalendar is the largest remaining vendor chunk
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,webp,woff2}'],
-        // Exclude source maps and large ML models from precache manifest
-        globIgnores: ['**/*.map', '**/tensorflow*', '**/tfjs*'],
+        // Exclude source maps from precache manifest
+        globIgnores: ['**/*.map'],
       },
 
       devOptions: {
@@ -97,7 +105,6 @@ export default defineConfig({
               return 'vendor-react';
             if (id.includes('framer-motion')) return 'vendor-framer';
             if (id.includes('recharts')) return 'vendor-recharts';
-            if (id.includes('@tensorflow/tfjs')) return 'vendor-tensorflow';
             if (id.includes('@fullcalendar')) return 'vendor-fullcalendar';
             if (id.includes('@sentry')) return 'vendor-sentry';
             if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify'))
@@ -109,6 +116,11 @@ export default defineConfig({
             )
               return 'vendor-i18n';
           }
+          // Heavy route chunks — loaded only when that route is visited
+          if (id.includes('mentorship')) return 'page-mentorship';
+          if (id.includes('portfolio')) return 'page-portfolio';
+          if (id.includes('gamification')) return 'page-gamification';
+          if (id.includes('analytics')) return 'page-analytics';
         },
       },
     },

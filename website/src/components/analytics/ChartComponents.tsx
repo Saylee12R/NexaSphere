@@ -154,10 +154,21 @@ export const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, l
                 flexShrink: 0,
               }}
             />
-            <span style={{ color: 'var(--text-secondary, var(--t2, rgba(255,255,255,0.5)))', fontSize: '0.82rem' }}>
+            <span
+              style={{
+                color: 'var(--text-secondary, var(--t2, rgba(255,255,255,0.5)))',
+                fontSize: '0.82rem',
+              }}
+            >
               {entry.name}:
             </span>
-            <span style={{ color: 'var(--text-primary, var(--t1, #ffffff))', fontWeight: 700, fontSize: '0.82rem' }}>
+            <span
+              style={{
+                color: 'var(--text-primary, var(--t1, #ffffff))',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+              }}
+            >
               {entry.value.toLocaleString()}
             </span>
           </div>

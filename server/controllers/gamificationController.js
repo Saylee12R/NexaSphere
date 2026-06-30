@@ -7,7 +7,7 @@ export async function getLeaderboard(req, res, next) {
   try {
     const filter = String(req.query.filter || 'all').toLowerCase();
     const leaderboard = await studentUsersRepository.getLeaderboard(filter);
-    
+
     // Map database properties to the frontend payload shape
     const formatted = leaderboard.map((user, i) => ({
       rank: i + 1,
@@ -17,7 +17,7 @@ export async function getLeaderboard(req, res, next) {
       avatar: user.avatar_url || '👤',
       badges: user.badges || [],
     }));
-    
+
     return res.json(formatted);
   } catch (error) {
     console.error('Failed to get leaderboard:', error);

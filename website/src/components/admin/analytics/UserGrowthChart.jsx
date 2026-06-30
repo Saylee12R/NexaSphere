@@ -44,7 +44,10 @@ const UserGrowthChart = React.memo(function UserGrowthChart({ data = [] }) {
                   <stop offset="95%" stopColor="#cc1111" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="var(--border-color, rgba(255,255,255,0.08))" vertical={false} />
+              <CartesianGrid
+                stroke="var(--border-color, rgba(255,255,255,0.08))"
+                vertical={false}
+              />
               <XAxis
                 dataKey="date"
                 tickFormatter={formatTick}

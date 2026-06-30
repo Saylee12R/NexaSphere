@@ -13,7 +13,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { initializeSentry } from './utils/errorTracking.js';
 import * as Sentry from '@sentry/react';
 import { ThemeProvider } from './context/theme/ThemeProvider';
-import GlobalErrorBoundary from './components/GlobalErrorBoundary';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { initSyncManager } from './utils/syncManager.js';
 import reportWebVitals from './reportWebVitals.js';
 
@@ -88,9 +88,9 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <HelmetProvider>
       <ThemeProvider>
-        <GlobalErrorBoundary>
+        <ErrorBoundary>
           <App />
-        </GlobalErrorBoundary>
+        </ErrorBoundary>
       </ThemeProvider>
     </HelmetProvider>
   </StrictMode>

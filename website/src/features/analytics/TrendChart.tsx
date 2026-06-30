@@ -17,7 +17,11 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, loading }) => {
       height={350}
     >
       <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color, rgba(255,255,255,0.08))" vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="var(--border-color, rgba(255,255,255,0.08))"
+          vertical={false}
+        />
         <XAxis
           dataKey="name"
           stroke="var(--text-muted, #888)"

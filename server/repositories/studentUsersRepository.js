@@ -173,10 +173,7 @@ export const studentUsersRepository = {
   async markRecoveryCodeUsed(id) {
     if (!HAS_SUPABASE) return;
     return withDb(async (client) => {
-      await client.query(
-        'UPDATE recovery_codes SET used = true WHERE id = $1',
-        [id]
-      );
+      await client.query('UPDATE recovery_codes SET used = true WHERE id = $1', [id]);
     });
   },
 
@@ -184,12 +181,15 @@ export const studentUsersRepository = {
     if (!HAS_SUPABASE) return null;
     return withDb(async (client) => {
       // Get current XP & Level
-      const userRes = await client.query('SELECT xp, level, badges FROM student_users WHERE id = $1', [userId]);
+      const userRes = await client.query(
+        'SELECT xp, level, badges FROM student_users WHERE id = $1',
+        [userId]
+      );
       if (userRes.rows.length === 0) return null;
-      
+
       const currentXP = userRes.rows[0].xp || 0;
       const newXP = currentXP + amount;
-      
+
       // Calculate level: Level 1 (0 XP), Level 2 (500 XP), Level 3 (1500 XP), Level 4 (4000 XP), Level 5 (10000 XP)
       let newLevel = 1;
       if (newXP >= 10000) newLevel = 5;

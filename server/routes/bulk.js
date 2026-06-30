@@ -142,15 +142,20 @@ router.post(paths('/bulk/events/import'), adminAuth, async (req, res) => {
   return res.status(202).json(job);
 });
 
-router.post(paths('/bulk/events/upload'), adminAuth, bulkUpload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'CSV file is required' });
+router.post(
+  paths('/bulk/events/upload'),
+  adminAuth,
+  bulkUpload.single('file'),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'CSV file is required' });
+    }
+    const csv = req.file.buffer.toString('utf-8');
+    const adminId = req.adminSession.username;
+    const job = await bulkOperationsService.importEvents(csv, adminId);
+    return res.status(202).json(job);
   }
-  const csv = req.file.buffer.toString('utf-8');
-  const adminId = req.adminSession.username;
-  const job = await bulkOperationsService.importEvents(csv, adminId);
-  return res.status(202).json(job);
-});
+);
 
 router.post(paths('/bulk/events/status'), adminAuth, async (req, res) => {
   const { eventIds, status } = req.body;

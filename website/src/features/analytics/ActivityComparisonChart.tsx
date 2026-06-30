@@ -20,7 +20,11 @@ export const ActivityComparisonChart: React.FC<ActivityComparisonChartProps> = (
       height={350}
     >
       <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color, rgba(255,255,255,0.08))" vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="var(--border-color, rgba(255,255,255,0.08))"
+          vertical={false}
+        />
         <XAxis
           dataKey="category"
           stroke="var(--text-muted, #888)"
@@ -28,8 +32,16 @@ export const ActivityComparisonChart: React.FC<ActivityComparisonChartProps> = (
           tickLine={false}
           axisLine={false}
         />
-        <YAxis stroke="var(--text-muted, #888)" tick={{ fill: 'var(--text-secondary, #888)' }} tickLine={false} axisLine={false} />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--c1a, rgba(204,17,17,0.08))' }} />
+        <YAxis
+          stroke="var(--text-muted, #888)"
+          tick={{ fill: 'var(--text-secondary, #888)' }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          content={<CustomTooltip />}
+          cursor={{ fill: 'var(--c1a, rgba(204,17,17,0.08))' }}
+        />
         <Legend wrapperStyle={{ paddingTop: '20px' }} />
         <Bar
           dataKey="contributions"

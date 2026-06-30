@@ -1,5 +1,5 @@
 # CI/CD Build and Test Workflow
-name: CI — Build & Test
+name: CI – Build & Test
 
 on:
   push:
@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -30,13 +30,13 @@ jobs:
         run: npm run format:check
 
   website:
-    name: Website — Build
+    name: Website – Build
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -53,6 +53,9 @@ jobs:
           NODE_ENV: production
           VITE_API_BASE: ''
 
+      - name: Create .nojekyll
+        run: touch website/dist/.nojekyll
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v7
         with:
@@ -60,15 +63,15 @@ jobs:
           path: website/dist/
           retention-days: 3
 
-  # ── Admin Dashboard ───────────────────────────────────────────────────────
+  # ── Admin Dashboard ──────────────────────────────────────────────────────
   admin-dashboard:
-    name: Admin Dashboard — Build & Test
+    name: Admin Dashboard – Build & Test
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -89,18 +92,18 @@ jobs:
         env:
           NODE_ENV: production
 
-  # ── Server (Express API) install & smoke test ─────────────────────────────
+  # ── Server (Express API) install & smoke test ──────────────────────────
   server:
-    name: Server — Install & Unit Tests
+    name: Server – Install & Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: server
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -122,10 +125,9 @@ jobs:
         run: npm test
         env:
           NODE_ENV: test
-          # Provide stub env vars so server startup helpers don't crash
           ADMIN_USERNAME: test-admin
-          ADMIN_PASSWORD: ${{ secrets.CI_ADMIN_PASSWORD || 'ci_test_password_stub' }}
-          ADMIN_EVENT_PASSWORD: ${{ secrets.CI_ADMIN_EVENT_PASSWORD || 'ci_test_event_password_stub' }}
+          ADMIN_PASSWORD: 'Ci_test_password_stub1!'
+          ADMIN_EVENT_PASSWORD: 'Ci_test_event_password_stub1!'
           PORT: 8787
           CORS_ORIGIN: 'http://localhost,http://127.0.0.1'
 
@@ -150,28 +152,35 @@ jobs:
         with:
           script: |
             const results = {
-              lint: '${{ needs.lint.result }}',
-              website: '${{ needs.website.result }}',
+              lint:           '${{ needs.lint.result }}',
+              website:        '${{ needs.website.result }}',
               adminDashboard: '${{ needs.admin-dashboard.result }}',
-              server: '${{ needs.server.result }}',
+              server:         '${{ needs.server.result }}',
             };
 
-            const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
+            const icon = (r) =>
+              r === 'success' ? '✅' :
+              r === 'skipped' ? '⏭️' : '❌';
 
-            const body = `
-            ## CI Pipeline Results
+            const rows = [
+              `| Job | Result |`,
+              `|-----|--------|`,
+              `| Lint & Format | ${icon(results.lint)} ${results.lint} |`,
+              `| Website Build | ${icon(results.website)} ${results.website} |`,
+              `| Admin Dashboard | ${icon(results.adminDashboard)} ${results.adminDashboard} |`,
+              `| Server Tests | ${icon(results.server)} ${results.server} |`,
+            ].join('\n');
 
-            ${icon(results.lint)} Lint — ${results.lint}
-            ${icon(results.website)} Website build — ${results.website}
-            ${icon(results.adminDashboard)} Admin dashboard tests — ${results.adminDashboard}
-            ${icon(results.server)} Server tests — ${results.server}
+            const allPassed = Object.values(results).every(r => r === 'success');
+            const summary = allPassed
+              ? '✅ All checks passed!'
+              : '❌ One or more jobs failed. Please review the logs.';
 
-            ${Object.values(results).every(r => r === 'success') ? 'CI pipeline completed successfully.' : '⚠️ One or more jobs failed. Please review the logs.'}
-            `;
+            const body = `## CI Summary\n\n${rows}\n\n${summary}`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: context.repo.repo,
+              repo:  context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body
+              body,
             });

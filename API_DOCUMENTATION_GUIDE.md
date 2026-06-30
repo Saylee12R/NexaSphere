@@ -7,21 +7,25 @@ Complete interactive API documentation generated from code using Swagger/OpenAPI
 ## Acceptance Criteria Status
 
 ✅ **Swagger UI loads correctly at /api/docs**
+
 - Interactive API exploration
 - Try-it-out functionality
 - Authentication support
 
 ✅ **ReDoc loads at /api/redoc**
+
 - Alternative documentation view
 - Organized by tags
 - Responsive design
 
 ✅ **Auto-generate OpenAPI spec from code**
+
 - JSDoc comments in route files
 - Automatic parsing with swagger-jsdoc
 - Real-time spec generation
 
 ✅ **Document all endpoints**
+
 - 25+ endpoints documented
 - Auth endpoints (register, login, verify, refresh)
 - Event endpoints (list, create, update, delete, register)
@@ -31,37 +35,44 @@ Complete interactive API documentation generated from code using Swagger/OpenAPI
 - Admin endpoints (stream, notifications)
 
 ✅ **Request/response examples provided**
+
 - Example request bodies
 - Example responses
 - Error responses
 - Data types and validation
 
 ✅ **Include error codes and auth requirements**
+
 - HTTP status codes
 - Authentication schemes (Bearer, API Key)
 - Authorization requirements
 - Error messages
 
 ✅ **Download OpenAPI spec**
+
 - JSON format: /api/swagger.json
 - YAML format: /api/swagger.yaml
 
 ## Files Created
 
 ### 1. Core Configuration
+
 - `server/config/swagger.js` - OpenAPI 3.0 configuration
 - `server/routes/documentation.js` - Documentation endpoints
 
 ### 2. Endpoint Documentation
+
 - `server/swagger-docs/endpoints.js` - Auth, events endpoints
 - `server/swagger-docs/team-and-activities.js` - Team, activities endpoints
 - `server/swagger-docs/monitoring-and-admin.js` - Monitoring, admin endpoints
 
 ### 3. Documentation & Examples
+
 - `BACKEND_INTEGRATION_EXAMPLE_ISSUE94.js` - Integration guide
 - `API_DOCUMENTATION_GUIDE.md` - This file
 
 ### 4. Updated Files
+
 - `server/package.json` - Added swagger-jsdoc, swagger-ui-express, redoc-express
 
 ## Documentation Endpoints
@@ -79,12 +90,14 @@ GET /api/docs-info   → Documentation info
 ### Documented Endpoints
 
 #### Authentication (5 endpoints)
+
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
 - `POST /api/auth/verify` - Verify email
 - `POST /api/auth/refresh` - Refresh JWT token
 
 #### Events (6 endpoints)
+
 - `GET /api/events` - Get all events
 - `POST /api/events` - Create event
 - `GET /api/events/{eventId}` - Get event details
@@ -93,6 +106,7 @@ GET /api/docs-info   → Documentation info
 - `POST /api/events/{eventId}/register` - Register for event
 
 #### Team Management (5 endpoints)
+
 - `GET /api/core-team` - Get all team members
 - `POST /api/core-team` - Add team member
 - `GET /api/core-team/{memberId}` - Get member details
@@ -100,6 +114,7 @@ GET /api/docs-info   → Documentation info
 - `DELETE /api/core-team/{memberId}` - Delete member
 
 #### Activity Events (5 endpoints)
+
 - `GET /api/activity-events` - Get all activities
 - `POST /api/activity-events` - Create activity
 - `GET /api/activity-events/{eventId}` - Get activity details
@@ -107,6 +122,7 @@ GET /api/docs-info   → Documentation info
 - `DELETE /api/activity-events/{eventId}` - Delete activity
 
 #### Monitoring (6 endpoints)
+
 - `GET /api/monitoring/health` - Health check
 - `GET /api/monitoring/metrics` - Performance metrics
 - `GET /api/monitoring/errors/stats` - Error statistics
@@ -117,17 +133,19 @@ GET /api/docs-info   → Documentation info
 #### Recommendations (1 endpoint) (Python Core)
 
 **`GET /recommend/events/{user_id}`**
+
 - **Description:** Get top 5 recommended events for a specific user.
 - **Input:** `user_id` (Path parameter, string)
 - **Output:** JSON List of Event Objects (containing `id`, `name`, `tags`, and calculated `final_score`).
 - **Data Integration:** Fetches user interests from the `"Profile"` table and event tags from the `"Events"` table in PostgreSQL.
 - **Logic Used:** **Hybrid Content + Collaborative Filtering**.
-  1. *Content-Based*: Uses `TfidfVectorizer` and Cosine Similarity to match user interest keywords against event tags.
-  2. *Collaborative Filtering*: Implements user-user similarity logic to find similar users based on shared interests and boosts the score of events they have already joined.
-  3. *Combined Score*: Creates a weighted final score combining both methods (70% content-based, 30% collaborative).
+  1. _Content-Based_: Uses `TfidfVectorizer` and Cosine Similarity to match user interest keywords against event tags.
+  2. _Collaborative Filtering_: Implements user-user similarity logic to find similar users based on shared interests and boosts the score of events they have already joined.
+  3. _Combined Score_: Creates a weighted final score combining both methods (70% content-based, 30% collaborative).
 - **Performance Optimization:** Utilizes **Redis Caching**. Checks Redis before executing the ML model. If not cached, the model runs and stores the result in Redis for 60 minutes (3600 seconds) to prevent redundant recalculations.
 
 #### Admin & Notifications (4 endpoints)
+
 - `GET /api/admin/stream` - Real-time SSE stream
 - `GET /api/admin/stream/info` - Connected clients info
 - `POST /api/notifications/subscribe` - Subscribe to push
@@ -136,6 +154,7 @@ GET /api/docs-info   → Documentation info
 ## Key Features
 
 ### 1. Swagger UI
+
 - **Interactive API Explorer** - Try endpoints directly from browser
 - **Request/Response Examples** - See exact format of data
 - **Authentication Support** - Test with Bearer tokens
@@ -144,6 +163,7 @@ GET /api/docs-info   → Documentation info
 - **Download OpenAPI Spec** - Export for other tools
 
 ### 2. ReDoc
+
 - **Beautiful Documentation** - Modern, clean interface
 - **Organized by Tags** - Group related endpoints
 - **Searchable** - Find endpoints quickly
@@ -151,6 +171,7 @@ GET /api/docs-info   → Documentation info
 - **Code Examples** - Multiple language examples
 
 ### 3. OpenAPI Specification
+
 - **Machine Readable** - Use with code generators
 - **Version Control** - Track API changes
 - **Standards Compliant** - OpenAPI 3.0.0
@@ -310,27 +331,32 @@ responses:
 ## API Server Setup
 
 ### 1. Install Dependencies
+
 ```bash
 npm install swagger-jsdoc swagger-ui-express redoc-express yaml
 ```
 
 ### 2. Import Documentation Routes
+
 ```javascript
 import documentationRoutes from './routes/documentation.js';
 app.use('/api', documentationRoutes);
 ```
 
 ### 3. Add JSDoc Comments to Routes
+
 Add JSDoc comments to all route files. swagger-jsdoc will automatically parse them.
 
 ### 4. Access Documentation
-- **Swagger UI:** http://localhost:3000/api/docs
-- **ReDoc:** http://localhost:3000/api/redoc
-- **OpenAPI JSON:** http://localhost:3000/api/swagger.json
+
+- **Swagger UI:** <http://localhost:3000/api/docs>
+- **ReDoc:** <http://localhost:3000/api/redoc>
+- **OpenAPI JSON:** <http://localhost:3000/api/swagger.json>
 
 ## Response Format
 
 ### Success Response
+
 ```json
 {
   "success": true,
@@ -343,6 +369,7 @@ Add JSDoc comments to all route files. swagger-jsdoc will automatically parse th
 ```
 
 ### Error Response
+
 ```json
 {
   "success": false,
@@ -353,26 +380,28 @@ Add JSDoc comments to all route files. swagger-jsdoc will automatically parse th
 
 ## HTTP Status Codes
 
-| Code | Meaning | Usage |
-|------|---------|-------|
-| 200 | OK | Successful GET, PUT, DELETE |
-| 201 | Created | Successful POST |
-| 400 | Bad Request | Invalid input |
-| 401 | Unauthorized | Missing/invalid auth |
-| 403 | Forbidden | Insufficient permissions |
-| 404 | Not Found | Resource not found |
-| 500 | Server Error | Unexpected error |
-| 503 | Service Unavailable | Server down |
+| Code | Meaning             | Usage                       |
+| ---- | ------------------- | --------------------------- |
+| 200  | OK                  | Successful GET, PUT, DELETE |
+| 201  | Created             | Successful POST             |
+| 400  | Bad Request         | Invalid input               |
+| 401  | Unauthorized        | Missing/invalid auth        |
+| 403  | Forbidden           | Insufficient permissions    |
+| 404  | Not Found           | Resource not found          |
+| 500  | Server Error        | Unexpected error            |
+| 503  | Service Unavailable | Server down                 |
 
 ## Authentication Methods
 
 ### Bearer Token (JWT)
+
 ```bash
 curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   http://localhost:3000/api/events
 ```
 
 ### API Key
+
 ```bash
 curl -H "X-API-Key: your-api-key" \
   http://localhost:3000/api/events
@@ -380,7 +409,7 @@ curl -H "X-API-Key: your-api-key" \
 
 ## Testing Endpoints in Swagger UI
 
-1. **Open Swagger UI:** http://localhost:3000/api/docs
+1. **Open Swagger UI:** <http://localhost:3000/api/docs>
 2. **Authorize:** Click "Authorize" button, enter JWT token
 3. **Try Endpoint:** Expand endpoint, click "Try it out"
 4. **Enter Parameters:** Fill in required fields
@@ -390,16 +419,19 @@ curl -H "X-API-Key: your-api-key" \
 ## Exporting OpenAPI Spec
 
 ### Download JSON
+
 ```bash
 curl http://localhost:3000/api/swagger.json > openapi.json
 ```
 
 ### Download YAML
+
 ```bash
 curl http://localhost:3000/api/swagger.yaml > openapi.yaml
 ```
 
 ### Use with Code Generators
+
 - OpenAPI Generator: Generate client libraries
 - Swagger Codegen: Generate server stubs
 - API documentation tools: Import specs
@@ -407,29 +439,34 @@ curl http://localhost:3000/api/swagger.yaml > openapi.yaml
 ## Best Practices
 
 ### 1. Comprehensive Documentation
+
 - Clear summaries and descriptions
 - Include all parameters and responses
 - Document error cases
 - Provide examples
 
 ### 2. Consistent Naming
+
 - Use consistent naming conventions
 - Group related endpoints with tags
 - Use standard HTTP methods
 - Follow REST principles
 
 ### 3. Version API
+
 - Include version in spec: `version: '1.0.0'`
 - Track changes in CHANGELOG
 - Update documentation with releases
 
 ### 4. Security
+
 - Document auth requirements
 - Show auth schemes (Bearer, API Key)
 - Indicate which endpoints require auth
 - Document permission requirements
 
 ### 5. Examples
+
 - Provide realistic examples
 - Show error responses
 - Include edge cases
@@ -438,23 +475,27 @@ curl http://localhost:3000/api/swagger.yaml > openapi.yaml
 ## Common Issues
 
 ### Swagger UI Not Loading
+
 - Check file paths in swagger.js
 - Ensure JSDoc comments are formatted correctly
 - Verify swagger-ui-express is installed
 - Check browser console for errors
 
 ### Endpoints Not Appearing
+
 - Verify JSDoc `@swagger` tag
 - Check path format matches route
 - Ensure comment is before function
 - Verify HTTP method is correct
 
 ### Schema References Not Working
+
 - Check schema name matches exactly
 - Ensure schema defined in swagger.js
 - Use correct reference format: `$ref: '#/components/schemas/Name'`
 
 ### Authentication Not Working
+
 - Verify securitySchemes defined
 - Check security field in endpoint
 - Ensure token format is correct
@@ -516,6 +557,7 @@ PR_CONTENT_ISSUE_94.md
 ## Support
 
 For questions or issues:
+
 1. Check this guide
 2. Review JSDoc comment examples
 3. Refer to OpenAPI 3.0 specification

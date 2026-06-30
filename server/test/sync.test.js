@@ -11,6 +11,7 @@ process.env.ADMIN_EVENT_PASSWORD = 'StrongEventPassword123!';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
 process.env.JWT_SECRET = 'secret_super_long_secret_key_that_is_safe_and_long_enough_for_256bit';
 process.env.PORT = '0';
+process.env.DATABASE_URL = 'postgresql://localhost/dummy_test_db';
 
 // Mock DB responses for sync testing
 let dbQueries = [];
@@ -24,6 +25,9 @@ setWithDbOverride(async (fn) => {
       dbQueries.push({ sql: sql.trim().replace(/\s+/g, ' '), params });
 
       const sqlLower = sql.toLowerCase();
+      if (sqlLower.includes('select count')) {
+        return { rows: [{ count: mockDbResult.select.length }], rowCount: 1 };
+      }
       if (sqlLower.includes('select updated_at') || sqlLower.includes('select id, name')) {
         return { rows: mockDbResult.select, rowCount: mockDbResult.select.length };
       }

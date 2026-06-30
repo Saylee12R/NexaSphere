@@ -1,7 +1,7 @@
 name: 🚀 Feature Request
 description: Propose a new feature or enhancement for NexaSphere.
-title: "[FEATURE]: "
-labels: ["enhancement", "triage"]
+title: '[FEATURE]: '
+labels: ['enhancement', 'triage']
 body:
   - type: markdown
     attributes:

@@ -64,7 +64,7 @@ const files = [
   './routes/scheduledTasks.js',
   './routes/financials.js',
   './services/schedulerService.js',
-  './routes/feedbackRoutes.js'
+  './routes/feedbackRoutes.js',
 ];
 
 async function check() {
