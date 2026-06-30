@@ -297,7 +297,11 @@ app.use(
 
         objectSrc: ["'none'"],
 
-feat/i18n-localization-1397
+ feat/i18n-localization-1397
+ feat/i18n-localization-1397
+
+ fix/csp-helmet-config-1475
+ main
         // ✅ CRITICAL FIX: Missing directives added below
         baseUri: ["'self'"],                                    // Prevents <base> tag injection
         frameAncestors: ["'none'"],                             // Prevents clickjacking
@@ -332,7 +336,7 @@ feat/i18n-localization-1397
         ],
 
         childSrc: ["'none'"],
-main
+ main
 
         reportUri: '/api/v1/csp-violation',
       },
@@ -369,6 +373,10 @@ main
   })
 );
  feat/i18n-localization-1397
+ feat/i18n-localization-1397
+
+ fix/csp-helmet-config-1475
+ main
 
 
 app.use(

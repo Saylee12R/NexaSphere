@@ -17,13 +17,13 @@ const LanguageSwitcher = () => {
     <div className="flex gap-2">
       <button
         onClick={() => switchLanguage('en')}
-        className={`px-3 py-1 rounded ${currentLocale === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+        className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
       >
         🇺🇸 EN
       </button>
       <button
         onClick={() => switchLanguage('hi')}
-        className={`px-3 py-1 rounded ${currentLocale === 'hi' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+        className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
       >
         🇮🇳 HI
       </button>
