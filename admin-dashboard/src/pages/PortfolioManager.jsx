@@ -83,6 +83,38 @@ export function PortfolioManager() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to move this portfolio to trash?')) return;
+    try {
+      const res = await fetch(`/api/admin/portfolios/${selectedPortfolio.username}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        alert('Moved to trash');
+        fetchPortfolios();
+        setSelectedPortfolio(null);
+      } else alert('Failed to delete');
+    } catch (e) {
+      alert('Error');
+    }
+  };
+
+  const handleRecover = async () => {
+    try {
+      const res = await fetch(`/api/admin/portfolios/${selectedPortfolio.username}/recover`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        alert('Recovered');
+        fetchPortfolios();
+      } else alert('Failed to recover');
+    } catch (e) {
+      alert('Error');
+    }
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -195,6 +227,32 @@ export function PortfolioManager() {
                 </div>
                 <div>
                   <strong>Theme:</strong> {selectedPortfolio.theme}
+                </div>
+                <div style={{ marginTop: 10, display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={handleDelete}
+                    style={{
+                      background: '#d32f2f',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '5px 10px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    Move to Trash
+                  </button>
+                  <button
+                    onClick={handleRecover}
+                    style={{
+                      background: '#388e3c',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '5px 10px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    Recover from Trash
+                  </button>
                 </div>
               </div>
 

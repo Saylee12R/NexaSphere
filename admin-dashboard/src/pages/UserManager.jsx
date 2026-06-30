@@ -221,6 +221,39 @@ export default function UserManager() {
     }
   }
 
+  async function handleUnlock(id) {
+    if (!confirm('Unlock this user account?')) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}/unlock`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) alert('Account unlocked successfully');
+      else alert('Failed to unlock');
+    } catch (e) {
+      console.error(e);
+      alert('Error unlocking account');
+    }
+  }
+
+  async function handleResetPassword(id) {
+    const newPassword = prompt('Enter new password (min 8 chars):');
+    if (!newPassword || newPassword.length < 8) return alert('Invalid password');
+    try {
+      const res = await fetch(`/api/admin/users/${id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ newPassword }),
+      });
+      if (res.ok) alert('Password reset successfully');
+      else alert('Failed to reset password');
+    } catch (e) {
+      console.error(e);
+      alert('Error resetting password');
+    }
+  }
+
   function openEdit(user) {
     setEditUser(user);
     setForm({
@@ -245,14 +278,7 @@ export default function UserManager() {
         }}
       >
         <h2>User Management</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setShowImportModal(true)} disabled={submitting}>
-            Batch Import
-          </button>
-          <button onClick={() => setShowAddModal(true)} disabled={submitting}>
-            + Add User
-          </button>
-        </div>
+        <button onClick={() => setShowAddModal(true)}>+ Add User</button>
       </div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -279,23 +305,10 @@ export default function UserManager() {
                 {user.joined_at ? new Date(user.joined_at).toLocaleDateString() : '-'}
               </td>
               <td style={{ padding: '8px', display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => openEdit(user)}
-                  disabled={deleting === user.id || submitting}
-                >
-                  Edit
-                </button>
-                <button onClick={() => handleDeactivate(user.id)} disabled={submitting}>
-                  Deactivate
-                </button>
-                <button
-                  onClick={() => setAwardBadgeUser(user)}
-                  disabled={submitting}
-                  style={{ background: '#8B5CF6', color: 'white' }}
-                >
-                  Award Badge
-                </button>
-                <button onClick={() => setTimelineUser(user)}>Activity</button>
+                <button onClick={() => openEdit(user)}>Edit</button>
+                <button onClick={() => handleDeactivate(user.id)}>Deactivate</button>
+                <button onClick={() => handleUnlock(user.id)}>Unlock</button>
+                <button onClick={() => handleResetPassword(user.id)}>Reset Password</button>
               </td>
             </tr>
           ))}

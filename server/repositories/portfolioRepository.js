@@ -229,16 +229,18 @@ function mapRow(row) {
 }
 
 export const portfolioRepository = {
-  async getByUsername(username) {
+  async getByUsername(username, { includeDeleted = false } = {}) {
     const isDbAvailable = await ensureReady();
     const sanitizedUsername = canonicalizeUsername(username);
 
     if (isDbAvailable) {
       try {
         return await withDb(async (client) => {
-          const { rows } = await client.query('SELECT * FROM portfolios WHERE username = $1', [
-            sanitizedUsername,
-          ]);
+          let query = 'SELECT * FROM portfolios WHERE username = $1';
+          if (!includeDeleted) {
+            query += ' AND deleted_at IS NULL';
+          }
+          const { rows } = await client.query(query, [sanitizedUsername]);
           if (!rows.length) return null;
           const portfolio = mapRow(rows[0]);
 
@@ -271,7 +273,7 @@ export const portfolioRepository = {
     // Local file fallback
     const portfolios = await readLocalPortfolios();
     const portfolio = portfolios[sanitizedUsername];
-    if (!portfolio) return null;
+    if (!portfolio || (!includeDeleted && portfolio.deletedAt)) return null;
     return sanitizePortfolioOutput({
       username: portfolio.username,
       theme: portfolio.theme,
@@ -481,12 +483,17 @@ export const portfolioRepository = {
     });
   },
 
-  async listAll() {
+  async listAll({ includeDeleted = false } = {}) {
     const isDbAvailable = await ensureReady();
     if (isDbAvailable) {
       try {
         return await withDb(async (client) => {
-          const { rows } = await client.query('SELECT * FROM portfolios ORDER BY updated_at DESC');
+          let query = 'SELECT * FROM portfolios';
+          if (!includeDeleted) {
+            query += ' WHERE deleted_at IS NULL';
+          }
+          query += ' ORDER BY updated_at DESC';
+          const { rows } = await client.query(query);
           return rows.map(mapRow);
         });
       } catch (err) {
@@ -500,10 +507,34 @@ export const portfolioRepository = {
     const isDbAvailable = await ensureReady();
     if (isDbAvailable) {
       return withDb(async (client) => {
-        await client.query('DELETE FROM portfolios WHERE username = $1', [username]);
+        await client.query('UPDATE portfolios SET deleted_at = NOW() WHERE username = $1', [
+          username,
+        ]);
       });
     }
-    throw new Error('Portfolio storage is unavailable');
+
+    const portfolios = await readLocalPortfolios();
+    if (portfolios[username]) {
+      portfolios[username].deletedAt = new Date().toISOString();
+      await writeLocalPortfolios(portfolios);
+    }
+  },
+
+  async recover(username) {
+    const isDbAvailable = await ensureReady();
+    if (isDbAvailable) {
+      return withDb(async (client) => {
+        await client.query('UPDATE portfolios SET deleted_at = NULL WHERE username = $1', [
+          username,
+        ]);
+      });
+    }
+
+    const portfolios = await readLocalPortfolios();
+    if (portfolios[username]) {
+      delete portfolios[username].deletedAt;
+      await writeLocalPortfolios(portfolios);
+    }
   },
 };
 
