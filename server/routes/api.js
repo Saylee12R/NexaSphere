@@ -31,7 +31,7 @@ import waitlistRoutes from './waitlist.js';
 
 import * as recommendationsController from '../controllers/recommendationsController.js';
 import * as gamificationController from '../controllers/gamificationController.js';
-import { Router } from 'express';
+import { impersonationService } from '../services/impersonationService.js';
 import multer from 'multer';
 
 router.use(rateLimitAdminRoutes);
