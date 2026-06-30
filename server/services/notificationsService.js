@@ -2,6 +2,7 @@ import { notificationAnalyticsRepository } from '../repositories/notificationAna
 import { pushSubscriptionsRepository } from '../repositories/pushSubscriptionsRepository.js';
 import { notificationsRepository } from '../repositories/notificationsRepository.js';
 import { HAS_SUPABASE, supabaseRequest } from '../storage/supabaseClient.js';
+import { createDigestPayload } from './notificationBatcher.js';
 import webpush from 'web-push';
 import { shouldDeliver } from './notificationPreferencesService.js';
 
@@ -144,14 +145,16 @@ class NotificationsService {
       },
     });
 
-    for (const sub of subs) {
-      try {
-        await webpush.sendNotification(sub, payload);
-        await notificationAnalyticsRepository.logEvent(userId, data.id, 'delivered');
-      } catch (err) {
-        if (err.statusCode === 410) await pushSubscriptionsRepository.remove(sub.endpoint);
-      }
-    }
+    await Promise.allSettled(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(sub, payload);
+          await notificationAnalyticsRepository.logEvent(userId, data.id, 'delivered');
+        } catch (err) {
+          if (err.statusCode === 410) await pushSubscriptionsRepository.remove(sub.endpoint);
+        }
+      })
+    );
   }
 
   async addToDigest(userId, frequency, data) {
@@ -175,6 +178,8 @@ class NotificationsService {
    */
   async processDigests(frequency) {
     const digests = await supabaseRequest(`pending_digests?frequency=eq.${frequency}`);
+    if (!digests || digests.length === 0) return;
+
     const userGroups = digests.reduce((acc, d) => {
       acc[d.user_id] = acc[d.user_id] || [];
       acc[d.user_id].push(d.notification_data);
@@ -182,16 +187,18 @@ class NotificationsService {
     }, {});
 
     for (const [userId, items] of Object.entries(userGroups)) {
-      const message =
-        items.length === 1
-          ? items[0].message
-          : `You have ${items.length} new ${frequency.replace('_', ' ')} updates including: ${items[0].title}`;
-
-      await this.sendNow(userId, {
-        title: `Your ${frequency.replace('_', ' ')}`,
-        message,
-        type: 'digest',
-      });
+      if (items.length === 1) {
+        await this.sendNow(userId, items[0]);
+      } else {
+        const digest = createDigestPayload(userId, items, frequency);
+        await this.sendNow(userId, {
+          id: `digest-${Date.now()}`,
+          title: digest.title,
+          message: digest.body,
+          type: 'digest',
+          link: '/notifications',
+        });
+      }
     }
     // Cleanup processed digests
     await supabaseRequest(`pending_digests?frequency=eq.${frequency}`, { method: 'DELETE' });
@@ -295,8 +302,40 @@ class NotificationsService {
   }
 
   async flushQueuedNotifications() {
-    // Placeholder: requires pending_digests/queued_notifications tables.
-    // This project already has a shouldDeliver() implementation for quiet hours + DND.
+    if (!HAS_SUPABASE) return;
+    const queued = await supabaseRequest('queued_notifications');
+    if (!queued || queued.length === 0) return;
+
+    const userGroups = queued.reduce((acc, d) => {
+      acc[d.user_id] = acc[d.user_id] || [];
+      acc[d.user_id].push(d);
+      return acc;
+    }, {});
+
+    for (const [userId, records] of Object.entries(userGroups)) {
+      const isDND = await notificationPreferencesRepository.isDNDActive(userId);
+      const inQuietHours = await notificationPreferencesRepository.isInsideQuietHours(userId);
+      
+      if (!isDND && !inQuietHours) {
+        const items = records.map(r => r.notification_data);
+        if (items.length === 1) {
+          await this.sendNow(userId, items[0]);
+        } else {
+          const digest = createDigestPayload(userId, items, 'batch');
+          await this.sendNow(userId, {
+            id: `digest-${Date.now()}`,
+            title: 'While you were away',
+            message: digest.body,
+            type: 'digest',
+            link: '/notifications',
+          });
+        }
+        
+        // Remove delivered notifications from queue
+        // In real world, we might do a bulk delete by user ID or IDs array
+        await supabaseRequest(`queued_notifications?user_id=eq.${userId}`, { method: 'DELETE' });
+      }
+    }
   }
 
   // CRUD Pass-throughs for Repository
