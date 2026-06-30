@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe, Type } from 'lucide-react';
+import { Moon, Sun, Settings } from 'lucide-react';
 import { BRAND_LOGO_FULL, BRAND_LOGO_ICON } from './brandAssets';
 
 const TABS = [
@@ -70,21 +70,15 @@ function ThemeToggle({ theme, onToggle }) {
   );
 }
 
-function LanguageToggle() {
-  const { i18n } = useTranslation();
-  const currentLang = i18n.language ? i18n.language.split('-')[0] : 'en';
-
-  const toggleLanguage = () => {
-    const nextLang = currentLang === 'en' ? 'hi' : 'en';
-    i18n.changeLanguage(nextLang);
-  };
+function SettingsToggle({ onSettings }) {
+  const { t } = useTranslation();
 
   return (
     <button
       className="ns-lang-toggle"
-      onClick={toggleLanguage}
-      aria-label={`Switch to ${currentLang === 'en' ? 'Hindi' : 'English'}`}
-      title={`Switch to ${currentLang === 'en' ? 'Hindi' : 'English'}`}
+      onClick={onSettings}
+      aria-label={t('settings')}
+      title={t('settings')}
       style={{
         background: 'var(--card)',
         border: '1px solid var(--bdr)',
@@ -110,47 +104,8 @@ function LanguageToggle() {
         e.currentTarget.style.color = 'var(--t2)';
       }}
     >
-      <Globe size={14} aria-hidden="true" />
-      <span>{currentLang.toUpperCase()}</span>
-    </button>
-  );
-}
-
-function FontSizeToggle({ fontSize, onToggle }) {
-  const label = fontSize === 'normal' ? 'Normal' : fontSize === 'large' ? 'Large' : 'Extra Large';
-  return (
-    <button
-      className="ns-fontsize-toggle"
-      onClick={onToggle}
-      aria-label={`Toggle Font Size. Current: ${label}`}
-      title={`Toggle Font Size. Current: ${label}`}
-      style={{
-        background: 'var(--card)',
-        border: '1px solid var(--bdr)',
-        borderRadius: '50px',
-        padding: '6px 12px',
-        color: 'var(--t2)',
-        fontSize: '0.8rem',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        fontFamily: "'Space Mono', monospace",
-        fontWeight: 600,
-        height: '32px',
-        transition: 'all 0.2s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--c1)';
-        e.currentTarget.style.color = 'var(--t1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--bdr)';
-        e.currentTarget.style.color = 'var(--t2)';
-      }}
-    >
-      <Type size={14} aria-hidden="true" />
-      <span>{fontSize === 'normal' ? 'A' : fontSize === 'large' ? 'A+' : 'A++'}</span>
+      <Settings size={14} aria-hidden="true" />
+      <span>{t('settings', 'Settings')}</span>
     </button>
   );
 }
@@ -160,10 +115,9 @@ export default function Navbar({
   onTabChange,
   onToggleTheme,
   theme,
-  fontSize,
-  onToggleFontSize,
   onApply,
   onJoin,
+  onSettings,
 }) {
   const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
@@ -213,7 +167,7 @@ export default function Navbar({
           </div>
 
           <div className="ns-mobile-top-actions">
-            <LanguageToggle />
+            <SettingsToggle onSettings={onSettings} />
             <ThemeToggle theme={theme} onToggle={onToggleTheme} />
             <FontSizeToggle fontSize={fontSize} onToggle={onToggleFontSize} />
             <button
@@ -366,7 +320,7 @@ export default function Navbar({
               {t('nav.apply')}
             </button>
           </div>
-          <LanguageToggle />
+          <SettingsToggle onSettings={onSettings} />
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <FontSizeToggle fontSize={fontSize} onToggle={onToggleFontSize} />
         </div>
