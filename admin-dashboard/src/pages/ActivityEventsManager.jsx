@@ -25,14 +25,17 @@ export function ActivityEventsManager() {
   const [deleting, setDeleting] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [error, setError] = useState('');
 
   const loadEvents = useCallback(async (key) => {
     setLoading(true);
+    setError('');
     try {
       const data = await api.activityEvents.getAll(key);
       setEvents(data?.events ?? []);
-    } catch {
+    } catch (e) {
       setEvents([]);
+      setError(e.message || 'Failed to load activity events.');
     } finally {
       setLoading(false);
     }
@@ -105,7 +108,9 @@ export function ActivityEventsManager() {
 
       {loading && <Skeleton height={64} count={3} />}
 
-      {!loading && (
+      {error && <div className="page-error">{error}</div>}
+
+      {!loading && !error && (
         <div className="list">
           {events.length === 0 && (
             <div className="empty-state">No events for {selectedName} yet.</div>
